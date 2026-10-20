@@ -1,0 +1,828 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>我有預約</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<style>
+/* Layout: a phone app. App bar on top, one screen per level in the middle, tab bar at the bottom. On wide screens the app is a centered phone-sized column. */
+:root{
+  --bg:#f6f5fb; --card:#ffffff; --line:#e6e4f0;
+  --ink:#17172b; --ink-2:#5d5d75; --ink-3:#9a99b0;
+  --accent:#6c4cf5; --accent-lo:#5538d6; --accent-soft:#efeaff;
+  --danger:#e5484d; --ok:#1fa463; --warn:#f5a524;
+  --ui:-apple-system,BlinkMacSystemFont,"SF Pro Text","PingFang TC","Noto Sans TC","Microsoft JhengHei","Segoe UI",system-ui,sans-serif;
+  color-scheme:light;
+}
+*{box-sizing:border-box}
+html{height:100%}
+body{
+  height:100%; margin:0; overflow:hidden;
+  font:15px/1.45 var(--ui); color:var(--ink); background:var(--bg);
+  overscroll-behavior:none; touch-action:manipulation;
+  -webkit-user-select:none; user-select:none; -webkit-tap-highlight-color:transparent;
+}
+#phone{position:relative; height:100%; width:100%; max-width:430px; margin:0 auto; display:flex; flex-direction:column; background:var(--bg)}
+@media (min-width:600px){
+  body{display:flex; background:#15141f}
+  #phone{height:min(100%,820px); margin:auto; border-radius:28px; overflow:hidden; box-shadow:0 30px 80px rgba(0,0,0,.55)}
+}
+
+/* app bar and tab bar */
+#appbar{
+  flex:none; height:54px; display:grid; grid-template-columns:32px 1fr 32px; align-items:center; gap:8px;
+  padding-left:max(16px,env(safe-area-inset-left,0px)); padding-right:max(16px,env(safe-area-inset-right,0px));
+  background:var(--bg);
+}
+.ab-ic{width:22px; height:22px; fill:none; stroke:var(--ink-2); stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; justify-self:center}
+.ab-title{text-align:center; line-height:1.2; cursor:default}
+.ab-title b{display:block; font-size:16px; font-weight:700}
+.ab-title small{display:block; margin-top:1px; font-size:11px; color:var(--ink-3); font-variant-numeric:tabular-nums}
+#tabbar{
+  flex:none; display:grid; grid-template-columns:repeat(4,1fr);
+  height:calc(54px + env(safe-area-inset-bottom,0px));
+  padding-bottom:env(safe-area-inset-bottom,0px);
+  margin-bottom:calc(-1 * env(safe-area-inset-bottom,0px));
+  padding-left:max(16px,env(safe-area-inset-left,0px)); padding-right:max(16px,env(safe-area-inset-right,0px));
+  background:var(--card); border-top:1px solid var(--line);
+}
+.tab{display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px; font-size:10px; color:var(--ink-3)}
+.tab svg{width:22px; height:22px; fill:none; stroke:currentColor; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round}
+.tab.on{color:var(--accent); font-weight:600}
+
+/* stage and screens */
+#stage{
+  position:relative; flex:1; min-height:0; overflow:hidden; display:flex; flex-direction:column;
+  padding-top:6px; padding-bottom:14px;
+  padding-left:max(16px,env(safe-area-inset-left,0px)); padding-right:max(16px,env(safe-area-inset-right,0px));
+}
+.screen{flex:1; min-height:0; display:flex; flex-direction:column}
+.actions{margin-top:auto; padding-top:16px; display:grid; gap:12px}
+
+.event{display:flex; align-items:center; gap:12px; padding:12px 14px; background:var(--card); border-radius:16px; box-shadow:0 1px 2px rgba(23,23,43,.06),0 6px 16px rgba(23,23,43,.05)}
+.eico{flex:none; width:44px; height:44px; border-radius:12px; background:var(--accent); display:grid; place-items:center}
+.eico svg{width:24px; height:24px}
+.event b{display:block; font-size:16px; line-height:1.3}
+.event span{font-size:12px; color:var(--ink-2)}
+.q{margin:22px 2px 4px; font-size:22px; line-height:1.3; font-weight:700}
+.qs{margin:0 2px; color:var(--ink-2); font-size:14px}
+
+.btn{
+  font:inherit; font-size:16px; font-weight:600; width:100%; height:52px; padding:0 18px;
+  border-radius:14px; border:1.5px solid transparent; background:var(--accent-soft); color:var(--accent);
+  cursor:pointer; touch-action:manipulation;
+}
+.btn:active{transform:scale(.98)}
+.btn.primary{background:var(--accent); color:#fff}
+.btn.primary:active{background:var(--accent-lo)}
+.btn.ghost{background:transparent; border-color:var(--line); color:var(--ink-2)}
+.btn.dim{background:#34334a; border-color:#34334a; color:#85849a; cursor:not-allowed; pointer-events:none; transform:none}
+.btn.sm{height:38px; font-size:14px; border-radius:11px}
+.btn:focus-visible,.docwrap:focus-visible{outline:2px solid var(--ink); outline-offset:2px}
+
+/* home and result screens */
+.home,.result{flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; gap:6px}
+.home .logo{width:88px; height:88px; border-radius:24px; background:var(--accent); display:grid; place-items:center; box-shadow:0 12px 28px rgba(108,76,245,.35)}
+.home .logo svg{width:50px; height:50px}
+.home h1{margin:18px 0 0; font-size:clamp(24px,7.6vw,32px); line-height:1.3; font-weight:800; letter-spacing:.03em}
+.home .tag{margin-top:4px; padding:4px 14px; border-radius:999px; background:var(--accent-soft); color:var(--accent); font-size:13px; font-weight:600}
+.home p{margin:14px 0 0; color:var(--ink-2)}
+.result h1{margin:0; font-weight:800; letter-spacing:.04em; line-height:1.15}
+.result.fail h1{font-size:clamp(44px,15.5vw,76px); color:var(--danger)}
+.result.giveup h1{font-size:clamp(44px,15.5vw,76px); color:var(--danger)}
+.result.clear h1{font-size:clamp(30px,10vw,44px); color:var(--ok)}
+.result .sub{margin:0; color:var(--ink-2)}
+.result .rico{width:72px; height:72px; margin-bottom:10px; border-radius:50%; background:var(--ok); display:grid; place-items:center}
+.result .rico svg{width:38px; height:38px}
+
+/* confirming overlay */
+.confirm{position:absolute; inset:0; z-index:1500; display:grid; place-items:center; background:rgba(246,245,251,.88); -webkit-backdrop-filter:blur(4px); backdrop-filter:blur(4px); animation:fade .15s ease-out}
+.confirm .box{display:flex; flex-direction:column; align-items:center; gap:14px; padding:26px 38px; border-radius:20px; background:#fff; box-shadow:0 14px 34px rgba(23,23,43,.18)}
+.confirm b{font-size:20px; letter-spacing:.08em}
+.spin{width:34px; height:34px; border-radius:50%; border:3.5px solid var(--accent-soft); border-top-color:var(--accent); animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes fade{from{opacity:0} to{opacity:1}}
+
+/* 干擾關 */
+.center{flex:1; display:flex; align-items:center; min-height:0}
+.popup{position:absolute; z-index:100; padding:14px; border-radius:16px; background:var(--card); box-shadow:0 14px 34px rgba(23,23,43,.35),0 2px 6px rgba(23,23,43,.2); animation:pop .14s ease-out}
+.popup .px{position:absolute; top:7px; right:7px; width:30px; height:30px; padding:0; border:0; border-radius:50%; background:rgba(23,23,43,.07); color:var(--ink-2); display:grid; place-items:center; cursor:pointer}
+.popup.xl .px{left:7px; right:auto}
+.popup h4{margin:0 36px 4px; font-size:14px}
+.popup p{margin:0 0 10px; padding:0 2px; font-size:13px; color:var(--ink-2); line-height:1.4}
+@keyframes pop{from{transform:scale(.94); opacity:0} to{transform:none; opacity:1}}
+
+/* 逃跑關 */
+.field{position:relative; flex:1; min-height:140px; max-height:320px; margin-top:16px; overflow:hidden; border-radius:16px; background:var(--card); border:1.5px dashed var(--line)}
+.runner{position:absolute; left:0; top:0; will-change:transform}
+.runner .btn{width:auto; min-width:140px; height:46px}
+.btn.tired{animation:pant .45s ease-in-out infinite}
+@keyframes pant{0%,100%{transform:rotate(-2deg)} 50%{transform:rotate(2deg)}}
+
+/* 蓋住關 */
+.intro{margin:10px 2px 12px}
+.intro .main{font-size:20px; font-weight:700}
+.intro .sub{margin-top:2px; color:var(--ink-2); font-size:13px}
+.tiles{display:grid; gap:8px}
+.tile{position:relative; display:flex; align-items:center; gap:6px; padding:5px 8px; min-height:clamp(48px,7.6vh,62px); background:var(--card); border-radius:14px; box-shadow:0 1px 2px rgba(23,23,43,.06),0 4px 12px rgba(23,23,43,.05)}
+.tile.bad{background:#fdeaeb; box-shadow:0 0 0 1.5px #f0a3a6}
+.slot{position:relative; flex:1 1 0; min-width:0; min-height:36px; display:flex; align-items:center; font-size:12px; line-height:1.25; color:#333}
+.slot.L{justify-content:flex-end; text-align:right}
+.slot.R{justify-content:flex-start; text-align:left}
+.tile .btn{flex:none; width:auto; min-width:92px; height:38px; padding:0 10px; font-size:14px; border-radius:10px}
+.sticker{
+  position:absolute; inset:-3px; z-index:5; padding:4px 7px; border-radius:10px; overflow:hidden;
+  font-size:11px; line-height:1.25; text-align:left; cursor:grab; touch-action:none;
+  box-shadow:0 2px 8px rgba(23,23,43,.3);
+}
+.sticker.drag{cursor:grabbing; z-index:50; box-shadow:0 10px 20px rgba(23,23,43,.38)}
+.sticker small{color:#777; font-size:10px}
+.st-note{background:#fff2a8; color:#5b4a00; border:1px solid #e3cf74}
+.st-toast{background:#fff; color:#222; border:1px solid #d9d7e6}
+.st-ad{background:linear-gradient(135deg,#ff5a5f,#ff8a3d); color:#fff; font-weight:600}
+.st-cookie{background:#2b2b3a; color:#eee}
+.st-cookie u{color:#b9a8ff}
+.st-update{background:#efeaff; color:#3b2a9a; border:1px solid #cfc3fa}
+.st-update .bar{display:block; height:4px; margin-top:4px; border-radius:2px; background:#d8cffa}
+.st-update .bar b{display:block; width:87%; height:100%; border-radius:2px; background:var(--accent)}
+
+/* 捲動關 */
+.dochead{display:flex; justify-content:space-between; align-items:center; gap:8px; margin:12px 2px 8px; font-size:13px; color:var(--ink-2)}
+.dochead .pg{flex:none; font-variant-numeric:tabular-nums}
+.docwrap{position:relative; flex:1; min-height:180px; max-height:440px; overflow:hidden; border-radius:16px; background:var(--card); border:1px solid var(--line); touch-action:none}
+.docin{position:absolute; left:0; right:0; top:0; padding:16px 24px 20px 16px; will-change:transform}
+.docin.flash{animation:flash .28s ease-out}
+@keyframes flash{from{opacity:.1} to{opacity:1}}
+.docin h3{margin:0 0 10px; font-size:17px}
+.docin h4{margin:0 0 4px; font-size:14px}
+.docin p{margin:0 0 14px; font-size:13.5px; line-height:1.65; color:#333}
+.docin .final{margin-top:4px; padding-top:16px; border-top:1px solid var(--line); text-align:center}
+.docin .final p{margin-bottom:12px}
+.sbar{position:absolute; top:6px; right:4px; bottom:6px; width:5px; border-radius:3px; background:rgba(23,23,43,.05); pointer-events:none}
+.sbar i{position:absolute; left:0; right:0; border-radius:3px; background:rgba(23,23,43,.3)}
+
+/* 射擊關 */
+.arena{position:relative; flex:1; min-height:150px; margin-top:14px; overflow:hidden; border-radius:16px; background:var(--card); border:1.5px solid var(--line); touch-action:none; cursor:crosshair}
+.flyer{position:absolute; left:0; top:0; width:156px; height:50px; box-shadow:0 8px 18px rgba(108,76,245,.35)}
+.ring{position:absolute; width:34px; height:34px; margin:-17px 0 0 -17px; border-radius:50%; border:2px solid var(--accent); pointer-events:none; animation:ring .35s ease-out forwards}
+@keyframes ring{from{transform:scale(.3); opacity:.9} to{transform:scale(1.4); opacity:0}}
+
+/* test sheet */
+.sheet{position:absolute; inset:0; z-index:2000; display:flex; align-items:flex-end; background:rgba(23,23,43,.5)}
+.sheet .panel{width:100%; display:grid; gap:8px; padding:16px max(16px,env(safe-area-inset-left,0px)) calc(16px + env(safe-area-inset-bottom,0px)); border-radius:20px 20px 0 0; background:var(--card)}
+.sheet .ph{font-weight:700; margin-bottom:4px}
+
+.dim-panel{flex:1; min-height:120px; max-height:300px; margin-top:16px; display:grid; place-items:center; border-radius:16px; border:0; background:transparent}
+.dim-panel .btn{width:min(80%,240px)}
+.dim-ctl{display:grid; grid-template-columns:auto 1fr auto; align-items:center; gap:12px; margin-top:14px; font-size:13px; color:var(--ink-2)}
+.dim-ctl input{width:100%; height:32px; margin:0; accent-color:var(--accent); touch-action:none}
+.shake{animation:shake .32s}
+@keyframes shake{0%,100%{transform:none} 20%{transform:translateX(-6px)} 40%{transform:translateX(5px)} 60%{transform:translateX(-4px)} 80%{transform:translateX(3px)}}
+@media (prefers-reduced-motion:reduce){*{animation-duration:.01ms!important; animation-iteration-count:1!important; transition-duration:.01ms!important}}
+</style>
+
+<div id="phone">
+  <header id="appbar">
+    <svg class="ab-ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M14.5 5.5L8 12l6.5 6.5"/></svg>
+    <div class="ab-title" id="abTitle"><b>見面會預約</b><small id="abSub">預約確認</small></div>
+    <svg class="ab-ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="5.5" cy="12" r="1.2"/><circle cx="12" cy="12" r="1.2"/><circle cx="18.5" cy="12" r="1.2"/></svg>
+  </header>
+  <main id="stage" aria-live="polite"></main>
+  <nav id="tabbar" aria-hidden="true">
+    <div class="tab"><svg viewBox="0 0 24 24"><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg>首頁</div>
+    <div class="tab on"><svg viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="15.5" rx="3"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg>預約</div>
+    <div class="tab"><svg viewBox="0 0 24 24"><path d="M4 5h16a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1h-9l-5 4v-4H4a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1z"/></svg>訊息</div>
+    <div class="tab"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 20c1-4 4-6 8-6s7 2 8 6"/></svg>我的</div>
+  </nav>
+</div>
+
+<script>
+(function(){
+'use strict';
+
+/* ---------- content that is easy to change ---------- */
+const EVENT='見面會';
+const TEXT={fail:'您沒有預約', giveup:'您沒有預約', clear:'見面會預約已完成', confirming:'確認中'};
+const SPEED_LIMIT_MS=2000;     // 速度關: how long the button can be pressed
+const CONFIRM_MS=1400;         // how long 「確認中」 stays on screen
+/* Level order. Each level is registered by name below; reorder or insert names here. */
+const ORDER=['速度關','干擾關','逃跑關','蓋住關','捲動關','射擊關','明暗關','確認關'];
+
+/* ---------- helpers ---------- */
+const phone=document.getElementById('phone');
+const stage=document.getElementById('stage');
+const abTitle=document.getElementById('abTitle');
+const abSub=document.getElementById('abSub');
+const el=(tag,cls,html)=>{const e=document.createElement(tag); if(cls) e.className=cls; if(html!=null) e.innerHTML=html; return e;};
+const rand=(a,b)=>a+Math.random()*(b-a);
+const clamp=(v,a,b)=>Math.min(b,Math.max(a,v));
+const shuffle=a=>{a=a.slice(); for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]];} return a;};
+function btn(label,cls){const b=el('button','btn'+(cls?' '+cls:'')); b.type='button'; b.textContent=label; return b;}
+
+const CAL='<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15.5" rx="3"/><path d="M3.5 10h17M8 3v4M16 3v4"/><path d="M9 15.2l2.1 2.1 4-4.4"/></svg>';
+const CHECK='<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7"/></svg>';
+const XICON='<svg viewBox="0 0 12 12" width="12" height="12" aria-hidden="true"><path d="M1.5 1.5l9 9M10.5 1.5l-9 9" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" fill="none"/></svg>';
+
+function eventCard(sub){
+  const c=el('div','event');
+  c.innerHTML='<div class="eico">'+CAL+'</div><div><b></b><span></span></div>';
+  c.querySelector('b').textContent=EVENT;
+  c.querySelector('span').textContent=sub;
+  return c;
+}
+function question(main,sub){
+  const f=document.createDocumentFragment();
+  const q=el('h2','q'); q.textContent=main;
+  const s=el('p','qs'); s.textContent=sub;
+  f.append(q,s);
+  return f;
+}
+function screenEl(){const s=el('div','screen'); stage.append(s); return s;}
+
+/* ---------- app bar label (and the hidden level picker) ---------- */
+let curStep='預約確認', curName='', dev=false;
+function setSub(step,name){curStep=step; curName=name||''; abSub.textContent=curStep+(dev&&curName?' · '+curName:'');}
+let taps=0, tapT=0;
+abTitle.addEventListener('click',function(){
+  const n=performance.now();
+  taps=(n-tapT<1200)?taps+1:1; tapT=n;
+  if(taps>=5){taps=0; dev=true; setSub(curStep,curName); openSheet();}
+});
+function openSheet(){
+  if(phone.querySelector('.sheet')) return;
+  const sh=el('div','sheet'), panel=el('div','panel');
+  const h=el('div','ph'); h.textContent='關卡（測試用）';
+  panel.append(h);
+  ORDER.forEach(function(n,i){
+    const b=btn((i+1)+'. '+n,'ghost');
+    b.addEventListener('click',function(){sh.remove(); playLevel(i);});
+    panel.append(b);
+  });
+  const home=btn('回標題','ghost'); home.addEventListener('click',function(){sh.remove(); showTitle();});
+  const close=btn('關閉'); close.addEventListener('click',function(){sh.remove();});
+  panel.append(home,close); sh.append(panel); phone.append(sh);
+}
+
+/* ---------- screen flow ---------- */
+let current=null;
+function setScreen(build){
+  if(current&&current.destroy){try{current.destroy();}catch(e){}}
+  stage.textContent='';
+  current=build()||null;
+}
+
+function showTitle(){
+  setScreen(function(){
+    setSub('預約確認','');
+    const s=screenEl();
+    const home=el('div','home');
+    home.innerHTML='<div class="logo">'+CAL+'</div><h1></h1><p></p>';
+    home.querySelector('h1').textContent='請問您有預約'+EVENT+'嗎？';
+    home.querySelector('p').textContent='按下「開始」，確認您的預約。';
+    const act=el('div','actions'); const go=btn('開始','primary'); act.append(go);
+    go.addEventListener('click',function(){playLevel(0);});
+    s.append(home,act);
+    return {destroy:function(){}};
+  });
+}
+
+function showResult(kind){
+  setScreen(function(){
+    setSub('預約結果','');
+    const s=screenEl();
+    const r=el('div','result '+kind);
+    if(kind==='clear') r.append(el('div','rico',CHECK));
+    const h=el('h1'); h.textContent=TEXT[kind]; r.append(h);
+    if(kind==='clear'){const sub=el('p','sub'); sub.textContent='期待與您會面'; sub.style.fontSize='18px'; sub.style.marginTop='8px'; r.append(sub);}
+    
+    const act=el('div','actions'); const back=btn('返回','primary'); act.append(back);
+    back.addEventListener('click',showTitle);
+    s.append(r,act);
+    return {destroy:function(){}};
+  });
+}
+
+function showConfirming(cb){
+  const o=el('div','confirm');
+  o.innerHTML='<div class="box"><div class="spin"></div><b></b></div>';
+  o.querySelector('b').textContent=TEXT.confirming;
+  phone.append(o);
+  setTimeout(function(){o.remove(); cb();},CONFIRM_MS);
+}
+
+const LEVELS={};
+function playLevel(i){
+  if(i>=ORDER.length){showResult('clear'); return;}
+  const name=ORDER[i], build=LEVELS[name];
+  if(!build){playLevel(i+1); return;}
+  setScreen(function(){
+    setSub('步驟 '+(i+1)+' / '+ORDER.length,name);
+    let done=false, cleaned=false; const cleans=[];
+    const runCleans=function(){if(cleaned) return; cleaned=true; cleans.forEach(function(fn){try{fn();}catch(e){}});};
+    const ctx={
+      name:name,
+      onCleanup:function(fn){cleans.push(fn);},
+      win:function(){if(done) return; done=true; runCleans(); showConfirming(function(){playLevel(i+1);});},
+      giveUp:function(){if(done) return; done=true; runCleans(); showResult('giveup');},
+      fail:function(){if(done) return; done=true; runCleans(); showResult('fail');}
+    };
+    build(ctx);
+    return {destroy:runCleans};
+  });
+}
+
+/* ---------- 速度關: the button can only be pressed for a few seconds ---------- */
+LEVELS['速度關']=function(ctx){
+  const s=screenEl();
+  s.append(eventCard('預約確認'),question('請問您是否有預約「'+EVENT+'」？','請確認後繼續。'));
+  const act=el('div','actions');
+  const yes=btn('我有預約','primary'), no=btn('我沒有預約','ghost');
+  act.append(yes,no); s.append(act);
+  let t0=0, expired=false, timer=0, raf=0;
+  function expire(){expired=true; yes.classList.add('dim'); yes.disabled=true; yes.setAttribute('aria-disabled','true');}
+  raf=requestAnimationFrame(function(){t0=performance.now(); timer=setTimeout(expire,SPEED_LIMIT_MS);});
+  yes.addEventListener('click',function(){
+    if(expired||!t0||performance.now()-t0>=SPEED_LIMIT_MS) return;
+    clearTimeout(timer); ctx.win();
+  });
+  no.addEventListener('click',function(){ctx.giveUp();});
+  ctx.onCleanup(function(){clearTimeout(timer); cancelAnimationFrame(raf);});
+};
+
+/* ---------- 干擾關: popups cover 「我有預約」 only ---------- */
+const POP=[
+  {t:'安全性警告',x:'您的電腦已感染 17 個病毒！',b:'立即清除',trap:true},
+  {t:'訂閱電子報',x:'每週為您送上預約小撇步。',b:'訂閱'},
+  {t:'系統更新',x:'有可用的更新。',b:'稍後提醒我'},
+  {t:'滿意度調查',x:'請為本次服務評分。',b:'去評分'},
+  {t:'Cookie 設定',x:'本應用程式使用 Cookie。',b:'全部接受'},
+  {t:'恭喜您！',x:'您是第 1,000,000 位使用者！',b:'領取獎品',trap:true},
+  {t:'通知',x:'允許傳送通知嗎？',b:'允許'},
+  {t:'登入提示',x:'登入可享更多優惠。',b:'登入'}
+];
+LEVELS['干擾關']=function(ctx){
+  const s=screenEl();
+  s.append(eventCard('預約確認'),question('請問您是否有預約「'+EVENT+'」？','請確認後繼續。'));
+  const center=el('div','center');
+  const yes=btn('我有預約','primary'); center.append(yes);
+  const act=el('div','actions'); const no=btn('我沒有預約','ghost'); act.append(no);
+  s.append(center,act);
+  yes.addEventListener('click',function(){ctx.win();});
+  no.addEventListener('click',function(){ctx.giveUp();});
+
+  let queue=8, trapUsed=0, oi=0, z=100, timer=0, spawned=0;
+  const order=shuffle(POP.map(function(_,i){return i;}));
+  const open=new Set();
+
+  function spawnPopup(){
+    const d=POP[order[oi%order.length]]; oi++; spawned++;
+    const p=el('div','popup'+(Math.random()<0.5?' xl':''));
+    const x=el('button','px',XICON); x.type='button'; x.setAttribute('aria-label','關閉');
+    const h=el('h4'); h.textContent=d.t;
+    const tx=el('p'); tx.textContent=d.x;
+    const act2=btn(d.b,'sm primary');
+    p.append(x,h,tx,act2);
+
+    const sr=stage.getBoundingClientRect(), yr=yes.getBoundingClientRect(), nr=no.getBoundingClientRect();
+    p.style.left=(yr.left-sr.left)+'px';
+    p.style.width=yr.width+'px';
+    p.style.zIndex=String(++z);
+    stage.append(p);
+    const ph=p.offsetHeight;
+    const yTop=yr.top-sr.top, yBot=yr.bottom-sr.top, limit=nr.top-sr.top-10;
+    const lo=yBot+4-ph, hi=Math.min(yTop-4,limit-ph);
+    let top=lo<=hi?rand(lo,hi):hi;
+    top=Math.max(4,top);
+    p.style.top=top+'px';
+    open.add(p);
+
+    const kill=function(){if(!open.has(p)) return; open.delete(p); p.remove();};
+    x.addEventListener('click',kill);
+    act2.addEventListener('click',function(){
+      if(d.trap&&trapUsed<2){trapUsed++; queue+=2; ensureTimer();}
+      kill();
+    });
+  }
+  function ensureTimer(){
+    if(timer) return;
+    timer=setTimeout(tick,spawned===0?450:850);
+  }
+  function tick(){
+    timer=0;
+    if(queue>0){spawnPopup(); queue--;}
+    if(queue>0) ensureTimer();
+  }
+  ensureTimer();
+  ctx.onCleanup(function(){
+    clearTimeout(timer); timer=0; queue=0;
+    open.forEach(function(n){n.remove();}); open.clear();
+  });
+};
+
+/* ---------- 逃跑關: the button runs away ---------- */
+LEVELS['逃跑關']=function(ctx){
+  const s=screenEl();
+  s.append(eventCard('預約確認'),question('請問您是否有預約「'+EVENT+'」？','請確認後繼續。'));
+  const field=el('div','field');
+  const runner=el('div','runner');
+  const yes=btn('我有預約','primary');
+  runner.append(yes); field.append(runner);
+  const act=el('div','actions'); const no=btn('我沒有預約','ghost'); act.append(no);
+  s.append(field,act);
+  no.addEventListener('click',function(){ctx.giveUp();});
+
+  const MAX=4;
+  let x=0,y=0,ang=rand(0,Math.PI*2),turnT=0,last=0,dodges=0,tween=null,ready=false,raf=0,cool=0;
+
+  function dodgeFrom(px,py){
+    if(dodges>=MAX) return;
+    dodges++;
+    if(dodges>=MAX) yes.classList.add('tired');
+    const fr=field.getBoundingClientRect();
+    const fw=field.clientWidth, fh=field.clientHeight, bw=runner.offsetWidth, bh=runner.offsetHeight;
+    let best={tx:0,ty:0}, bestD=-1;
+    for(let i=0;i<8;i++){
+      const tx=rand(0,Math.max(0,fw-bw)), ty=rand(0,Math.max(0,fh-bh));
+      const d=Math.hypot(fr.left+tx+bw/2-px, fr.top+ty+bh/2-py);
+      if(d>bestD){bestD=d; best={tx:tx,ty:ty};}
+    }
+    tween={t:0,d:0.18,x0:x,y0:y,x1:best.tx,y1:best.ty};
+  }
+  function near(e,m){
+    const r=yes.getBoundingClientRect();
+    return e.clientX>r.left-m&&e.clientX<r.right+m&&e.clientY>r.top-m&&e.clientY<r.bottom+m;
+  }
+  field.addEventListener('pointerdown',function(e){
+    if(dodges<MAX&&near(e,38)) dodgeFrom(e.clientX,e.clientY);
+  });
+  field.addEventListener('pointermove',function(e){
+    if(e.pointerType!=='mouse'||dodges>=MAX) return;
+    const now=performance.now();
+    if(now<cool) return;
+    if(near(e,22)){dodgeFrom(e.clientX,e.clientY); cool=now+450;}
+  });
+  yes.addEventListener('click',function(e){
+    if(dodges<MAX){
+      const r=yes.getBoundingClientRect();
+      dodgeFrom(e.clientX||r.left,e.clientY||r.top);
+      return;
+    }
+    ctx.win();
+  });
+
+  function frame(ts){
+    raf=requestAnimationFrame(frame);
+    const dt=last?Math.min(0.05,(ts-last)/1000):1/60; last=ts;
+    const fw=field.clientWidth, fh=field.clientHeight, bw=runner.offsetWidth, bh=runner.offsetHeight;
+    const mx=Math.max(0,fw-bw), my=Math.max(0,fh-bh);
+    if(!ready){x=mx/2; y=my/2; ready=true;}
+    if(tween){
+      tween.t+=dt;
+      const k=Math.min(1,tween.t/tween.d), e=1-Math.pow(1-k,3);
+      x=tween.x0+(tween.x1-tween.x0)*e; y=tween.y0+(tween.y1-tween.y0)*e;
+      if(k>=1) tween=null;
+    }else{
+      turnT-=dt;
+      if(turnT<=0){ang+=rand(-1.2,1.2); turnT=rand(0.5,1.4);}
+      const sp=dodges>=MAX?40:150;
+      x+=Math.cos(ang)*sp*dt; y+=Math.sin(ang)*sp*dt;
+      if(x<0){x=0; ang=Math.PI-ang;}
+      if(x>mx){x=mx; ang=Math.PI-ang;}
+      if(y<0){y=0; ang=-ang;}
+      if(y>my){y=my; ang=-ang;}
+    }
+    x=clamp(x,0,mx); y=clamp(y,0,my);
+    runner.style.transform='translate('+x.toFixed(1)+'px,'+y.toFixed(1)+'px)';
+  }
+  raf=requestAnimationFrame(frame);
+  ctx.onCleanup(function(){cancelAnimationFrame(raf);});
+};
+
+/* ---------- 蓋住關: move the stickers, find the real button ---------- */
+const FAKES=[
+  {side:'L',text:'其實我沒有但我說'},
+  {side:'R',text:'但我被停權了'},
+  {side:'L',text:'我夢見'},
+  {side:'R',text:'但那是朋友的名字'}
+];
+const STICKERS=[
+  {cls:'st-note',html:'<b>便利貼</b><br>記得帶證件'},
+  {cls:'st-toast',html:'<small>通知</small><br>您有 3 則新訊息'},
+  {cls:'st-ad',html:'限時優惠<br>全面 5 折！'},
+  {cls:'st-cookie',html:'我們使用 Cookie<br><u>了解更多</u>'},
+  {cls:'st-update',html:'正在更新… 87%<i class="bar"><b></b></i>'}
+];
+
+function makeDraggable(node,getBounds){
+  let pid=null,sx=0,sy=0,ox=0,oy=0,cx=0,cy=0,minX=0,maxX=0,minY=0,maxY=0;
+  node.addEventListener('pointerdown',function(e){
+    if(pid!==null) return;
+    pid=e.pointerId; node.setPointerCapture(pid); node.classList.add('drag');
+    sx=e.clientX; sy=e.clientY;
+    const r=node.getBoundingClientRect(), b=getBounds();
+    minX=b.left+2-(r.left-ox); maxX=b.right-2-(r.right-ox);
+    minY=b.top+2-(r.top-oy);   maxY=b.bottom-2-(r.bottom-oy);
+    e.preventDefault();
+  });
+  node.addEventListener('pointermove',function(e){
+    if(e.pointerId!==pid) return;
+    cx=clamp(ox+e.clientX-sx,minX,maxX); cy=clamp(oy+e.clientY-sy,minY,maxY);
+    node.style.transform='translate('+cx+'px,'+cy+'px)';
+  });
+  const end=function(e){
+    if(e.pointerId!==pid) return;
+    pid=null; node.classList.remove('drag'); ox=cx; oy=cy;
+  };
+  node.addEventListener('pointerup',end);
+  node.addEventListener('pointercancel',end);
+}
+
+LEVELS['蓋住關']=function(ctx){
+  const s=screenEl();
+  const intro=el('div','intro');
+  intro.innerHTML='<div class="main">請選擇您的預約</div><div class="sub"></div>';
+  intro.querySelector('.sub').textContent=EVENT+'　選擇後無法更改。';
+  const tiles=el('div','tiles');
+  s.append(intro,tiles);
+
+  const specs=shuffle(FAKES.concat([{real:true,side:Math.random()<0.5?'L':'R',text:''}]));
+  const stickers=shuffle(STICKERS);
+  let locked=false;
+  specs.forEach(function(sp,i){
+    const tile=el('div','tile');
+    const L=el('div','slot L'), R=el('div','slot R');
+    const b=btn('我有預約','primary');
+    tile.append(L,b,R);
+    const host=sp.side==='L'?L:R;
+    if(sp.text) host.append(document.createTextNode(sp.text));
+    const st=el('div','sticker '+stickers[i].cls,stickers[i].html);
+    host.append(st);
+    makeDraggable(st,function(){return stage.getBoundingClientRect();});
+    b.addEventListener('click',function(){
+      if(locked) return;
+      locked=true;
+      if(sp.real){ctx.win(); return;}
+      tile.classList.add('bad');
+      setTimeout(function(){ctx.fail();},450);
+    });
+    tiles.append(tile);
+  });
+};
+
+/* ---------- 捲動關: terms of service, scrolled by hand ---------- */
+const CLAUSES=[
+  ['第一條（總則）','本服務條款（以下簡稱「本條款」）係為規範使用者與本預約系統（以下簡稱「本系統」）之間的權利義務關係而訂定。使用者於點選任何按鈕前，應已詳閱並充分了解本條款全文。'],
+  ['第二條（名詞定義）','本條款所稱「預約」，指使用者於本系統登錄之任何形式的意願表示；所稱「確認」，指本系統於合理期間內，以合理方式，對前述意願表示所為之合理處理。'],
+  ['第三條（服務內容）','本系統提供預約之登錄、查詢、確認及其他相關附屬服務。附屬服務之範圍，以本系統當時公告為準，本系統得隨時調整而毋須另行通知。'],
+  ['第四條（使用者資格）','使用者應具備完全行為能力，或已取得法定代理人之同意。使用者如無法確認自己是否具備前述資格，視為已具備。'],
+  ['第五條（帳號與密碼）','使用者應妥善保管其帳號與密碼，並對以其帳號所為之一切行為負責。帳號遭他人使用時，亦同。'],
+  ['第六條（個人資料）','本系統將依相關法令及本系統隱私權政策，蒐集、處理及利用使用者之個人資料。隱私權政策之內容另行公告，並得隨時修訂。'],
+  ['第七條（使用者行為規範）','使用者不得以任何方式干擾本系統之正常運作，亦不得利用本系統從事任何違反法令、公序良俗或本條款之行為，但本條款另有規定者除外。'],
+  ['第八條（預約之效力）','預約經本系統確認後始生效力。未經確認之預約，視為尚未成立；已成立之預約，除另有約定外，視為已經成立。'],
+  ['第九條（預約之變更）','使用者得於預約生效前變更預約內容。預約生效後如欲變更，應依本系統所定之程序辦理，惟該程序以本系統另行公告者為準。'],
+  ['第十條（預約之取消）','使用者得依本條款規定取消預約。取消之方式、時限與費用，依本系統當時公告辦理；本系統未公告者，依本系統之認定辦理。'],
+  ['第十一條（費用）','本系統之基本服務免費。惟本系統得視情況就特定服務收取費用，並於收費前以適當方式公告，所稱適當方式，由本系統決定之。'],
+  ['第十二條（系統維護）','本系統得不定期進行維護、更新或測試，期間可能造成服務暫時中斷。使用者同意本系統不因此負擔任何責任，亦不因此負擔任何補償。'],
+  ['第十三條（免責聲明）','於法律允許之最大範圍內，本系統對於因使用或無法使用本服務所致之任何直接、間接、附隨、衍生或其他損害，不負賠償責任。'],
+  ['第十四條（智慧財產權）','本系統所使用之軟體、程式、網頁設計、文字、圖片、標誌及其他內容，其智慧財產權均屬本系統或其授權人所有，使用者不得擅自使用。'],
+  ['第十五條（通知方式）','本系統得以電子郵件、簡訊、系統公告或其他本系統認為適當之方式通知使用者。通知於發出時視為送達，使用者是否收悉在所不問。'],
+  ['第十六條（條款之修訂）','本系統得隨時修訂本條款，修訂後之條款於公告時即生效力。使用者於修訂後繼續使用本服務，視為同意修訂後之條款。'],
+  ['第十七條（可分性）','本條款任一規定經認定無效或無法執行者，不影響其他規定之效力，其他規定仍應繼續有效，除非其他規定亦經認定無效或無法執行。'],
+  ['第十八條（轉讓）','使用者不得將其於本條款下之權利或義務，轉讓或移轉予任何第三人。本系統得隨時將其權利或義務，轉讓或移轉予任何第三人，毋須通知使用者。'],
+  ['第十九條（不可抗力）','因天災、戰爭、罷工、網路中斷、電力異常、政府措施或其他非本系統所能合理控制之事由，致本系統無法履行義務者，本系統不負遲延或不履行之責任。'],
+  ['第二十條（爭議處理）','因本條款所生之爭議，雙方應先本於誠信原則協商解決；協商不成時，以本系統所在地之法院為第一審管轄法院，惟使用者另有主張時，亦同。'],
+  ['第二十一條（語言版本）','本條款以中文為準。如有其他語言版本，僅供參考；其他語言版本與中文版本不一致時，以中文版本為準，中文版本不明確時，以中文版本之解釋為準。'],
+  ['第二十二條（聲明）','使用者聲明已詳細閱讀並同意以上全部條款。使用者如未詳細閱讀，亦視為已詳細閱讀。'],
+  ['第二十三條（附則）','本條款自公告日起施行。公告日以本系統所載日期為準；本系統未載明日期者，以使用者首次使用之日為準。']
+];
+
+LEVELS['捲動關']=function(ctx){
+  const s=screenEl();
+  const head=el('div','dochead');
+  const hint=el('span'); hint.textContent='請閱讀以下內容，直到最後一頁。';
+  const pg=el('span','pg');
+  head.append(hint,pg);
+  const view=el('div','docwrap'); view.tabIndex=0;
+  view.setAttribute('role','document'); view.setAttribute('aria-label','服務條款與使用說明');
+  const inner=el('div','docin');
+  inner.innerHTML='<h3>服務條款與使用說明</h3>'+CLAUSES.map(function(c){return '<h4>'+c[0]+'</h4><p>'+c[1]+'</p>';}).join('');
+  const fin=el('div','final');
+  fin.innerHTML='<h4>第二十四條（預約確認）</h4><p>請於下方按鈕確認您的預約。</p>';
+  const yes=btn('我有預約','primary'); yes.style.width='min(100%,240px)';
+  fin.append(yes); inner.append(fin);
+  const sbar=el('div','sbar'); const thumb=el('i'); sbar.append(thumb);
+  view.append(inner,sbar);
+  const act=el('div','actions'); const no=btn('我沒有預約','ghost'); act.append(no);
+  s.append(head,view,act);
+  yes.addEventListener('click',function(){ctx.win();});
+  no.addEventListener('click',function(){ctx.giveUp();});
+
+  const THRESH=300, DECAY=2.6, GAIN=1.25, VMAX=4500;
+  let pos=0,v=0,max=0,V=0,H=0,raf=0,last=0;
+  let pid=null,startY=0,startPos=0,moved=false,dragging=false,samples=[];
+
+  function measure(){V=view.clientHeight; H=inner.offsetHeight; max=Math.max(0,H-V);}
+  function render(){
+    inner.style.transform='translate3d(0,'+(-pos).toFixed(1)+'px,0)';
+    const pages=Math.max(1,Math.ceil(H/Math.max(1,V)));
+    const now=max>0?Math.min(pages,Math.floor(pos/max*(pages-1)+0.001)+1):1;
+    pg.textContent='第 '+now+' / '+pages+' 頁';
+    const track=Math.max(1,V-12), th=Math.max(22,track*V/Math.max(H,1));
+    thumb.style.height=th+'px';
+    thumb.style.top=((track-th)*(max>0?pos/max:0))+'px';
+  }
+  function jumpTop(){
+    pos=0; v=0;
+    inner.classList.remove('flash'); void inner.offsetWidth; inner.classList.add('flash');
+    render();
+  }
+  function step(ts){
+    raf=0;
+    if(dragging) return;
+    const dt=last?Math.min(0.05,(ts-last)/1000):1/60; last=ts;
+    if(Math.abs(v)<8){v=0; last=0; return;}
+    measure();
+    pos+=v*dt; v*=Math.exp(-DECAY*dt);
+    if(pos<=0){pos=0; v=0;}
+    else if(pos>=max){
+      if(v>THRESH){jumpTop(); last=0; return;}
+      pos=max; v=0;
+    }
+    render();
+    if(v!==0) raf=requestAnimationFrame(step); else last=0;
+  }
+  function kick(){if(!raf){last=0; raf=requestAnimationFrame(step);}}
+
+  view.addEventListener('pointerdown',function(e){
+    if(e.pointerType==='mouse'&&e.button!==0) return;
+    pid=e.pointerId; startY=e.clientY; startPos=pos; moved=false; v=0;
+    samples=[{t:e.timeStamp,p:pos}];
+  });
+  view.addEventListener('pointermove',function(e){
+    if(e.pointerId!==pid) return;
+    if(e.pointerType==='mouse'&&!(e.buttons&1)) return;
+    const dy=e.clientY-startY;
+    if(!moved&&Math.abs(dy)>6){moved=true; dragging=true; try{view.setPointerCapture(pid);}catch(err){}}
+    if(!moved) return;
+    measure();
+    pos=clamp(startPos-dy,0,max);
+    samples.push({t:e.timeStamp,p:pos});
+    if(samples.length>8) samples.shift();
+    render();
+  });
+  function endDrag(e){
+    if(e.pointerId!==pid) return;
+    pid=null;
+    if(!moved){dragging=false; return;}
+    dragging=false; moved=false;
+    const now=e.timeStamp, lastS=samples[samples.length-1];
+    let vel=0;
+    const recent=samples.filter(function(sm){return now-sm.t<=90;});
+    if(recent.length>=2){
+      const a=recent[0], b=recent[recent.length-1], dt=(b.t-a.t)/1000;
+      if(dt>0) vel=(b.p-a.p)/dt;
+    }
+    if(now-lastS.t>70) vel=0;
+    v=clamp(vel*GAIN,-VMAX,VMAX);
+    measure();
+    if(pos>=max-0.5&&v>THRESH){jumpTop(); return;}
+    kick();
+  }
+  view.addEventListener('pointerup',endDrag);
+  view.addEventListener('pointercancel',endDrag);
+  view.addEventListener('wheel',function(e){
+    e.preventDefault();
+    const d=e.deltaMode===1?e.deltaY*16:e.deltaY;
+    measure();
+    v=clamp(v+d*2.8,-VMAX,VMAX);
+    kick();
+  },{passive:false});
+  view.addEventListener('keydown',function(e){
+    const k={ArrowDown:260,ArrowUp:-260,PageDown:700,PageUp:-700,' ':700}[e.key];
+    if(k===undefined) return;
+    e.preventDefault(); measure(); v=clamp(v+k,-VMAX,VMAX); kick();
+  });
+  const onResize=function(){measure(); pos=clamp(pos,0,max); render();};
+  window.addEventListener('resize',onResize);
+  requestAnimationFrame(function(){measure(); render();});
+  ctx.onCleanup(function(){cancelAnimationFrame(raf); raf=0; window.removeEventListener('resize',onResize);});
+};
+
+/* ---------- 射擊關: the whole button flies across the screen ---------- */
+LEVELS['射擊關']=function(ctx){
+  const s=screenEl();
+  s.append(eventCard('預約確認'));
+  const arena=el('div','arena');
+  const fly=btn('我有預約','primary'); fly.classList.add('flyer'); fly.style.visibility='hidden';
+  arena.append(fly);
+  const act=el('div','actions'); const no=btn('我沒有預約','ghost'); act.append(no);
+  s.append(arena,act);
+  no.addEventListener('click',function(){ctx.giveUp();});
+
+  let raf=0,last=0,state='wait',wait=0.9,t=0,pass=null,count=0;
+  function startPass(){
+    const aw=arena.clientWidth, ah=arena.clientHeight, fw=fly.offsetWidth, fh=fly.offsetHeight;
+    const dir=Math.random()<0.5?1:-1;
+    const yMax=Math.max(8,ah-fh-8);
+    const slow=count>=3?Math.min(3.5,1+0.3*(count-2)):1; count++;
+    const y0=rand(8,yMax), y1=clamp(y0+rand(-ah*0.35,ah*0.35),8,yMax);
+    pass={x0:dir>0?-fw:aw,x1:dir>0?aw:-fw,y0:y0,y1:y1,dur:rand(0.62,0.9)*slow};
+    t=0; state='fly'; fly.style.visibility='visible';
+  }
+  function frame(ts){
+    raf=requestAnimationFrame(frame);
+    const dt=last?Math.min(0.05,(ts-last)/1000):1/60; last=ts;
+    if(state==='wait'){wait-=dt; if(wait<=0) startPass(); return;}
+    t+=dt;
+    const k=Math.min(1,t/pass.dur);
+    const x=pass.x0+(pass.x1-pass.x0)*k, y=pass.y0+(pass.y1-pass.y0)*k;
+    fly.style.transform='translate('+x.toFixed(1)+'px,'+y.toFixed(1)+'px)';
+    if(k>=1){state='wait'; wait=rand(0.7,1.3); fly.style.visibility='hidden';}
+  }
+  raf=requestAnimationFrame(frame);
+  fly.addEventListener('pointerdown',function(e){e.stopPropagation(); e.preventDefault(); ctx.win();});
+  arena.addEventListener('pointerdown',function(e){
+    const r=arena.getBoundingClientRect();
+    const ring=el('div','ring');
+    ring.style.left=(e.clientX-r.left)+'px'; ring.style.top=(e.clientY-r.top)+'px';
+    arena.append(ring);
+    setTimeout(function(){ring.remove();},380);
+  });
+  ctx.onCleanup(function(){cancelAnimationFrame(raf);});
+};
+
+/* ---------- 明暗關: the real button only shows at the darkest or the brightest setting ---------- */
+LEVELS['明暗關']=function(ctx){
+  const s=screenEl();
+  s.append(eventCard('預約確認'),question('請問您有預約'+EVENT+'嗎？','畫面亮度可於下方調整。'));
+  const panel=el('div','dim-panel');
+  const yes=btn('我有預約','ghost'); panel.append(yes);
+  yes.style.background='#fff'; yes.style.borderColor='#fff'; yes.style.color='var(--accent)'; yes.style.boxShadow='none';
+  const ctl=el('div','dim-ctl');
+  const lo=el('span'); lo.textContent='暗';
+  const hi=el('span'); hi.textContent='亮';
+  const sl=document.createElement('input');
+  sl.type='range'; sl.min='0'; sl.max='100'; sl.step='1'; sl.value='50';
+  sl.setAttribute('aria-label','亮度');
+  ctl.append(lo,sl,hi);
+  const act=el('div','actions'); const no=btn('我沒有預約','primary'); act.append(no);
+  s.append(panel,ctl,act);
+  no.addEventListener('click',function(){ctx.giveUp();});
+  /* the whole screen dims or brightens; the controls and both buttons stay above the veil */
+  const veil=el('div'); veil.style.cssText='position:absolute;inset:0;z-index:1000;pointer-events:none;background:#808080;opacity:0';
+  phone.append(veil);
+  [ctl,act,yes].forEach(function(n){n.style.position='relative'; n.style.zIndex='1001';});
+  ctx.onCleanup(function(){veil.remove();});
+  function update(){
+    const v=+sl.value, far=Math.abs(v-50);
+    veil.style.background=v<50?'#000':'#fff';
+    veil.style.opacity=String(far/50*0.94);
+    const o=v>=97?1:0;
+    yes.style.opacity=String(o);
+    const on=o>=0.5;
+    yes.style.pointerEvents=on?'auto':'none';
+    yes.tabIndex=on?0:-1;
+    yes.setAttribute('aria-hidden',on?'false':'true');
+  }
+  sl.addEventListener('input',update);
+  yes.addEventListener('click',function(){
+    if(+yes.style.opacity<0.5) return;
+    ctx.win();
+  });
+  update();
+};
+
+/* ---------- 確認關: agree many times in the same spot; the last time that spot is a trap ---------- */
+const CONFIRM_QS=['您要繼續嗎？','您要進入下一步嗎？','您是本人嗎？','您準備好了嗎？','您要確認送出嗎？','您要完成預約嗎？'];
+LEVELS['確認關']=function(ctx){
+  const s=screenEl();
+  s.append(eventCard('預約確認'));
+  const body=el('div'); s.append(body);
+  const act=el('div','actions');
+  const top=btn('','primary'), bottom=btn('','ghost');
+  act.append(top,bottom); s.append(act);
+  const total=CONFIRM_QS.length+1;
+  let i=0, locked=false;
+  function show(){
+    body.textContent='';
+    const last=i===CONFIRM_QS.length;
+    const f=question(last?'請問您有預約'+EVENT+'嗎？':CONFIRM_QS[i],'第 '+(i+1)+' / '+total+' 題');
+    body.append(f);
+    top.textContent=last?'我沒有預約':'同意';
+    bottom.textContent=last?'我有預約':'不同意';
+  }
+  top.addEventListener('click',function(){
+    if(locked) return;
+    if(i===CONFIRM_QS.length){locked=true; ctx.fail(); return;}
+    i++; show();
+  });
+  bottom.addEventListener('click',function(){
+    if(locked) return;
+    locked=true;
+    if(i===CONFIRM_QS.length) ctx.win(); else ctx.giveUp();
+  });
+  show();
+};
+
+showTitle();
+})();
+</script>
+
+</body></html>
