@@ -1,0 +1,2624 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1"><style>:root{color-scheme:light}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>高塔狙擊手</title>
+<style>
+  :root { --amber:#e8c45a; --green:#7fd18b; --red:#e05a4a; --ink:#e8e2c8; --panel:rgba(10,14,10,.9); }
+  html,body { margin:0; height:100%; background:#000; color:var(--ink); overflow:hidden;
+    font-family:"Courier New","Noto Sans TC","Microsoft JhengHei",monospace; user-select:none; }
+  #game { position:fixed; inset:0; display:flex; align-items:center; justify-content:center; }
+  #box { position:relative; background:#000; overflow:hidden; }
+  #gl { width:100%; height:100%; display:block; image-rendering:pixelated; image-rendering:crisp-edges; }
+  .ov { position:absolute; inset:0; pointer-events:none; }
+  #scope { display:none; background:radial-gradient(circle closest-side, transparent 0 96%, #000 97%); }
+  #scope::before, #scope::after { content:""; position:absolute; background:#000; }
+  #scope::before { left:0; right:0; top:50%; height:2px; margin-top:-1px; }
+  #scope::after { top:0; bottom:0; left:50%; width:2px; margin-left:-1px; }
+  #scope .mil { position:absolute; left:50%; top:50%; width:8px; height:8px; margin:-4px 0 0 -4px; border-radius:50%; background:rgba(220,40,30,.9); }
+  #scope .ring { position:absolute; left:50%; top:50%; border:1px solid rgba(220,40,30,.8); border-radius:50%; transform:translate(-50%,-50%); }
+  #cross { position:absolute; left:50%; top:50%; border:2px solid rgba(232,226,200,.85); border-radius:50%; transform:translate(-50%,-50%); }
+  #cross::after { content:""; position:absolute; left:50%; top:50%; width:4px; height:4px; margin:-2px 0 0 -2px; background:var(--ink); }
+  #splat { opacity:0; transition:opacity .4s; }
+  .hud { position:absolute; font-size:15px; text-shadow:2px 2px 0 #000; letter-spacing:1px; }
+  #info { left:12px; top:10px; }
+  #targets { right:12px; top:10px; text-align:right; font-size:13px; }
+  #targets .t { margin-bottom:3px; }
+  #targets .bar { display:inline-block; width:70px; height:6px; background:#333; vertical-align:middle; margin-left:6px; border:1px solid #000; }
+  #targets .bar i { display:block; height:100%; background:var(--amber); }
+  #ammo { right:12px; bottom:12px; text-align:right; width:200px; }
+  #ammo .rounds { font-size:20px; color:var(--amber); }
+  .pbar { display:flex; align-items:center; justify-content:flex-end; gap:6px; font-size:12px; margin-top:3px; }
+  .pbar em { width:120px; height:7px; background:#333; border:1px solid #000; display:block; }
+  .pbar em i { display:block; height:100%; }
+  #breath { left:12px; bottom:14px; }
+  #breath .bar { width:120px; height:7px; background:#333; border:1px solid #000; margin-top:4px; }
+  #breath .bar i { display:block; height:100%; background:#8fc8ff; }
+  #range { left:50%; top:calc(50% + 60px); transform:translateX(-50%); color:#ff7a6a; display:none; }
+  #radio { left:136px; bottom:14px; max-width:46%; color:var(--green); }
+  #msg { left:0; right:0; top:26%; text-align:center; font-size:30px; color:var(--amber); }
+  #hitmark { left:50%; top:calc(50% - 46px); transform:translateX(-50%); font-size:18px; color:#fff; opacity:0; white-space:nowrap; }
+  .menuon .ov, .menuon #cross, .menuon #radar { display:none !important; }
+  #menu { position:absolute; inset:0; background:var(--panel); pointer-events:auto; overflow:auto; padding:18px 22px; box-sizing:border-box; }
+  #menu h1 { margin:0 0 2px; color:var(--amber); font-size:30px; letter-spacing:4px; }
+  #menu h2 { margin:14px 0 8px; font-size:16px; color:var(--green); letter-spacing:2px; }
+  #menu .sub { color:#a9a48c; font-size:13px; line-height:1.6; }
+  .guns { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; }
+  .gun { border:2px solid #444; padding:7px 9px; cursor:pointer; background:rgba(0,0,0,.4); }
+  .gun.on { border-color:var(--amber); background:rgba(232,196,90,.12); }
+  .gun b { color:var(--amber); font-size:14px; }
+  .gun small { display:block; color:#a9a48c; font-size:11px; margin:2px 0 4px; min-height:28px; }
+  .stat { display:flex; align-items:center; font-size:11px; gap:6px; }
+  .stat span { width:30px; }
+  .stat em { flex:1; height:5px; background:#333; }
+  .stat em i { display:block; height:100%; background:var(--green); }
+  .cards { display:flex; gap:8px; flex-wrap:wrap; }
+  .card { flex:1; min-width:150px; border:2px solid #555; padding:9px 11px; cursor:pointer; background:rgba(0,0,0,.4); }
+  .card:hover { border-color:var(--amber); }
+  .card b { color:var(--ink); font-size:16px; }
+  .card small { display:block; color:#a9a48c; font-size:12px; margin-top:4px; line-height:1.5; }
+  .keys { font-size:12px; color:#a9a48c; line-height:1.7; margin-top:12px; }
+  .keys b { color:var(--ink); }
+  .btn { display:inline-block; border:2px solid var(--amber); color:var(--amber); padding:6px 16px; margin:6px 6px 0 0; cursor:pointer; }
+  .btn:hover { background:rgba(232,196,90,.15); }
+  .btn.dim { border-color:#666; color:#aaa; }
+  .form { display:grid; grid-template-columns:150px 1fr; gap:8px 12px; align-items:center; font-size:14px; }
+  .form input[type=range] { width:200px; vertical-align:middle; }
+  .form select { background:#111; color:var(--ink); border:1px solid #666; font:inherit; padding:2px 4px; }
+  .types { display:grid; grid-template-columns:repeat(3, 1fr); gap:4px 10px; font-size:13px; }
+  .types label, .form label { cursor:pointer; }
+  #radar { position:absolute; top:auto; right:auto; left:12px; bottom:44px; width:112px; height:96px; pointer-events:none; }
+  #alert { left:0; right:0; top:58px; text-align:center; font-size:18px; color:#ff5a4a; opacity:0; }
+  .files { display:grid; grid-template-columns:repeat(3, 1fr); gap:8px; }
+  .file { display:flex; gap:8px; border:1px solid #444; background:rgba(0,0,0,.45); padding:6px; }
+  .file img { width:54px; height:72px; background:#2a2f2a; border:1px solid #555; image-rendering:pixelated; flex:none; }
+  .file b { color:var(--amber); font-size:13px; }
+  .file .no { color:#777; font-size:10px; }
+  .file p { margin:3px 0 0; font-size:11px; color:#c9c3a8; line-height:1.5; }
+  .tabs { display:flex; gap:6px; margin:12px 0 4px; flex-wrap:wrap; }
+  .sc { position:relative; cursor:help; border-bottom:1px dotted; }
+  .sc .tip { display:none; position:absolute; right:0; top:100%; z-index:20; width:230px; margin-top:4px; background:#fffaf0; color:#2b2416; padding:8px 10px;
+    text-align:left; font-size:12px; font-weight:normal; line-height:1.7; box-shadow:0 4px 14px rgba(0,0,0,.5); }
+  .sc:hover .tip { display:block; }
+  .sc .tip div { display:flex; justify-content:space-between; }
+  .rank { width:100%; border-collapse:collapse; font-size:14px; margin-top:8px; }
+  .rank th { color:var(--amber); text-align:left; border-bottom:1px solid #555; padding:4px 6px; font-weight:normal; }
+  .rank td { padding:4px 6px; border-bottom:1px dashed #444; color:#ddd6bc; }
+  .rank td.s { color:#ffd25a; font-weight:bold; text-align:right; }
+  .rank tr.me td { background:rgba(255,210,90,.15); }
+  .rank .no1 { color:#ffd25a; } .rank .no2 { color:#d8d8d8; } .rank .no3 { color:#d0905a; }
+  .tabs.small .tab { padding:2px 10px; font-size:13px; }
+  #nameIn { background:#1a1d18; color:#f0e6c0; border:1px solid #666; padding:3px 8px; font:inherit; width:140px; }
+  .tab { border:2px solid #555; padding:4px 14px; cursor:pointer; color:#aaa; }
+  .tab.on { border-color:var(--amber); color:var(--amber); }
+  .help { font-size:13px; line-height:1.9; }
+  .help b { color:var(--amber); }
+  .help p { margin:0 0 6px; }
+  .gfiles { display:grid; grid-template-columns:repeat(2, 1fr); gap:8px; }
+  .file img.gimg { width:132px; height:44px; align-self:center; }
+  #menu.titlebg { background:linear-gradient(180deg, rgba(10,14,10,.35) 0%, rgba(10,14,10,.55) 45%, rgba(10,14,10,.88) 100%); }
+  .title { min-height:100%; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; gap:14px; }
+  .title .tag { color:#c9c3a8; font-size:13px; letter-spacing:4px; text-shadow:2px 2px 0 #000; }
+  #menu .title h1.big { font-size:52px; letter-spacing:10px; margin:0; text-shadow:3px 3px 0 #000, 0 0 18px rgba(232,196,90,.35); }
+  .title .lead { color:var(--ink); font-size:15px; line-height:1.8; text-shadow:2px 2px 0 #000; margin-bottom:6px; }
+  .mlist { display:grid; grid-template-columns:repeat(3, 210px); gap:10px; }
+  .mitem { border:2px solid #6b6650; background:rgba(0,0,0,.55); padding:10px 14px; cursor:pointer; text-align:left; }
+  .mitem:hover { border-color:var(--amber); background:rgba(232,196,90,.14); }
+  .mitem b { display:block; color:var(--amber); font-size:18px; letter-spacing:2px; }
+  .mitem small { color:#a9a48c; font-size:12px; }
+  .title .foot { margin-top:10px; color:#a9a48c; font-size:12px; text-shadow:1px 1px 0 #000; }
+  .tlist { display:grid; grid-template-columns:repeat(3, 1fr); gap:6px 12px; font-size:12px; color:#a9a48c; }
+  .tlist b { color:var(--ink); }
+  #rain { width:100%; height:100%; image-rendering:pixelated; display:none; }
+  #flash { background:#fff; opacity:0; }
+  #glare { opacity:0; }
+  #bossbar { left:50%; top:10px; transform:translateX(-50%); text-align:center; font-size:14px; display:none; color:#ffb0a0; }
+  #bossbar .bb { width:260px; height:9px; background:#333; border:1px solid #000; margin:4px auto 0; }
+  #bossbar .bb i { display:block; height:100%; }
+  #ammo .item { font-size:12px; color:#c9b0ff; margin-top:3px; }
+  .items { display:grid; grid-template-columns:repeat(4,1fr); gap:8px; }
+  .icon { display:inline-block; width:26px; height:26px; line-height:26px; text-align:center; border:1px solid #6b6650; color:var(--amber); font-size:16px; margin-right:6px; vertical-align:middle; background:rgba(0,0,0,.4); }
+  .mk { position:absolute; border:2px solid #ff4030; box-shadow:0 0 0 1px #000, inset 0 0 0 1px #000; transform:translate(-50%,-50%); }
+  .mk span { position:absolute; bottom:100%; left:50%; transform:translateX(-50%); margin-bottom:2px; font-size:12px; color:#ff7a5a; text-shadow:1px 1px 0 #000; white-space:nowrap; }
+  .mk.edge { border:none; box-shadow:none; color:#ff4030; font-size:22px; text-shadow:2px 2px 0 #000; }
+  .mk.edge span { bottom:auto; top:100%; }
+  #talk { left:50%; top:66%; transform:translateX(-50%); width:76%; text-align:center; font-size:16px; line-height:1.5; opacity:0; transition:opacity .25s; background:rgba(0,0,0,.55); padding:6px 12px; box-sizing:border-box; }
+  #talk b { margin-right:6px; }
+  #talk b.d { color:#ff6a50; } #talk b.g { color:#8fc8ff; }
+  /* 典獄長評核報告 */
+  .report { animation:rpIn .5s ease-out both; position:relative; max-width:700px; margin:0 auto; background:#ebe1c3; color:#2b2416; padding:16px 22px 14px; box-shadow:0 6px 22px rgba(0,0,0,.7); transform:rotate(-.4deg);
+    font-family:"Courier New","Noto Serif TC","PMingLiU",serif; background-image:repeating-linear-gradient(0deg, transparent 0 25px, rgba(120,100,60,.12) 25px 26px); }
+  .report .rh { text-align:center; border-bottom:2px solid #2b2416; padding-bottom:6px; font-size:13px; letter-spacing:3px; }
+  .report .rh b { display:block; font-size:22px; letter-spacing:8px; margin-top:2px; }
+  .report .rm { font-size:12px; margin:6px 0 8px; display:flex; justify-content:space-between; flex-wrap:wrap; gap:4px 12px; }
+  .report .rb { display:grid; grid-template-columns:1fr 210px; gap:14px; align-items:start; }
+  .report table { width:100%; border-collapse:collapse; font-size:13px; }
+  .report td { border-bottom:1px dashed rgba(43,36,22,.4); padding:3px 2px; }
+  .report td:last-child { text-align:right; font-weight:bold; }
+  .report .rt { margin-top:8px; font-size:14px; }
+  .report .rt b { font-size:18px; color:#7a1c12; letter-spacing:2px; }
+  .report .badge { display:inline-block; border:1px solid #2b2416; padding:0 6px; margin:2px 4px 0 0; font-size:12px; }
+  .report .rc { margin-top:8px; font-size:14px; line-height:1.7; font-style:italic; }
+  .report .rc .sg { display:block; text-align:right; font-style:normal; font-size:13px; }
+  .photo { background:#f6f2e8; padding:7px 7px 24px; box-shadow:2px 3px 8px rgba(0,0,0,.45); transform:rotate(2.5deg); position:relative; margin-top:6px; }
+  .photo img { width:100%; display:block; filter:sepia(.55) contrast(1.05); image-rendering:pixelated; background:#555; min-height:120px; }
+  .photo .cap { position:absolute; left:8px; right:8px; bottom:4px; font-size:11px; color:#3a3020; text-align:center; font-style:italic; }
+  .photo .clip { position:absolute; top:-10px; left:22px; width:14px; height:34px; border:3px solid #8a8a8a; border-radius:8px; }
+  .stamp { position:absolute; right:30px; bottom:46px; border:3px solid #b8241c; color:#b8241c; font-size:28px; padding:2px 12px; letter-spacing:8px; transform:rotate(-14deg); opacity:.82; font-weight:bold; z-index:5; }
+
+  @keyframes rpIn { from { transform:translateY(-60px) rotate(-3deg); opacity:0; } to { transform:rotate(-.4deg); opacity:1; } }
+  @keyframes phIn { 0% { transform:scale(1.35) rotate(9deg); opacity:0; } 70% { transform:scale(.97) rotate(2deg); opacity:1; } 100% { transform:rotate(2.5deg); opacity:1; } }
+  @keyframes stIn { 0% { transform:scale(2.6) rotate(-14deg); opacity:0; } 60% { transform:scale(.92) rotate(-14deg); opacity:.95; } 100% { transform:scale(1) rotate(-14deg); opacity:.82; } }
+  @keyframes fdIn { from { opacity:0; } to { opacity:1; } }
+  .report .photo { animation:phIn .45s ease-out .75s both; }
+  .report .rt, .report .rc { animation:fdIn .35s ease-out 1.5s both; }
+  .report .stamp { animation:stIn .3s ease-in 1.7s both; }
+  .collage { position:relative; height:280px; }
+  .collage .photo { position:absolute; width:150px; padding:5px 5px 20px; margin:0; }
+  .collage .photo img { min-height:80px; }
+  .collage .photo .cap { font-size:10px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; bottom:3px; }
+  .collage .photo:nth-child(1) { left:30px; top:0; z-index:3; width:178px; }
+  .collage .photo:nth-child(2) { left:-6px; top:140px; z-index:2; width:140px; }
+  .collage .photo:nth-child(3) { left:76px; top:160px; z-index:1; width:140px; }
+  .photos { display:flex; gap:10px; flex-wrap:wrap; justify-content:center; margin:8px 0; }
+  .photos .photo { width:120px; padding:5px 5px 18px; }
+  .photos .photo img { min-height:60px; }
+  .photos .photo .cap { font-size:10px; }
+  /* 任務簡報 */
+  .brief { display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-top:8px; align-items:start; }
+  .brief .help { margin:0; }
+  .btypes { display:flex; flex-wrap:wrap; gap:6px; }
+  .bt { width:62px; text-align:center; font-size:11px; color:#c9c3a8; }
+  .bt img { width:54px; height:72px; background:#2a2f2a; border:1px solid #555; image-rendering:pixelated; display:block; margin:0 auto 2px; }
+  .bt em { display:block; color:#ff6a50; font-style:normal; font-size:10px; }
+  .bt { position:relative; cursor:help; }
+  .bt:hover img { border-color:#ffd25a; }
+  .bt .tip { display:none; position:absolute; left:0; top:100%; z-index:20; width:250px; margin-top:4px; background:#f1ead2; color:#2a2a3a; padding:8px 10px;
+    text-align:left; font-size:13px; line-height:1.6; box-shadow:0 4px 14px rgba(0,0,0,.7); }
+  .bt .tip span { display:block; text-align:right; font-size:11px; color:#7a1c12; }
+  .bt:hover .tip { display:block; }
+  .note { background:#f1ead2; color:#2a2a3a; padding:14px 18px; transform:rotate(.8deg); box-shadow:0 4px 14px rgba(0,0,0,.6); font-size:15px; line-height:26px;
+    font-family:"Kaiti TC","DFKai-SB","BiauKai","STKaiti","KaiTi",cursive; background-image:repeating-linear-gradient(0deg, transparent 0 25px, rgba(70,90,160,.25) 25px 26px); }
+  .note .nh { font-size:13px; color:#7a1c12; border-bottom:1px solid #7a1c12; margin-bottom:6px; }
+  .note p { margin:0; }
+  .mfoot { display:flex; justify-content:space-between; align-items:center; margin-top:14px; }
+  .mfoot .btn { margin:0; }
+  .btn.go { font-size:18px; padding:8px 26px; }
+  .items .gun b { display:flex; align-items:center; white-space:nowrap; }
+  .items .gun small { min-height:0; }
+  #pause { position:absolute; inset:0; display:none; flex-direction:column; align-items:center; justify-content:center; gap:10px; background:rgba(0,0,0,.62); pointer-events:auto; }
+  #pause h1 { color:var(--amber); letter-spacing:6px; margin:0 0 8px; }
+  #pause .mitem { width:240px; text-align:center; }
+  .file .icon { width:54px; height:54px; line-height:54px; font-size:28px; flex:none; margin:0; }
+</style>
+</head>
+<body>
+<div id="game"><div id="box">
+  <canvas id="gl"></canvas>
+  <canvas id="rain" class="ov" width="200" height="150"></canvas>
+  <div id="scope" class="ov"><div class="mil"></div><div class="ring" id="sring"></div></div>
+  <div id="cross"></div>
+  <div id="splat" class="ov"></div>
+  <div id="glare" class="ov"></div>
+  <div id="marks" class="ov"></div>
+  <div id="flash" class="ov"></div>
+  <canvas id="radar" class="ov" width="112" height="96"></canvas>
+  <div class="ov">
+    <div id="info" class="hud"></div>
+    <div id="targets" class="hud"></div>
+    <div id="ammo" class="hud"></div>
+    <div id="breath" class="hud">屏息<div class="bar"><i id="breathbar"></i></div></div>
+    <div id="range" class="hud"></div>
+    <div id="radio" class="hud"></div>
+    <div id="msg" class="hud"></div>
+    <div id="hitmark" class="hud"></div>
+    <div id="alert" class="hud"></div>
+    <div id="bossbar" class="hud"></div>
+    <div id="talk" class="hud"></div>
+  </div>
+  <div id="pause"></div>
+  <div id="menu"></div>
+</div></div>
+<script src="assets/lib/three.min.js"></script>
+<script>
+(() => {
+'use strict';
+// ================= 基本設定 =================
+const RW = 400, RH = 300;               // 內部解析度（PS1 風格低解析）
+const FOV = 55, EYE = new THREE.Vector3(0, 21, 7);
+const ESCAPE_Z = -250;                   // 跑進森林就算逃脫
+const WALL_H = 6.2;
+const box = document.getElementById('box'), cvs = document.getElementById('gl');
+const $ = id => document.getElementById(id);
+function fit() {
+  const w = Math.min(innerWidth, innerHeight * 4 / 3), h = w * 3 / 4;
+  box.style.width = w + 'px'; box.style.height = h + 'px';
+}
+addEventListener('resize', fit); fit();
+
+const renderer = new THREE.WebGLRenderer({ canvas: cvs, antialias: false });
+renderer.setPixelRatio(1); renderer.setSize(RW, RH, false);
+const camera = new THREE.PerspectiveCamera(FOV, 4 / 3, 0.1, 800);
+camera.rotation.order = 'YXZ';
+
+// ================= 槍械 =================
+// dmg 對耐力的傷害；spread 散布(度)；sway 晃動倍率；bolt 每發間隔(秒)；reload 換彈(秒)；speed 彈速(m/s，0=瞬間)
+const GUNS = [
+  { id:'m24',  name:'M-24R 哨兵', note:'標準狙擊槍，各項平衡', dmg:50, pellets:1, mag:5,  bolt:1.1, reload:2.6, spread:.10, sway:1.0, speed:520, kick:1.2, color:0x2b2f2a },
+  { id:'gl79', name:'GL-79 雷鳴', note:'榴彈槍，落點炸開小範圍麻醉氣，範圍穩定、威力高，換彈最慢之一', dmg:120, pellets:1, mag:4, bolt:1.6, reload:4.8, spread:.12, sway:1.25, speed:0, blast:5, kick:2.6, color:0x3a3524 },
+  { id:'lx9',  name:'LX-9 光矛',  note:'實驗型雷射，瞬間命中、極精準，只有兩發', dmg:130, pellets:1, mag:2, bolt:2.2, reload:4.2, spread:.02, sway:.8, speed:0, kick:.6, color:0x9aa3ad },
+  { id:'sr25', name:'SR-25 疾風', note:'半自動，射得快、彈多，威力弱', dmg:28, pellets:1, mag:12, bolt:.32, reload:2.3, spread:.22, sway:1.1, speed:600, kick:.8, color:0x23262b },
+  { id:'r870', name:'R-870 獵鷹', note:'8 顆散彈，同一人中越多發加成越高，近距離速戰速決', dmg:19, pellets:8, mag:6, bolt:.9, reload:3.0, spread:.7, sway:1.0, speed:450, kick:2.0, color:0x4a3220, multi:.2 },
+  { id:'m249', name:'M-249 暴雨', note:'按住連射、彈匣最大，但晃動最嚴重', dmg:14, pellets:1, mag:60, bolt:.085, reload:5.2, spread:.35, sway:2.8, speed:650, kick:.45, color:0x2a2c22, auto:true },
+];
+const PART_MUL = { head:1.6, body:1, leg:.75 };
+let gunIdx = 0;
+
+// ================= 犯人類型 =================
+// scale 體型倍率；speed m/s；sta 耐力
+const PTYPES = {
+  normal:  { name:'一般犯',   speed:5.4, sta:100, scale:2.0,  suit:0xe0802e, desc:'沒有特殊能力' },
+  fast:    { name:'飛毛腿',   speed:7.6, sta:70,  scale:1.8,  suit:0xf0a040, desc:'跑最快，耐力低' },
+  brute:   { name:'壯漢',     speed:3.6, sta:230, scale:2.8,  suit:0xc0601c, desc:'體型巨大、很耐打，但跑得慢' },
+  fraud:   { name:'詐欺犯',   speed:5.6, sta:90,  scale:1.95, suit:0x2e3440, darkSuit:0x56607a, desc:'穿西裝的騙子，跑一跑會立起人形立牌混淆' },
+  clown:   { name:'小丑',     speed:5.2, sta:95,  scale:1.9,  suit:0xd04a8a, desc:'停下來跳彈簧床。表演時沒打中他，之後會越跑越快' },
+  vampire: { name:'吸血鬼',   speed:5.8, sta:110, scale:2.05, suit:0x3a1424, darkSuit:0x6a2a48, desc:'化成蝙蝠。打光蝙蝠會在原地現身並短暫昏厥，超時就往前瞬移一段' },
+  psychic: { name:'超能力者', speed:4.8, sta:100, scale:1.95, suit:0x6a46c8, desc:'定時張開護盾，護住身邊所有犯人' },
+  priest:  { name:'牧師',     speed:4.6, sta:120, scale:2.0,  suit:0x26262c, darkSuit:0x4a4a5c, desc:'定時禱告，替自己和附近犯人回復耐力' },
+  slime:   { name:'黏液人',   speed:5.0, sta:110, scale:2.1,  suit:0x5fae34, desc:'中一槍就變成史萊姆；倒下時黏液濺到鏡頭，一段時間不能開鏡' },
+  werewolf:{ name:'狼人',     speed:3.2, sta:120, scale:2.15, suit:0xc8702a, desc:'走一段路就全速衝刺，衝刺中打不到，要趁他走路時打' },
+  succubus:{ name:'魅魔',     speed:4.6, sta:110, scale:2.0,  suit:0xff3cb4, glow:0x5a0a3c, desc:'迷住附近犯人，靠近她就變成護衛。護衛沒倒之前她不會受傷' },
+  guard:   { name:'護衛',     speed:4.4, sta:140, scale:2.6,  suit:0x7a1c48, noSpawn:true, desc:'被魅魔迷住而變身的犯人，跟在她身邊' },
+  imp:     { name:'惡魔兵',   speed:3.0, sta:80,  scale:2.1,  suit:0x5a1410, noSpawn:true, desc:'跟著惡魔前進的軍隊，金色的是隊長' },
+};
+const TYPE_KEYS = Object.keys(PTYPES).filter(k => !PTYPES[k].noSpawn);   // 可以直接出場的種類
+// 典獄長的犯人檔案
+const WARDEN = {
+  normal:  '大部分的人都是這種，沒什麼特別。不過別小看，人在逃命的時候都跑得比平常快。',
+  fast:    '以前是田徑隊的，放風時繞操場跑，獄警沒一個追得上。看到他翻牆，第一個先處理他。',
+  brute:   '一個人能抬起整張餐桌。麻醉彈打他得多打幾發，好在他那身肉跑不快。',
+  fraud:   '靠一張嘴騙進來的。在牢房裡用紙箱做了一堆自己的人像，看到站著不動的人影，先想想是不是真的。',
+  clown:   '馬戲團出身，逃命還不忘表演。他跳彈簧床的時候就是最好的機會；讓他表演完，他會得意得越跑越快。',
+  vampire: '沒人知道他怎麼辦到的，他會化成一群蝙蝠。把蝙蝠全打下來，他會在原地現身、昏個幾秒，那是最好的機會；拖太久，他會在前面一大段的地方冒出來。',
+  psychic: '他身邊偶爾會亮起一層藍光，子彈打不進去，連旁邊的人都被護著。別浪費子彈，等光散了再打。',
+  priest:  '在牢裡帶大家禱告。他一停下來把手舉高，附近的人就重新振作。看到他，優先處理。',
+  slime:   '他的身體總是分泌出不明的黏液，別問我那是什麼東西。只要挨上一槍，他就不再是人的樣子，變成一團黏液繼續往前爬。放倒他的時候小心，那些黏液會濺到你的瞄準鏡上，好一陣子看不清楚。',
+  werewolf:'月圓不圓都一樣，他就是會變。平常拖著腳慢慢走，走沒多久就突然趴低全速衝一段，那時候快到子彈都追不上。等他衝完、又開始慢慢走的時候再打。',
+  succubus:'別盯著她看太久。她一舉手，附近的犯人就像著了魔一樣往她身邊跑，跑到她身邊就變成她的護衛。護衛還站著，她就毫髮無傷。趁她施法前先處理她，或先放倒靠過去的人。',
+  guard:   '被魅魔迷住的人，體格整個膨脹起來，跟在她身邊替她擋子彈。打倒他們，她就沒有保護了。她倒下或跑掉以後，他們會醒過來自己逃。',
+  imp:     '惡魔帶來的兵，排成隊跟在他腳邊走，替他擋子彈。身上發金光的是隊長，放著不管，他就會替惡魔張開防護罩。打倒隊長，下一個會接手；全部清光雖然乾淨，但很花子彈和時間。',
+  demon:   '最後那一區的人全處理完之後，森林那邊會走出一個大傢伙。麻醉彈打在他身上只會彈開。他手腳戴著四個金飾，每個都不好對付：左手那個特別小，右手那個會忽隱忽現，左腳那個會離開腳踝繞著他飄。金飾全打掉，胸口會浮出一顆寶石，那時他會從胸口噴出強光，別直視，等光停了再打碎它。千萬別讓他走到圍牆。',
+};
+// ================= 道具 =================
+const ITEMS = [
+  { id:'none',     icon:'—', name:'不帶道具',   note:'空手上塔' },
+  { id:'recall',   icon:'↺', name:'傳送信標',   note:'第一個逃脫的人會被拉回圍牆邊（每關一次）' },
+  { id:'lock',     icon:'◎', name:'鷹眼晶片',   note:'每第五發，準心範圍內的敵人必中' },
+  { id:'quick',    icon:'»', name:'快拔彈匣袋', note:'爆頭後，下一次換彈時間減半（不累計）' },
+  { id:'rhythm',   icon:'♪', name:'節拍器',     note:'第一發威力 ×0.75，連續命中每發 +0.25，最高 ×1.25，打空歸零' },
+  { id:'zombie',   icon:'☠', name:'屍變藥劑',   note:'放倒的人有 35% 機率在原地變成殭屍 20 秒，附近 12 公尺內的犯人走路減半' },
+  { id:'suppress', icon:'≋', name:'干擾電波器', note:'所有特殊能力變弱，但敵人耐力 ×1.2' },
+  { id:'orb',      icon:'●', name:'天雷寶珠',   note:'天上出現寶珠，打碎後雷劈場上所有人並持續 4 秒' },
+  { id:'xray',     icon:'◐', name:'熱像瞄準鏡', note:'開鏡時看穿岩石、樹叢、煙霧、岩漿濃煙；強光刺眼速度減半；不怕黏液；子彈能穿過煙霧' },
+];
+const ITEM_NOTES = {
+  xray:     '軍方淘汰下來的熱像瞄準鏡，裝上去以後，開鏡看到的是人身上的熱。岩石、樹叢、卡車後面躲著誰，一眼就看穿；煙霧、岩漿冒出來的濃煙也擋不住它。太陽和強光它會自己調暗一些，刺眼得比較慢，但看久了一樣受不了；黏液濺上來也只糊在外面那層鏡片。記住，看得穿不代表打得穿：子彈穿得過煙，可穿不過石頭。',
+  none:     '什麼都不帶也行。空手的人通常最專心。',
+  recall:   '研究所寄來的怪東西，插在圍牆上就好。有人一腳踏進森林的時候，它會把那個人拉回牆邊，等於再給你一次機會。就算他已經坐上車也拉得回來。一區只能用一次，用完就沒電了。',
+  lock:     '裝在瞄準鏡上的晶片。它會自己數你開了幾槍，每到第五發，只要準心附近有人，子彈就會自己找上他，就算你手在抖、他躲在石頭後面只露一點點也一樣。右下角會告訴你下一發是不是那一發。',
+  quick:    '老守衛自己改的彈匣袋。打中頭的那一下手感特別順，下一次換彈只要平常一半的時間。連續爆頭也不會更快，最多就是一半。',
+  rhythm:   '教官的老把戲。一開始手生，第一發藥效只有七成五；之後每連續打中一發，藥效就多兩成五，最多到一點二五倍。只要打空一發，就從頭來過。',
+  zombie:   '研究所的新配方，混在麻醉藥裡。被放倒的人有時候會自己爬起來，眼神空洞地站在原地，一站就是二十秒。他不會逃，只會伸手去抓經過的人，附近的犯人得拖著腳才擠得過去。藥效退了他就會再倒下。至於他醒來記不記得，別問我。',
+  suppress: '這台機器會干擾那些怪傢伙的能力：吸血鬼的蝙蝠少一隻，護盾、黏液、煙霧撐得比較短，禱告沒那麼靈，詐欺犯的立牌少一個，狼人衝不了那麼久，魅魔的手也伸不了那麼遠。代價是電波讓他們精神亢奮，每個人都比平常耐打兩成。',
+  orb:      '開打之後，天上會浮著一顆發光的珠子。它很硬，要打好幾發才會碎。碎掉的那一刻，雷會劈在場上每一個人身上，接下來四秒還會一直劈。還沒翻牆的人劈不到，挑人多的時候再打碎它。',
+};
+
+// ================= 地圖與關卡 =================
+const MAPS = {
+  waste: { name:'荒地', sky:0xa9b8bf, fog:[170, 560], seed:11, rocks:22, bushes:24, trees:4, sheep:0, trucks:[], ground:'grass' },
+  ranch: { name:'牧場', sky:0xc9a483, fog:[160, 540], seed:23, rocks:12, bushes:26, trees:16, sheep:16, trucks:[], ground:'dry' },
+  convoy:{ name:'車隊', sky:0x8e9aa6, fog:[160, 540], seed:37, rocks:12, bushes:14, trees:8, sheep:0, road:true, ground:'grass',
+    trucks:[ [-75,-95,.3], [-52,-98,.25], [-29,-100,.2], [40,-150,-.2], [64,-152,-.15] ] },
+  storm: { name:'雷雨', sky:0x2c3540, fog:[130, 480], seed:51, rocks:16, bushes:22, trees:12, sheep:0, trucks:[], ground:'grass', dark:true, rain:true, mount:0x2a3038,
+    light:{ hemi:[0xa0b0c8, 0x2a2a30, .68], sun:[0xa8b8d8, .4] } },
+  sunrise:{ name:'日出', sky:0xf0b080, fog:[150, 540], seed:63, rocks:14, bushes:18, trees:10, sheep:0, trucks:[], ground:'dry', sun:true, mount:0x8a6070,
+    light:{ hemi:[0xffd8b0, 0x5a4030, .72], sun:[0xffb070, .85] } },
+  desert:{ name:'沙漠', sky:0xe6cfa0, fog:[170, 560], seed:91, rocks:20, bushes:8, trees:0, cacti:18, sheep:0, trucks:[], ground:'sand', mount:0xb89060,
+    light:{ hemi:[0xfff0d8, 0x806040, .8], sun:[0xfff0d0, .8] } },
+  hell:  { name:'地獄', sky:0x4a120c, fog:[110, 470], seed:77, rocks:14, bushes:0, trees:10, spikes:16, sheep:0, trucks:[], ground:'hell', hell:true, dark:true, mount:0x2e1410,
+    light:{ hemi:[0xffa080, 0x501810, .7], sun:[0xff7040, .6] } },
+};
+const STAGES = [
+  { name:'第一關　午後放風', map:'waste', total:6, maxAlive:2, allowEscape:1, smoke:0,
+    pool:['normal','normal','fast','brute','fraud'], terrain:'圍牆外是一片荒地，只有零星的石頭和矮樹叢可以躲，視野很開闊。', note:'第一天上工。我被分到最北邊的高塔，前輩說這裡是整座監獄看得最遠的地方。典獄長只交代了一句：「不能讓任何人進森林。」……我真的做得到嗎？手心一直在冒汗。總之，先把今天撐過去。', brief:'第一天上工，先從簡單的來。後面那片荒地沒什麼好躲的，跑出來的都是些普通角色。把手感練起來。', desc:'空曠的荒地。一般犯、飛毛腿、壯漢、詐欺犯。' },
+  { name:'第二關　黃昏牧場', map:'ranch', total:10, maxAlive:3, allowEscape:2, smoke:.25,
+    pool:['normal','fast','brute','fraud','clown','priest'], terrain:'放牧中的羊群會在中段遊蕩，子彈打到羊會被擋下。樹叢和樹比較多，黃昏的光線偏暗。', note:'第二天。今天的人明顯比昨天難纏：有人在牧場中間跳彈簧床，有人跪下來禱告，旁邊倒下的人居然又站起來繼續跑。我得更努力才行，不能一直讓前輩替我收拾。', brief:'隔壁牧場的羊群會在外面晃，打到羊我可不幫你寫報告。黃昏這批人比較難纏：會跳彈簧床的小丑，還有會禱告的牧師。', desc:'羊群會擋子彈。小丑、牧師登場，還有煙霧彈。' },
+  { name:'第三關　接應車隊', map:'convoy', total:14, maxAlive:4, allowEscape:2, smoke:.3, cars:true, explosions:[1, 55],
+    pool:['normal','fast','brute','fraud','clown','psychic','priest','slime'], terrain:'中段停著一排軍用卡車，是很好的掩體。最遠處的路邊有接應車在等，場上還會發生爆炸。', note:'東區牢房有個臉色蒼白的犯人，從來不在白天放風，送去的飯一口也沒動，半夜卻聽得到他牢房裡有東西在拍翅膀。還有一個犯人，摸過的欄杆都會留下一層綠色的黏液，他的牢房地板每天早上都是濕的……不，一定是我太累了，是我自己多疑。專心把工作做好就好。', brief:'外面那條路常有車在等，人一上車就難攔了，上車前多打幾發。今天還有人在場上埋了炸藥，那個說自己看得見怪東西的，還有那個黏答答的傢伙，也都排在這班。', desc:'有爆炸和接應車，超能力者、黏液人登場。' },
+  { name:'第四關　雷雨夜', map:'storm', total:16, maxAlive:4, allowEscape:2, smoke:.3, explosions:[1, 60],
+    pool:['normal','fast','brute','fraud','clown','psychic','priest','slime','werewolf','werewolf'], terrain:'雷雨夜，天色昏暗、雨勢很大。閃電打下來時整片地會亮一下。', note:'我偷翻了犯人的檔案。好幾份的照片欄是空的，罪名欄寫的不是罪名，而是一串編號。昨晚那個在雨裡衝刺的傢伙……那真的是人嗎？我想知道這座監獄到底在關些什麼。', brief:'雷雨夜，天很暗，雨大到看不清楚，閃電打下來的那一瞬間最好認人。這班有個毛很重的傢伙，聽說跑起來會突然暴衝，那時候別浪費子彈。', desc:'大雨加閃電，天色昏暗。狼人登場。' },
+  { name:'第五關　破曉', map:'sunrise', total:18, maxAlive:5, allowEscape:3, smoke:.3,
+    pool:['normal','fast','brute','fraud','clown','vampire','psychic','priest','slime','werewolf','succubus'], terrain:'面東的乾燥平原。太陽貼在左前方的地平線上，朝那個方向開鏡，畫面會越來越亮。', note:'有件事我一直想不通：那些逃掉的人，追捕隊從來沒找到過。足跡到了森林的邊界就斷了，像是憑空消失一樣。邊界那裡，到底有什麼？', brief:'這區面東，天剛亮，太陽就貼在地平線上。朝那個方向開鏡撐不了多久。那個臉色蒼白的，還有那個很會說話的女人，都排在這一班。', desc:'朝陽貼著地平線，朝太陽開鏡會被刺得睜不開眼。吸血鬼、魅魔登場。' },
+  { name:'第六關　地獄門', map:'hell', total:20, maxAlive:5, allowEscape:3, smoke:.25, explosions:[1, 50, 100], boss:true,
+    pool:['normal','fast','brute','fraud','clown','vampire','psychic','priest','slime','werewolf','succubus','werewolf','succubus'], terrain:'地面布滿岩漿池和尖岩。岩漿池每隔一陣子就會噴發，冒出的濃煙會擋住視線，那些人卻直接從岩漿上走過去。所有逃犯處理完後，惡魔會帶著軍隊從森林現身。', note:'我在典獄長桌上看到一份泛黃的舊文件。這座監獄蓋在一扇「門」的上面，每隔一段時間，門就會和地獄連在一起。那些犯人不是在逃獄，是在回家。而今晚，地獄的魔王要親自來拯救他的子民了。', brief:'最後一區。別問我那是什麼地方，地上在冒岩漿。所有人都會出來，等他們都處理完了，還有一個大傢伙在森林裡等你。', desc:'岩漿遍地，所有逃犯出動。最後惡魔親自現身。' },
+];
+
+// ================= 小工具 =================
+function rng(seed) { return () => { seed |= 0; seed = seed + 0x6D2B79F5 | 0; let t = Math.imul(seed ^ seed >>> 15, 1 | seed); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+const rand = (a, b) => a + Math.random() * (b - a);
+const D2R = Math.PI / 180;
+const SUN_YAW = 24 * D2R, SUN_EL = 5 * D2R;   // 日出關太陽的方位
+const SUN_DIR = new THREE.Vector3(-Math.sin(SUN_YAW) * Math.cos(SUN_EL), Math.sin(SUN_EL), -Math.cos(SUN_YAW) * Math.cos(SUN_EL));
+function heightAt(x, z) {
+  if (z > -15 || z < -215) return 0;
+  const k = Math.min(1, (-15 - z) / 25) * Math.min(1, (z + 215) / 25);
+  return k * (1.1 * Math.sin(x * .045) * Math.cos(z * .037) + .6 * Math.sin(x * .11 + z * .07));
+}
+function canvasTex(size, paint, rep) {
+  const c = document.createElement('canvas'); c.width = c.height = size;
+  paint(c.getContext('2d'), size);
+  const t = new THREE.CanvasTexture(c);
+  t.magFilter = THREE.NearestFilter; t.minFilter = THREE.NearestFilter; t.generateMipmaps = false;
+  if (rep) { t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(rep[0], rep[1]); }
+  return t;
+}
+function noisePaint(base, vary) {
+  return (g, s) => { for (let y = 0; y < s; y++) for (let x = 0; x < s; x++) {
+    const v = (Math.random() - .5) * vary; g.fillStyle = `rgb(${base[0] + v | 0},${base[1] + v | 0},${base[2] + v * .7 | 0})`; g.fillRect(x, y, 1, 1); } };
+}
+const TEX = {
+  grass: canvasTex(32, noisePaint([96, 112, 62], 34), [70, 52]),
+  dry:   canvasTex(32, noisePaint([140, 120, 78], 30), [70, 52]),
+  concrete: canvasTex(32, noisePaint([128, 126, 118], 26), [60, 1]),
+  rock:  canvasTex(16, noisePaint([118, 112, 104], 40)),
+  road:  canvasTex(32, noisePaint([92, 80, 64], 24), [80, 1]),
+  hell:  canvasTex(32, noisePaint([78, 36, 28], 30), [70, 52]),
+  sand:  canvasTex(32, noisePaint([196, 168, 116], 22), [70, 52]),
+};
+const GLOW_TEX = canvasTex(32, (g, s) => { const r = g.createRadialGradient(s / 2, s / 2, 0, s / 2, s / 2, s / 2);
+  r.addColorStop(0, 'rgba(255,255,255,1)'); r.addColorStop(.35, 'rgba(255,255,255,.8)'); r.addColorStop(1, 'rgba(255,255,255,0)'); g.fillStyle = r; g.fillRect(0, 0, s, s); });
+const M = (color, opt = {}) => new THREE.MeshLambertMaterial({ color, flatShading: true, ...opt });
+function spriteText(ch, color, px = 32) {
+  const c = document.createElement('canvas'); c.width = c.height = px;
+  const g = c.getContext('2d'); g.font = `bold ${px * .8}px monospace`; g.textAlign = 'center'; g.textBaseline = 'middle';
+  g.lineWidth = 4; g.strokeStyle = '#000'; g.strokeText(ch, px / 2, px / 2 + 1); g.fillStyle = color; g.fillText(ch, px / 2, px / 2 + 1);
+  const t = new THREE.CanvasTexture(c); t.magFilter = t.minFilter = THREE.NearestFilter;
+  return new THREE.SpriteMaterial({ map: t, transparent: true, depthTest: false });
+}
+const SPR = { crown: spriteText('♛', '#ffd040'), star: spriteText('★', '#ffe06a'), z: spriteText('Z', '#ffffff'), plus: spriteText('+', '#7dff8a'), up: spriteText('↑', '#ff7ad0'), heart: spriteText('♥', '#ff6ad0') };
+
+// ================= 音效（WebAudio 合成）=================
+let AC = null, noiseBuf = null, master = null;
+function audio() {
+  if (!AC) {
+    AC = new (window.AudioContext || window.webkitAudioContext)();
+    master = AC.createGain(); master.gain.value = .55; master.connect(AC.destination);
+    noiseBuf = AC.createBuffer(1, AC.sampleRate, AC.sampleRate);
+    const d = noiseBuf.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+  }
+  if (AC.state === 'suspended') AC.resume();
+  return AC;
+}
+function noise(dur, freq, vol, type = 'lowpass', at = 0) {
+  if (!AC) return; const t = AC.currentTime + at;
+  const s = AC.createBufferSource(); s.buffer = noiseBuf;
+  const f = AC.createBiquadFilter(); f.type = type; f.frequency.value = freq;
+  const g = AC.createGain(); g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(.001, t + dur);
+  s.connect(f); f.connect(g); g.connect(master); s.start(t); s.stop(t + dur + .05);
+}
+function tone(type, f0, f1, dur, vol, at = 0) {
+  if (!AC) return; const t = AC.currentTime + at;
+  const o = AC.createOscillator(), g = AC.createGain(); o.type = type;
+  o.frequency.setValueAtTime(f0, t); o.frequency.exponentialRampToValueAtTime(Math.max(1, f1), t + dur);
+  g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(.001, t + dur);
+  o.connect(g); g.connect(master); o.start(t); o.stop(t + dur + .05);
+}
+const SFX = {
+  shot(g) {
+    if (g.id === 'lx9') { tone('sawtooth', 1800, 120, .45, .25); tone('square', 900, 60, .3, .12); return; }
+    if (g.id === 'gl79') { tone('sine', 160, 60, .25, .6); noise(.18, 700, .6); return; }
+    const big = g.id === 'm249' || g.id === 'sr25' ? .6 : 1;
+    noise(.22 * big, 1400, .9 * Math.min(1, big)); noise(.5 * big, 300, .5 * Math.min(1, big)); tone('sine', 120, 40, .18, .5);
+  },
+  bolt() { noise(.04, 3000, .3, 'highpass', .25); noise(.05, 2400, .35, 'highpass', .45); },
+  reload() { noise(.05, 2600, .3, 'highpass', .2); noise(.06, 1800, .35, 'highpass', .9); noise(.05, 3000, .35, 'highpass', 1.4); },
+  empty() { noise(.03, 4000, .3, 'highpass'); },
+  hit(head) { tone('square', head ? 880 : 520, head ? 440 : 260, .08, .15); },
+  down() { tone('triangle', 660, 330, .25, .2); tone('triangle', 440, 220, .35, .2, .2); },
+  miss(near) { noise(.08, near ? 2000 : 900, .15, 'bandpass'); },
+  baa() { tone('sawtooth', 380, 330, .45, .08); },
+  boom() { noise(1.4, 400, 1); tone('sine', 80, 25, 1, .7); },
+  siren() { if (!AC) return; for (let i = 0; i < 3; i++) { tone('square', 520, 820, .55, .05, i * 1.1); tone('square', 820, 520, .55, .05, i * 1.1 + .55); } },
+  engine() { tone('sawtooth', 60, 140, 1.2, .12); },
+  thud() { noise(.25, 200, .5); },
+  boing() { tone('sine', 200, 600, .25, .15); },
+  heal() { tone('sine', 520, 1040, .4, .1); tone('sine', 780, 1560, .4, .08, .1); },
+  shield() { tone('sine', 300, 900, .5, .1); },
+  ping() { tone('sine', 1500, 1200, .12, .12); },
+  bat() { tone('square', 1800, 2400, .06, .05); tone('square', 2000, 2600, .06, .05, .08); },
+  splat() { noise(.4, 600, .5); tone('sine', 200, 60, .3, .2); },
+  thunder() { noise(2.4, 160, .9); noise(.5, 900, .4); },
+  howl() { tone('sine', 300, 620, .5, .12); tone('sine', 620, 420, .6, .1, .5); },
+  charm() { tone('sine', 880, 1320, .4, .1); tone('sine', 1320, 990, .5, .08, .25); },
+  roar() { tone('sawtooth', 110, 40, 1.6, .3); noise(1.4, 300, .6); },
+  groan() { tone('sawtooth', 130, 70, .9, .12); tone('sawtooth', 95, 60, .7, .08, .3); },
+  lock() { tone('square', 1200, 1800, .12, .1); },
+  warp() { tone('sine', 200, 1600, .5, .15); },
+};
+
+// ================= 狀態 =================
+let scene, colliders, prisoners, sheep, smokes, decoys, cars, bullets, fx, bats, map, stage, stageT, state = 'menu';
+let yaw = 0, pitch = -9 * D2R, recoil = 0, scoped = false, zoom = 4, breath = 1, gasp = 0, holdBreath = false;
+let mag = 0, cool = 0, reloading = 0, firing = false, stats, shake = 0, radioT = 0, msgT = 0, endT = 0, splatT = 0;
+let gunModel = null, shotId = 0, mode = 'campaign';
+let itemIdx = 0, itemId = 'none', abilityF = 1, hpMul = 1, recallUsed = false, shotCount = 0, halfReload = false, combo = .75, reloadTotal = 1;
+let orb = null, aura = null, boss = null, sunGlare = 0, sunBlind = 0, sunAng = 90, lightT = 0, flashA = 0;
+const ray = new THREE.Raycaster();
+
+// ================= 建立場景 =================
+function buildMap(key) {
+  map = MAPS[key];
+  scene = new THREE.Scene();
+  scene.background = new THREE.Color(map.sky);
+  scene.fog = new THREE.Fog(map.sky, map.fog[0], map.fog[1]);
+  const L = map.light || { hemi:[0xdfe8ff, 0x4a4030, .75], sun:[0xfff0d0, .75] };
+  map.hemi = new THREE.HemisphereLight(L.hemi[0], L.hemi[1], L.hemi[2]); map.hemiI = L.hemi[2]; scene.add(map.hemi);
+  const sun = new THREE.DirectionalLight(L.sun[0], L.sun[1]); sun.position.set(-60, 120, -40);
+  if (map.sun) sun.position.copy(SUN_DIR).multiplyScalar(100);
+  scene.add(sun);
+  colliders = []; prisoners = []; sheep = []; smokes = []; decoys = []; cars = []; bullets = []; fx = []; bats = [];
+  boss = null; orb = null; aura = null; map.lava = []; map.lavaMats = []; map.embers = []; map.flashT = 0;
+  const R = rng(map.seed);
+
+  // 地面
+  const gg = new THREE.PlaneGeometry(700, 520, 70, 52); gg.rotateX(-Math.PI / 2); gg.translate(0, 0, -250);
+  const pos = gg.attributes.position;
+  for (let i = 0; i < pos.count; i++) pos.setY(i, heightAt(pos.getX(i), pos.getZ(i)));
+  gg.computeVertexNormals();
+  const ground = new THREE.Mesh(gg, M(0xffffff, { map: TEX[map.ground] }));
+  ground.userData.kind = 'ground'; scene.add(ground); colliders.push(ground);
+  // 監獄內側：放風場地、建築
+  const inner = new THREE.Mesh(new THREE.PlaneGeometry(700, 60), M(0x77756e)); inner.rotation.x = -Math.PI / 2; inner.position.set(0, .02, 30); scene.add(inner);
+  inner.userData.kind = 'ground'; colliders.push(inner);
+  for (const [x, w, d] of [[-60, 30, 12], [55, 36, 12], [-130, 26, 14], [130, 26, 14]]) {
+    const b = new THREE.Mesh(new THREE.BoxGeometry(w, 9, d), M(0x8d877a)); b.position.set(x, 4.5, 20); scene.add(b);
+    for (let i = 0; i < w / 4 - 1; i++) { const win = new THREE.Mesh(new THREE.BoxGeometry(1.2, 1, .1), M(0x222830)); win.position.set(x - w / 2 + 3 + i * 4, 6, 20 - d / 2 - .05); scene.add(win); }
+  }
+  // 圍牆、鐵絲網
+  const wall = new THREE.Mesh(new THREE.BoxGeometry(600, WALL_H, 1.2), M(0xffffff, { map: TEX.concrete }));
+  wall.position.set(0, WALL_H / 2, 0); wall.userData.kind = 'wall'; scene.add(wall); colliders.push(wall);
+  const wire = new THREE.Mesh(new THREE.BoxGeometry(600, .5, .3), M(0x2a2a2a)); wire.position.set(0, WALL_H + .3, 0); scene.add(wire);
+  for (let x = -290; x <= 290; x += 6) { const p = new THREE.Mesh(new THREE.BoxGeometry(.15, 1.2, .15), M(0x333333)); p.position.set(x, WALL_H + .5, 0); scene.add(p); }
+  // 其他高塔
+  for (const tx of [-140, 140]) {
+    const t = new THREE.Group();
+    const leg = new THREE.Mesh(new THREE.BoxGeometry(3, 18, 3), M(0x8a8478)); leg.position.y = 9; t.add(leg);
+    const cab = new THREE.Mesh(new THREE.BoxGeometry(6, 4, 6), M(0x6d675c)); cab.position.y = 20; t.add(cab);
+    const roof = new THREE.Mesh(new THREE.ConeGeometry(5, 2.5, 4), M(0x3d3a33)); roof.position.y = 23.2; roof.rotation.y = Math.PI / 4; t.add(roof);
+    t.position.set(tx, 0, 3); scene.add(t);
+  }
+  // 森林（逃脫線）
+  for (let i = 0; i < 260; i++) addTree(-340 + R() * 680, ESCAPE_Z - 6 - R() * 70, 1.6 + R() * 1.4, R, false);
+  // 遠山
+  for (let i = 0; i < 9; i++) {
+    const hh = 40 + R() * 30;
+    const h = new THREE.Mesh(new THREE.ConeGeometry(70 + R() * 50, hh, 5), M(map.mount || 0x5f6a72));
+    h.position.set(-360 + i * 90, 10, -470); scene.add(h);
+    if (map.hell) { const tip = new THREE.Mesh(new THREE.ConeGeometry(9, 8, 5), new THREE.MeshBasicMaterial({ color: 0xff6020, fog: false })); tip.position.set(-360 + i * 90, 10 + hh / 2 - 3.5, -470); scene.add(tip); }
+  }
+  // 低掛的太陽（日出關一直在；沙漠的無盡模式會不定期出現）
+  map.sunSprites = [];
+  if (map.sun || map.ground === 'sand') {
+    const sp = EYE.clone().addScaledVector(SUN_DIR, 600);
+    for (const [sz, c] of [[260, 0xffc080], [60, 0xffffff]]) {
+      const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: GLOW_TEX, color: c, transparent: true, fog: false, depthWrite: false }));
+      s.scale.set(sz, sz, 1); s.position.copy(sp); s.visible = !!map.sun; scene.add(s); map.sunSprites.push(s);
+    }
+  }
+  // 地獄：飄上來的火星
+  if (map.hell) for (let i = 0; i < 70; i++) {
+    const e = new THREE.Sprite(new THREE.SpriteMaterial({ color: i % 3 ? 0xff7a20 : 0xffc040, fog: false }));
+    e.scale.set(.5, .5, 1); e.position.set(rand(-150, 150), rand(0, 32), rand(-20, -240)); scene.add(e); map.embers.push(e);
+  }
+  // 逃脫警戒線：森林前的紅線和警示燈
+  const strip = new THREE.Mesh(new THREE.PlaneGeometry(700, 4), new THREE.MeshBasicMaterial({ color: 0xff3020, transparent: true, opacity: .3, fog: false }));
+  strip.rotation.x = -Math.PI / 2; strip.position.set(0, .12, ESCAPE_Z + 1); scene.add(strip);
+  const lampMat = new THREE.MeshBasicMaterial({ color: 0x661008, fog: false });
+  for (let x = -160; x <= 160; x += 20) {
+    const post = new THREE.Mesh(new THREE.BoxGeometry(.4, 4, .4), M(0xd8d0c0)); post.position.set(x, 2, ESCAPE_Z + 1); scene.add(post);
+    const lamp = new THREE.Mesh(new THREE.BoxGeometry(1.6, 1.2, 1.6), lampMat); lamp.position.set(x, 4.5, ESCAPE_Z + 1); scene.add(lamp);
+  }
+  map.alarm = { strip, lampMat };
+  if (map.road) {
+    const road = new THREE.Mesh(new THREE.PlaneGeometry(700, 12), M(0xffffff, { map: TEX.road }));
+    road.rotation.x = -Math.PI / 2; road.position.set(0, .04, -232); scene.add(road);
+  }
+  // 障礙物（避開彼此）
+  const placed = [];
+  const free = (x, z, r) => placed.every(p => Math.hypot(p[0] - x, p[1] - z) > p[2] + r + 4);
+  map.trucks.forEach(([x, z, ry]) => { addTruck(x, z, ry); placed.push([x, z, 8]); });
+  const scatter = (n, r, make, tag) => { let k = 0, tries = 0;
+    while (k < n && tries++ < 800) { const x = -140 + R() * 280, z = -24 - R() * 200;
+      if (free(x, z, r)) { make(x, z); placed.push(tag ? [x, z, r, tag] : [x, z, r]); k++; } } };
+  if (map.hell) scatter(8, 8, (x, z) => addLava(x, z, 4 + R() * 4), 'lava');
+  if (map.spikes) scatter(map.spikes, 2.5, (x, z) => addSpike(x, z, 1 + R() * .8, R));
+  scatter(map.rocks, 3.5, (x, z) => addRock(x, z, 1.5 + R() * 2.4, R));
+  scatter(map.bushes, 3, (x, z) => addBush(x, z, 1.5 + R() * 1.2, R));
+  scatter(map.trees, 2.5, (x, z) => addTree(x, z, 1.5 + R() * .6, R, true));
+  if (map.cacti) scatter(map.cacti, 2.5, (x, z) => addCactus(x, z, 1.2 + R() * .6, R));
+  map.placed = placed;
+  for (let i = 0; i < map.sheep; i++) addSheep(-40 + R() * 70, -95 - R() * 45, R);
+  map.carSlots = [];
+
+  scene.add(camera);
+  if (gunModel) camera.remove(gunModel);
+  gunModel = makeGunModel(GUNS[gunIdx]); camera.add(gunModel);
+}
+function addCollider(mesh, kind) { mesh.userData.kind = kind; colliders.push(mesh); }
+function removeColliders(pred) { colliders = colliders.filter(c => !pred(c)); }
+function addRock(x, z, s, R) {
+  const m = new THREE.Mesh(new THREE.DodecahedronGeometry(s, 0), M(map.hell ? 0x8a5a4c : 0xffffff, { map: TEX.rock }));
+  m.scale.set(1 + R() * .6, .6 + R() * .5, 1 + R() * .5); m.rotation.y = R() * 6;
+  m.position.set(x, heightAt(x, z) + s * .35, z); scene.add(m); addCollider(m, 'rock');
+}
+function addBush(x, z, s, R) {
+  const m = new THREE.Mesh(new THREE.IcosahedronGeometry(s, 0), M(new THREE.Color().setHSL(.27 + R() * .06, .45, .22 + R() * .08)));
+  m.scale.set(1.4, .9, 1.2); m.position.set(x, heightAt(x, z) + s * .6, z); scene.add(m); addCollider(m, 'bush');
+}
+function addTree(x, z, s, R, solid) {
+  const g = new THREE.Group();
+  const trunk = new THREE.Mesh(new THREE.CylinderGeometry(.25 * s, .35 * s, 3 * s, 5), M(map.hell ? 0x1c120e : 0x4a3524)); trunk.position.y = 1.5 * s; g.add(trunk);
+  const top = map.hell ? new THREE.Mesh(new THREE.ConeGeometry(.8 * s, 6 * s, 4), M(0x2a1812))   // 燒焦的枯樹
+    : new THREE.Mesh(new THREE.ConeGeometry(2 * s, 6 * s, 6), M(new THREE.Color().setHSL(.3 + R() * .05, .35, .16 + R() * .06)));
+  top.position.y = 5.5 * s; g.add(top);
+  g.position.set(x, heightAt(x, z), z); scene.add(g);
+  if (solid) { addCollider(trunk, 'tree'); addCollider(top, 'tree'); }
+}
+// 岩漿池：貼著地形起伏，會一閃一閃
+function addLava(x, z, r) {
+  const mk = (rad, mat, dy) => {
+    const geo = new THREE.CircleGeometry(rad, 10); geo.rotateX(-Math.PI / 2);
+    const a = geo.attributes.position;
+    for (let i = 0; i < a.count; i++) a.setY(i, heightAt(x + a.getX(i), z + a.getZ(i)) + dy);
+    const m = new THREE.Mesh(geo, mat); m.position.set(x, 0, z); scene.add(m); return m;
+  };
+  mk(r + 1.3, M(0x1e0c08), .08);
+  const mat = new THREE.MeshBasicMaterial({ color: 0xff5a14 });
+  mk(r, mat, .16);
+  map.lava.push([x, z, r, rand(3, 12)]); map.lavaMats.push(mat);
+}
+function addCactus(x, z, s, R) {
+  const mat = M(0x4a7a3a), g = new THREE.Group();
+  const trunk = new THREE.Mesh(new THREE.CylinderGeometry(.45 * s, .5 * s, 5 * s, 6), mat); trunk.position.y = 2.5 * s; g.add(trunk);
+  for (const d of [-1, 1]) if (R() < .8) {
+    const h = (1.5 + R()) * s, y = (1.8 + R() * 1.5) * s;
+    const arm = new THREE.Mesh(new THREE.CylinderGeometry(.3 * s, .3 * s, h, 6), mat); arm.position.set(d * 1.1 * s, y + h / 2, 0); g.add(arm);
+    const j = new THREE.Mesh(new THREE.BoxGeometry(1.1 * s, .5 * s, .5 * s), mat); j.position.set(d * .6 * s, y, 0); g.add(j);
+  }
+  g.position.set(x, heightAt(x, z), z); g.rotation.y = R() * 6; scene.add(g);
+  g.children.forEach(c => addCollider(c, 'tree'));
+}
+function addSpike(x, z, s, R) {
+  const m = new THREE.Mesh(new THREE.ConeGeometry(1.1 * s, 5 * s, 5), M(0x3a2420));
+  m.position.set(x, heightAt(x, z) + 2.3 * s, z); m.rotation.set(R() * .3 - .15, R() * 6, R() * .3 - .15); scene.add(m); addCollider(m, 'rock');
+}
+function addTruck(x, z, ry) {
+  const g = new THREE.Group(), olive = M(0x4d5536), dark = M(0x23261b);
+  const cargo = new THREE.Mesh(new THREE.BoxGeometry(2.6, 2.8, 6), olive); cargo.position.set(0, 2, -1.2); g.add(cargo);
+  const cab = new THREE.Mesh(new THREE.BoxGeometry(2.5, 2.2, 2.2), olive); cab.position.set(0, 1.7, 3); g.add(cab);
+  const win = new THREE.Mesh(new THREE.BoxGeometry(2.3, .8, .1), M(0x223040)); win.position.set(0, 2.2, 4.12); g.add(win);
+  for (const [wx, wz] of [[-1.3, 3], [1.3, 3], [-1.3, -2.5], [1.3, -2.5], [-1.3, -.5], [1.3, -.5]]) {
+    const w = new THREE.Mesh(new THREE.CylinderGeometry(.55, .55, .4, 8), dark); w.rotation.z = Math.PI / 2; w.position.set(wx, .55, wz); g.add(w);
+  }
+  g.scale.setScalar(1.5); g.position.set(x, 0, z); g.rotation.y = Math.PI / 2 + ry; scene.add(g);
+  g.children.forEach(c => addCollider(c, 'truck'));
+}
+function addSheep(x, z, R) {
+  const g = new THREE.Group();
+  const body = new THREE.Mesh(new THREE.BoxGeometry(.8, .7, 1.3), M(0xe8e4d8)); body.position.y = .8; g.add(body);
+  const head = new THREE.Mesh(new THREE.BoxGeometry(.4, .4, .45), M(0x222222)); head.position.set(0, 1.05, .8); g.add(head);
+  for (const [lx, lz] of [[-.25, .45], [.25, .45], [-.25, -.45], [.25, -.45]]) {
+    const l = new THREE.Mesh(new THREE.BoxGeometry(.15, .5, .15), M(0x222222)); l.position.set(lx, .25, lz); g.add(l);
+  }
+  g.scale.setScalar(1.5);
+  g.position.set(x, heightAt(x, z), z); g.rotation.y = R() * 6; scene.add(g);
+  const s = { g, x, z, dir: R() * 6, t: R() * 5, panic: 0, cx: x, cz: z };
+  [body, head].forEach(m => { addCollider(m, 'sheep'); m.userData.sheep = s; });
+  sheep.push(s);
+}
+function addCar(x, z) {
+  const g = new THREE.Group();
+  const body = new THREE.Mesh(new THREE.BoxGeometry(2, 1, 4.2), M(0x6b2a22)); body.position.y = .9; g.add(body);
+  const cab = new THREE.Mesh(new THREE.BoxGeometry(1.8, .8, 2), M(0x4a1d18)); cab.position.set(0, 1.8, -.3); g.add(cab);
+  const glass = new THREE.Mesh(new THREE.BoxGeometry(1.7, .6, .1), M(0x1a2633)); glass.position.set(0, 1.8, .72); g.add(glass);
+  const wheels = [];
+  for (const [wx, wz] of [[-1, 1.3], [1, 1.3], [-1, -1.3], [1, -1.3]]) {
+    const w = new THREE.Mesh(new THREE.CylinderGeometry(.45, .45, .3, 8), M(0x151515)); w.rotation.z = Math.PI / 2; w.position.set(wx, .45, wz); g.add(w); wheels.push(w);
+  }
+  g.scale.setScalar(1.5);
+  g.position.set(x, 0, z); g.rotation.y = x < 0 ? -Math.PI / 2 : Math.PI / 2; scene.add(g);
+  const car = { g, x, z, state:'wait', hp:0, maxHp:0, v:0, dir: x < 0 ? -1 : 1, wheels, driver:null, t:0, smokeT:0, reserved:false };
+  g.children.forEach(c => { addCollider(c, 'car'); c.userData.car = car; });
+  cars.push(car); return car;
+}
+function makeGunModel(gun) {
+  const g = new THREE.Group(), mat = M(gun.color), wood = M(gun.id === 'r870' ? 0x6a4428 : 0x3b3326);
+  const len = gun.id === 'gl79' ? .9 : gun.id === 'r870' ? 1.4 : 1.7;
+  const barrel = new THREE.Mesh(new THREE.BoxGeometry(.08, .08, len), mat); barrel.position.set(0, .05, -len / 2 - .4); g.add(barrel);
+  const body = new THREE.Mesh(new THREE.BoxGeometry(.16, .22, .9), mat); body.position.set(0, 0, -.2); g.add(body);
+  const stock = new THREE.Mesh(new THREE.BoxGeometry(.14, .26, .6), wood); stock.position.set(0, -.08, .45); g.add(stock);
+  if (gun.id === 'gl79') { const tube = new THREE.Mesh(new THREE.CylinderGeometry(.13, .13, 1, 8), mat); tube.rotation.x = Math.PI / 2; tube.position.set(0, .06, -.95); g.add(tube); }
+  if (gun.id !== 'r870' && gun.id !== 'm249' && gun.id !== 'gl79') { const sc = new THREE.Mesh(new THREE.CylinderGeometry(.07, .08, .7, 6), M(0x111111)); sc.rotation.x = Math.PI / 2; sc.position.set(0, .2, -.35); g.add(sc); }
+  if (gun.id === 'm249') { const b = new THREE.Mesh(new THREE.BoxGeometry(.25, .25, .3), M(0x3d4030)); b.position.set(.1, -.18, -.35); g.add(b); }
+  if (gun.id === 'lx9') { const c = new THREE.Mesh(new THREE.BoxGeometry(.2, .12, .5), new THREE.MeshBasicMaterial({ color:0xff3a2a })); c.position.set(0, .14, -.6); g.add(c); }
+  g.scale.setScalar(.45); g.position.set(.3, -.3, -.6); g.rotation.y = .05;
+  g.traverse(o => { if (o.material) { o.material = o.material.clone(); o.material.fog = false; o.material.depthTest = false; } o.renderOrder = 10; });
+  return g;
+}
+
+// ================= 犯人外觀 =================
+let pCount = 0;
+function buildBody(type, dark) {
+  const T = PTYPES[type];
+  const g = new THREE.Group(); g.rotation.order = 'YXZ';
+  const suit = M(dark && T.darkSuit ? T.darkSuit : T.suit), hair = M(0x2b2219), shoe = M(0x1d1d1d);
+  const skin = M({ vampire:0xd8d0d4, clown:0xf4f0ea, succubus:0xe8b8c0, werewolf:0x6a4c34, imp:0xb02818 }[type] || 0xc49a74);
+  const parts = [];
+  const add = (geo, mat, x, y, z, part, parent = g) => { const m = new THREE.Mesh(geo, mat); m.position.set(x, y, z); parent.add(m); if (part) { m.userData.part = part; parts.push(m); } return m; };
+  const wide = type === 'brute' || type === 'guard' ? 1.25 : 1;
+  add(new THREE.BoxGeometry(.5 * wide, .68, .3 * wide), suit, 0, 1.22, 0, 'body');
+  add(new THREE.BoxGeometry(.28, .3, .28), skin, 0, 1.73, 0, 'head');
+  // 頭部特徵
+  if (type === 'clown') {
+    add(new THREE.BoxGeometry(.09, .09, .09), M(0xff2020), 0, 1.71, .16, 'head');
+    for (const [x, c] of [[-.2, 0x30c0ff], [.2, 0xffd020], [0, 0x50e050]]) add(new THREE.BoxGeometry(.16, .16, .16), M(c), x, 1.9, -.02, 'head');
+  } else if (type === 'vampire') {
+    add(new THREE.BoxGeometry(.3, .08, .3), M(0x111111), 0, 1.9, 0, 'head');
+    const cape = add(new THREE.BoxGeometry(.7, 1.2, .06), M(0x6a0a14), 0, 1.0, -.2, null);
+    cape.rotation.x = -.15;
+  } else if (type === 'psychic') {
+    add(new THREE.BoxGeometry(.3, .06, .3), M(0x40ffff), 0, 1.8, 0, 'head');
+  } else if (type === 'priest') {
+    add(new THREE.BoxGeometry(.2, .06, .02), M(0xffffff), 0, 1.5, .16, 'body');
+    add(new THREE.BoxGeometry(.3, .08, .3), M(0x888888), 0, 1.9, 0, 'head');
+  } else if (type === 'fraud') {
+    add(new THREE.BoxGeometry(.18, .36, .02), M(0xf4f4f0), 0, 1.36, .155, 'body');   // 白襯衫
+    add(new THREE.BoxGeometry(.07, .34, .02), M(0xc02030), 0, 1.33, .17, 'body');     // 紅領帶
+    add(new THREE.BoxGeometry(.3, .08, .3), hair, 0, 1.9, 0, 'head');
+  } else if (type === 'brute') {
+    add(new THREE.BoxGeometry(.3, .05, .3), hair, 0, 1.89, 0, 'head');
+  } else if (type === 'slime') {
+    for (let i = 0; i < 5; i++) add(new THREE.BoxGeometry(.12, .12, .12), M(0x9cff60), rand(-.2, .2), rand(.9, 1.5), .16, 'body');
+  } else if (type === 'werewolf') {
+    const fur = M(0x4a3424);
+    for (const x of [-.1, .1]) add(new THREE.BoxGeometry(.08, .15, .06), skin, x, 1.95, 0, 'head');
+    add(new THREE.BoxGeometry(.14, .12, .16), skin, 0, 1.69, .19, 'head');
+    add(new THREE.BoxGeometry(.32, .1, .32), fur, 0, 1.89, 0, 'head');
+    add(new THREE.BoxGeometry(.1, .1, .42), fur, 0, .98, -.28, null).rotation.x = .7;
+  } else if (type === 'succubus') {
+    for (const x of [-.1, .1]) add(new THREE.BoxGeometry(.05, .17, .05), M(0x1a0a10), x, 1.95, .04, 'head');
+    add(new THREE.BoxGeometry(.3, .42, .1), M(0x8a2ad8), 0, 1.68, -.17, 'head');
+    for (const s of [-1, 1]) { const w = add(new THREE.BoxGeometry(.6, .5, .04), M(0xc0208a, { emissive: 0x500830 }), s * .34, 1.42, -.2, null); w.rotation.z = s * .5; w.rotation.y = s * .3; }
+  } else if (type === 'imp') {
+    for (const x of [-.1, .1]) { const h = add(new THREE.ConeGeometry(.04, .16, 4), M(0xd8ccb0), x, 1.94, 0, 'head'); h.rotation.z = -x * 3; }
+    add(new THREE.BoxGeometry(.18, .04, .02), new THREE.MeshBasicMaterial({ color: 0xffe040 }), 0, 1.76, .15, 'head');
+  } else if (type === 'guard') {
+    add(new THREE.BoxGeometry(.31, .06, .31), new THREE.MeshBasicMaterial({ color: 0xff5ab0 }), 0, 1.8, 0, 'head');
+    add(new THREE.BoxGeometry(.3, .05, .3), hair, 0, 1.89, 0, 'head');
+  } else add(new THREE.BoxGeometry(.3, .08, .3), hair, 0, 1.9, 0, 'head');
+  const limb = (w, h, mat, x, y, part) => { const pv = new THREE.Group(); pv.position.set(x, y, 0);
+    const m = new THREE.Mesh(new THREE.BoxGeometry(w * wide, h, w * wide), mat); m.position.y = -h / 2; m.userData.part = part; parts.push(m); pv.add(m); g.add(pv); return [pv, m]; };
+  const armX = .33 * wide;
+  const [armL] = limb(.13, .62, suit, -armX, 1.52, 'body'), [armR] = limb(.13, .62, suit, armX, 1.52, 'body');
+  const [legL, legLm] = limb(.19, .88, suit, -.13 * wide, .88, 'leg'), [legR, legRm] = limb(.19, .88, suit, .13 * wide, .88, 'leg');
+  const runner = type === 'fast';   // 飛毛腿：白色跑鞋加紅條紋，遠遠就認得出來
+  const shoeM = runner ? M(0xffffff, { emissive: 0x404040 }) : shoe;
+  [legLm, legRm].forEach(l => {
+    const s = new THREE.Mesh(runner ? new THREE.BoxGeometry(.27, .15, .4) : new THREE.BoxGeometry(.21, .1, .3), shoeM); s.position.set(0, runner ? -.82 : -.84, runner ? .07 : .05); s.userData.part = 'leg'; parts.push(s); l.add(s);
+    if (runner) { const st = new THREE.Mesh(new THREE.BoxGeometry(.28, .05, .3), M(0xe02020)); st.position.set(0, -.8, .07); l.add(st);
+      const sock = new THREE.Mesh(new THREE.BoxGeometry(.21, .12, .21), M(0xffffff, { emissive: 0x303030 })); sock.position.set(0, -.68, 0); l.add(sock); }
+  });
+  // 暗的關卡：把人稍微提亮，深色衣服的再多一點
+  if (T.glow) suit.emissive.setHex(T.glow);   // 魅魔：衣服自己會發亮
+  if (dark) { const lift = T.darkSuit ? 0x30303a : 0x1c1c1c;
+    g.traverse(o => { if (o.isMesh && o.material.emissive && !o.material.emissive.getHex()) o.material.emissive.setHex(lift); }); }
+  g.scale.setScalar(T.scale);
+  return { g, parts, legL, legR, armL, armR };
+}
+
+// ================= 犯人 =================
+function spawnPrisoner(type) {
+  const T = PTYPES[type];
+  const b = buildBody(type, map.dark);
+  // 翻牆地點：避開別人
+  let sx = 0;
+  for (let k = 0; k < 10; k++) { sx = rand(-75, 75); if (prisoners.every(p => p.state !== 'climb' || Math.abs(p.x - sx) > 12)) break; }
+  const p = {
+    id: 1000 + (++pCount) * 17 + Math.floor(Math.random() * 9), type, T, ...b,
+    sta: T.sta * hpMul, maxSta: T.sta * hpMul, legMul: 1, speedMul: 1, state: 'climb', t: 0, ct: 0, phase: 0, timer: 0,
+    x: sx, z: 1.05, path: [], i: 0, boost: 0, sprite: null, fall: 0, hidden: false,
+    smoke: Math.random() < (stage.smoke || 0) ? rand(-60, -150) : null,
+    abT: rand(4, 7), decoys: 0, shownHit: false, batDone: 0, shield: null,
+    wolf: type === 'werewolf' ? { dash: false, t: rand(3, 5) } : null, guards: [], charm: null, master: null,
+  };
+  p.parts.forEach(m => { addCollider(m, 'prisoner'); m.userData.p = p; });
+  // 繩子
+  const rope = new THREE.Mesh(new THREE.BoxGeometry(.08, WALL_H, .08), M(0x8a7a50)); rope.position.set(sx, WALL_H / 2, .75); scene.add(rope);
+  p.rope = rope;
+  p.g.position.set(p.x, 0, p.z); p.g.rotation.y = Math.PI; scene.add(p.g);
+  // 接應車
+  if (stage.cars && type !== 'brute' && type !== 'vampire') {
+    const c = map.carSlots.find(c => c.state === 'wait' && !c.reserved);
+    if (c && Math.random() < .5) { c.reserved = true; p.car = c; }
+  }
+  prisoners.push(p);
+  stats.spawned++;
+  radio(`警報！${p.id} 號（${T.name}）翻牆了！`);
+  return p;
+}
+function planPath(p) {
+  p.path = []; p.i = 0;
+  let ex, ez;
+  if (p.car) { ex = p.car.x + (p.car.dir < 0 ? 3 : -3); ez = p.car.z + 4.5; }
+  else { ex = clamp(p.x * 1.4 + rand(-70, 70), -150, 150); ez = ESCAPE_Z - 4; }
+  const steps = Math.max(2, Math.round((p.z - ez) / 40));
+  let pz = p.z;
+  for (let s = 1; s <= steps; s++) {
+    const f = s / steps; let wx = p.x + (ex - p.x) * f; const wz = p.z + (ez - p.z) * f;
+    if (s < steps) wx += rand(-18, 18);
+    const cover = map.placed.find(o => !o[3] && Math.hypot(o[0] - wx, o[1] - wz) < 18 && o[1] < pz - 8 && o[1] > ez + 10);
+    if (cover && s < steps && Math.random() < .55) { p.path.push({ x: cover[0] + rand(-1, 1), z: cover[1] - cover[2] - 1.8, wait: rand(1.2, 3) }); pz = cover[1]; }
+    else { p.path.push({ x: wx, z: wz }); pz = wz; }
+  }
+}
+function active(p) { return p.state !== 'down' && p.state !== 'escaped'; }
+// quiet：天雷這種持續傷害，不算命中次數、不出提示
+function hurtPrisoner(p, dmg, part, quiet) {
+  if (!active(p) || p.state === 'inCar' || p.hidden) return false;
+  if (p.wolf && p.wolf.dash) { if (!quiet) { showHit('衝刺中，打不到！'); SFX.miss(false); } return false; }
+  if (p.type === 'succubus' && p.guards.some(active)) {
+    if (!quiet) { showHit('護衛還在，傷不了她！'); SFX.ping(); }
+    puff(new THREE.Vector3(p.x, p.g.position.y + 2, p.z), 0xff6ad0, 1.2, .5); return false;
+  }
+  const d = dmg * PART_MUL[part];
+  p.sta -= d;
+  if (part === 'leg') p.legMul = Math.max(.4, p.legMul - .2);
+  if (!quiet) {
+    stats.hits++;
+    if (part === 'head') stats.heads++;
+    const quick = part === 'head' && itemId === 'quick';
+    if (quick) halfReload = true;
+    p.lastPart = part;
+    showHit(part === 'head' ? (quick ? '頭部命中！下次換彈減半' : '頭部命中！') : part === 'leg' ? '腿部命中（減速）' : '身體命中');
+    SFX.hit(part === 'head');
+    addSprite(p, 'star', 1.2);
+  }
+  if (p.state === 'show') p.shownHit = true;
+  if (p.type === 'slime' && !p.blob) toBlob(p);
+  if (p.sta <= 0) { if (quiet && !p.imp) stats.itemDowns++; knockDown(p); }
+  else if (p.state === 'run' || p.state === 'hide') { if (p.state === 'hide') p.g.scale.y = p.T.scale; p.state = 'stumble'; p.timer = .45; }
+  return true;
+}
+// 黏液人挨了一槍就失去人形，變成一團史萊姆（能力不變）
+function toBlob(p) {
+  p.g.children.forEach(c => { if (!p.sprite || c !== p.sprite.s) c.visible = false; });
+  const mat = M(0x6fd03a, { emissive: 0x143808 }), dk = M(0x2a5a14), b = new THREE.Group();
+  const parts = [];
+  const add = (geo, m, x, y, z, part) => { const o = new THREE.Mesh(geo, m); o.position.set(x, y, z); b.add(o); if (part) { o.userData.part = part; parts.push(o); } return o; };
+  add(new THREE.BoxGeometry(1, .5, .9), mat, 0, .25, 0, 'body');
+  add(new THREE.BoxGeometry(.72, .34, .66), mat, 0, .66, 0, 'body');
+  add(new THREE.BoxGeometry(.42, .26, .4), mat, 0, .94, 0, 'head');
+  for (const x of [-.12, .12]) add(new THREE.BoxGeometry(.09, .12, .04), dk, x, .96, .21, 'head');
+  for (let i = 0; i < 4; i++) add(new THREE.BoxGeometry(.16, .12, .16), M(0x9cff60), rand(-.45, .45), .06, rand(-.4, .4), 'leg');
+  p.g.add(b); p.blob = b;
+  removeColliders(c => c.userData.p === p);
+  p.parts = parts; parts.forEach(m => { addCollider(m, 'prisoner'); m.userData.p = p; });
+  for (let i = 0; i < 6; i++) puff(new THREE.Vector3(p.x + rand(-1.5, 1.5), p.g.position.y + rand(.5, 3), p.z + rand(-1.5, 1.5)), 0x8ef050, 1.4, .7);
+  SFX.thud(); radio(`${p.id} 號（黏液人）……整個人融化了！`);
+  firstSight('slime', ['什……什麼！？他的身體……融化了！？', '那團東西還在動……還在往森林爬！我、我真的沒看錯吧……']);
+}
+// 狼人第一次衝刺時現出原形：灰毛、拱背、長吻、尾巴
+function toWolf(p) {
+  p.g.children.forEach(c => { if (!p.sprite || c !== p.sprite.s) c.visible = false; });
+  const fur = M(0x8e8e96, map.dark ? { emissive: 0x2a2a30 } : undefined), dk = M(0x4e4e56), claw = M(0xe8e0c8);
+  const w = new THREE.Group(), parts = [];
+  const add = (geo, m, x, y, z, part, par = w) => { const o = new THREE.Mesh(geo, m); o.position.set(x, y, z); par.add(o); if (part) { o.userData.part = part; parts.push(o); } return o; };
+  add(new THREE.BoxGeometry(.64, .7, .42), fur, 0, 1.2, 0, 'body').rotation.x = .3;
+  add(new THREE.BoxGeometry(.5, .3, .2), M(0xb4b4ba), 0, 1.36, .2, 'body');
+  add(new THREE.BoxGeometry(.32, .3, .32), fur, 0, 1.66, .16, 'head');
+  add(new THREE.BoxGeometry(.17, .14, .26), fur, 0, 1.6, .42, 'head');
+  add(new THREE.BoxGeometry(.08, .06, .06), dk, 0, 1.63, .56, 'head');
+  for (const x of [-.1, .1]) {
+    add(new THREE.ConeGeometry(.06, .2, 4), fur, x, 1.88, .1, 'head');
+    add(new THREE.BoxGeometry(.06, .04, .02), new THREE.MeshBasicMaterial({ color: 0xffe040 }), x, 1.71, .33, null);
+  }
+  add(new THREE.BoxGeometry(.14, .14, .55), fur, 0, .98, -.36, null).rotation.x = .9;
+  const limb = (wd, h, m, x, y, part) => { const pv = new THREE.Group(); pv.position.set(x, y, 0);
+    const o = new THREE.Mesh(new THREE.BoxGeometry(wd, h, wd), m); o.position.y = -h / 2; o.userData.part = part; parts.push(o); pv.add(o); w.add(pv); return [pv, o]; };
+  const [aL, aLm] = limb(.15, .78, fur, -.38, 1.48, 'body'), [aR, aRm] = limb(.15, .78, fur, .38, 1.48, 'body');
+  [aLm, aRm].forEach(a => { const c = new THREE.Mesh(new THREE.BoxGeometry(.18, .1, .12), claw); c.position.set(0, -.42, .06); a.add(c); });
+  const [lL, lLm] = limb(.2, .88, fur, -.15, .88, 'leg'), [lR, lRm] = limb(.2, .88, fur, .15, .88, 'leg');
+  [lLm, lRm].forEach(l => { const f = new THREE.Mesh(new THREE.BoxGeometry(.22, .1, .34), dk); f.position.set(0, -.84, .08); f.userData.part = 'leg'; parts.push(f); l.add(f); });
+  p.g.add(w); p.wolfForm = w;
+  p.legL = lL; p.legR = lR; p.armL = aL; p.armR = aR;
+  removeColliders(c => c.userData.p === p);
+  p.parts = parts; parts.forEach(m => { addCollider(m, 'prisoner'); m.userData.p = p; });
+  for (let i = 0; i < 5; i++) puff(new THREE.Vector3(p.x + rand(-1, 1), p.g.position.y + rand(1, 3.5), p.z + rand(-1, 1)), 0x9a9aa0, 1.4, .6);
+  radio(`${p.id} 號（狼人）……現出原形了！`);
+}
+function knockDown(p) {
+  p.sta = 0; p.state = 'down'; p.fall = 0; p.g.scale.setScalar(p.T.scale); p.g.visible = true;
+  SFX.down(); SFX.thud();
+  if (p.imp) { onImpDown(p); }
+  else {
+    stats.downed++;
+    const left = p.z - ESCAPE_Z;
+    stats.downs.push({ left, fromWall: -p.z });
+    let sc = 100 + stats.downed, cap = `${p.id} 號（${p.T.name}）`;
+    if (p.lastPart === 'head') { sc = 300; cap += '・頭部命中'; }
+    if (left < 60) sc = 500 + (60 - left);
+    requestPhoto(sc, `${cap}・距森林 ${Math.max(0, Math.round(left))}m`, () => new THREE.Vector3(p.x, p.g.position.y + p.T.scale * .55, p.z), p.T.scale * 2.6, .45);
+  }
+  if (p.tramp) { scene.remove(p.tramp); p.tramp = null; }
+  if (p.shield) dropShield(p);
+  if (p.rope) { scene.remove(p.rope); p.rope = null; }
+  if (p.wolf) p.wolf.dash = false;
+  if (itemId === 'zombie' && !p.zDone && Math.random() < .35) { p.zDone = true; p.zRise = 1.4; }
+  if (!p.imp) radio(`${p.id} 號（${p.T.name}）已被制伏。` + (learn(p.type) ? '典獄長在犯人檔案補了幾句。' : ''));
+  if (p.type === 'slime') {
+    splat();
+    const pud = new THREE.Mesh(new THREE.CylinderGeometry(2.2, 2.2, .05, 8), M(0x7fdc40)); pud.position.set(p.x, heightAt(p.x, p.z) + .05, p.z); scene.add(pud);
+  }
+}
+function addSprite(p, kind, life) {
+  if (p.sprite) p.g.remove(p.sprite.s);
+  const s = new THREE.Sprite(SPR[kind]); s.scale.set(.5, .5, 1); s.position.set(0, 2.25, 0); p.g.add(s);
+  p.sprite = { s, life, kind };
+}
+function setLimbs(p, l, r, al, ar) { p.legL.rotation.x = l; p.legR.rotation.x = r; p.armL.rotation.x = al; p.armR.rotation.x = ar; }
+function updatePrisoner(p, dt) {
+  p.t += dt;
+  if (p.blob && p.state !== 'down') { const w = Math.sin(p.t * 9) * .12; p.blob.scale.set(1 - w * .6, 1 + w, 1 - w * .6); }
+  if (p.sprite) {
+    p.sprite.life -= dt;
+    if (p.sprite.kind === 'z') { const k = (p.t * .8) % 1; p.sprite.s.position.set(.3 + k * .5, .6 + k * 1.2, 0); p.sprite.s.material.opacity = 1 - k; }
+    else p.sprite.s.position.y = 2.25 + Math.sin(p.t * 8) * .06;
+    if (p.sprite.life <= 0) { p.g.remove(p.sprite.s); p.sprite = null; if (p.state === 'down') addSprite(p, 'z', 999); }
+  }
+  if (p.shield) updateShield(p, dt);
+  if (p.zombie > 0) return updateZombie(p, dt);
+  if (p.state === 'down') {
+    p.fall = Math.min(1, p.fall + dt * 2.2);
+    p.g.rotation.x = p.fall * Math.PI / 2 * .98; p.g.rotation.z = 0;
+    const gy = p.z > 0 ? 0 : heightAt(p.x, p.z);
+    p.g.position.y += (gy + .15 * p.T.scale * p.fall - p.g.position.y) * Math.min(1, dt * 8);
+    setLimbs(p, 0, 0, -2.6 * p.fall, -2.6 * p.fall);
+    if (p.zRise > 0) { p.zRise -= dt; if (p.zRise <= 0) becomeZombie(p); }
+    return;
+  }
+  if (p.state === 'escaped' || p.state === 'inCar') return;
+  // 翻牆：爬繩 → 翻過 → 跳下
+  if (p.state === 'climb') {
+    p.ct += dt; const c = p.ct;
+    if (c < 1.7) { p.g.position.set(p.x, (c / 1.7) * (WALL_H - .3), 1.05); const s = Math.sin(c * 10); setLimbs(p, s * .5, -s * .5, -2.8 + s * .4, -2.8 - s * .4); }
+    else if (c < 2.1) { const k = (c - 1.7) / .4; p.z = 1.05 - k * 2.3; p.g.position.set(p.x, WALL_H - .3 + Math.sin(k * Math.PI) * .8, p.z); setLimbs(p, -.8, -.8, -1.5, -1.5); }
+    else if (c < 2.55) { const k = (c - 2.1) / .45; p.z = -1.25 - k * 1.6; p.g.position.set(p.x, (WALL_H - .3) * (1 - k * k), p.z); setLimbs(p, .4, -.4, -2, -2); }
+    else { p.state = 'run'; p.g.position.y = 0; if (p.rope) { const r = p.rope; setTimeout(() => scene.remove(r), 3000); p.rope = null; } planPath(p); }
+    return;
+  }
+  if (p.state === 'stumble') {
+    p.timer -= dt; p.g.rotation.z = Math.sin(p.timer * 30) * .2;
+    if (p.timer <= 0) { p.g.rotation.z = 0; p.state = 'run'; }
+    return;
+  }
+  if (p.state === 'hide') {
+    p.timer -= dt; p.g.scale.y = p.T.scale * .62; setLimbs(p, .5, .5, -.3, -.3);
+    if (p.timer <= 0) { p.g.scale.y = p.T.scale; p.state = 'run'; p.i++; }
+    return;
+  }
+  if (p.state === 'show') return updateShow(p, dt);
+  if (p.state === 'pray') {
+    p.timer -= dt; setLimbs(p, 0, 0, -3, -3);
+    if (p.timer <= 0) { healAround(p); p.state = 'run'; }
+    return;
+  }
+  if (p.state === 'bats') return updateBatPhase(p, dt);
+  if (p.state === 'charm') {
+    p.timer -= dt; setLimbs(p, 0, 0, -2.6, -2.6); p.g.rotation.x = 0; p.g.rotation.y += dt * 3;
+    if (Math.random() < dt * 8) puff(new THREE.Vector3(p.x + rand(-2, 2), p.g.position.y + rand(1, 4), p.z), 0xff6ad0, .8, .8);
+    if (p.timer <= 0) p.state = 'run';
+    return;
+  }
+  // 惡魔兵：排成隊跟在惡魔腳邊
+  if (p.escort) {
+    if (!boss) return;
+    const tx = boss.x + p.escort.ox, tz = boss.z + p.escort.oz, d = Math.hypot(tx - p.x, tz - p.z);
+    walk(p, tx, tz, d < .3 ? 0 : Math.min(8, Math.max(1.8, d * 1.5)) * p.legMul, dt);
+    return;
+  }
+  // 被魅魔迷住：往她身邊跑，靠近就變成護衛
+  if (p.charm) {
+    const s = p.charm;
+    if (!active(s) || s.hidden || s.state === 'inCar') { p.charm = null; planPath(p); }
+    else { if (walk(p, s.x, s.z + 2, p.T.speed * 1.4 * p.legMul * zombieSlow(p), dt) < 4) convertGuard(p, s); return; }
+  }
+  // 護衛：跟在魅魔前面
+  if (p.master) {
+    const s = p.master;
+    if (!active(s) || s.state === 'inCar') { p.master = null; planPath(p); radio(`${p.id} 號（護衛）醒過來，自己往森林跑了！`); }
+    else {
+      const tx = s.x + (p.slot ? 3.2 : -3.2), tz = s.z + 3.5, d = Math.hypot(tx - p.x, tz - p.z);
+      walk(p, tx, tz, d < .3 ? 0 : Math.min(10, Math.max(s.T.speed, d * 1.6)) * p.legMul, dt);
+      return;
+    }
+  }
+
+  // ---- 特殊能力 ----
+  if (p.smoke !== null && p.z < p.smoke) { spawnSmoke(p.x + rand(-1.5, 1.5), p.z + 5); radio(`${p.id} 號丟出煙霧彈！`); p.smoke = null; }
+  p.abT -= dt;
+  if (p.z < -18 && p.z > ESCAPE_Z + 30 && p.abT <= 0) {
+    if (p.type === 'fraud' && p.decoys < (abilityF < 1 ? 2 : 3)) {
+      p.decoys++; p.abT = rand(5, 7);
+      spawnDecoy(p); p.boost = 2.5;
+      p.path.splice(p.i, 0, { x: clamp(p.x + (Math.random() < .5 ? -1 : 1) * rand(16, 26), -150, 150), z: p.z - 14 });
+      stats.abil++; radio(`${p.id} 號（詐欺犯）立起了人形立牌！`); return;
+    }
+    if (p.type === 'clown') { p.abT = rand(10, 13); startShow(p); return; }
+    if (p.type === 'priest') { p.abT = rand(7, 9); p.state = 'pray'; p.timer = 1.2; return; }
+    if (p.type === 'psychic') { p.abT = rand(10, 12); raiseShield(p); }
+    if (p.type === 'vampire' && p.batDone < 2 && p.z < -45 - p.batDone * 80) { p.batDone++; p.abT = 3; startBats(p); return; }
+    if (p.type === 'succubus' && p.guards.filter(active).length < 2 && charmNearby(p)) return;
+  }
+
+  const wp = p.path[p.i];
+  if (!wp) {
+    if (p.car) { p.state = 'inCar'; p.g.visible = false; boardCar(p.car, p); }
+    else p.state = 'escaped';
+    return;
+  }
+  const dist = Math.hypot(wp.x - p.x, wp.z - p.z);
+  if (dist < .6) { if (wp.wait) { if (p.wolf) p.wolf.dash = false; p.state = 'hide'; p.timer = wp.wait; wp.wait = 0; } else p.i++; return; }
+  if (p.boost > 0) p.boost -= dt;
+  // 狼人：走一段 → 衝刺一段
+  let wolfMul = 1;
+  if (p.wolf && p.z < -8) {
+    const w = p.wolf; w.t -= dt;
+    if (w.t <= 0) {
+      w.dash = !w.dash; w.t = w.dash ? 1.4 * abilityF : rand(4, 6);
+      if (w.dash) { SFX.howl(); if (!p.wolfForm) toWolf(p); if (!w.told) { w.told = true; radio(`${p.id} 號（狼人）變身衝刺！等他停下來再打！`); } }
+    }
+    if (w.dash) { wolfMul = 12 / p.T.speed; w.dust = (w.dust || 0) - dt;
+      if (w.dust <= 0) { w.dust = .12; puff(new THREE.Vector3(p.x, heightAt(p.x, p.z) + .5, p.z), 0x8a7a5a, 1.2, .6); } }
+  }
+  const tired = p.sta < p.maxSta * .5 ? .8 : 1;
+  const sp = p.T.speed * p.legMul * p.speedMul * tired * wolfMul * zombieSlow(p) * (p.boost > 0 ? 1.35 : 1) * (p.shield ? .6 : 1);
+  walk(p, wp.x, wp.z, sp, dt);
+  if (p.wolf && p.wolf.dash) p.g.rotation.x = .5;
+  if (p.z <= ESCAPE_Z) p.state = 'escaped';
+}
+// 朝目標走一步（含走路動作），回傳剩下的距離
+function walk(p, tx, tz, sp, dt) {
+  const dx = tx - p.x, dz = tz - p.z, dist = Math.hypot(dx, dz);
+  const st = Math.min(dist, sp * dt);
+  if (st > 1e-4) { p.x += dx / dist * st; p.z += dz / dist * st; p.g.rotation.y = Math.atan2(dx, dz); p.phase += sp / p.T.scale * dt * 2.1; }
+  p.g.position.set(p.x, heightAt(p.x, p.z), p.z);
+  const sw = st > 1e-4 ? Math.sin(p.phase) * clamp(sp / 5, .5, 1) * .9 : 0;
+  setLimbs(p, sw, -sw, -sw * .9, sw * .9);
+  p.g.rotation.x = st > 1e-4 ? .12 : 0; p.g.position.y += Math.abs(Math.sin(p.phase)) * .08 * p.T.scale * (st > 1e-4 ? 1 : 0);
+  return dist - st;
+}
+// 魅魔：迷住附近的人
+function charmNearby(s) {
+  const R = 30 * abilityF, room = 2 - s.guards.filter(active).length - prisoners.filter(q => q.charm === s && active(q)).length;
+  const cand = prisoners.filter(q => q !== s && active(q) && !q.hidden && !q.charm && !q.master && q.type !== 'succubus' && q.type !== 'guard'
+      && (q.state === 'run' || q.state === 'hide' || q.state === 'stumble') && Math.hypot(q.x - s.x, q.z - s.z) < R)
+    .sort((a, b) => Math.hypot(a.x - s.x, a.z - s.z) - Math.hypot(b.x - s.x, b.z - s.z)).slice(0, Math.max(0, room));
+  if (!cand.length) { s.abT = 2.5; return false; }
+  s.abT = rand(9, 11); s.state = 'charm'; s.timer = 1.6; SFX.charm();
+  cand.forEach(q => { q.charm = s; if (q.state === 'hide') { q.g.scale.y = q.T.scale; q.state = 'run'; } if (q.wolf) q.wolf.dash = false; addSprite(q, 'heart', 3); });
+  radio(`${s.id} 號（魅魔）迷住了 ${cand.length} 個人！他們往她身邊跑過去了！`);
+  return true;
+}
+function convertGuard(q, s) {
+  scene.remove(q.g); removeColliders(c => c.userData.p === q);
+  if (q.shield) dropShield(q);
+  if (q.car) { q.car.reserved = false; q.car = null; }
+  const b = buildBody('guard', map.dark);
+  Object.assign(q, b);
+  q.type = 'guard'; q.T = PTYPES.guard; q.maxSta = q.sta = PTYPES.guard.sta * hpMul;
+  q.charm = null; q.master = s; q.slot = s.guards.filter(active).length % 2; q.wolf = null; q.smoke = null; q.sprite = null;
+  q.legMul = 1; q.speedMul = 1; q.boost = 0; q.state = 'run';
+  q.parts.forEach(m => { addCollider(m, 'prisoner'); m.userData.p = q; });
+  q.g.position.set(q.x, heightAt(q.x, q.z), q.z); scene.add(q.g);
+  s.guards.push(q); stats.abil++;
+  puff(new THREE.Vector3(q.x, 3, q.z), 0xff6ad0, 4, 1); SFX.charm();
+  radio(`${q.id} 號變成魅魔的護衛了！先打倒護衛！`);
+}
+
+// 小丑：彈簧床表演
+function startShow(p) {
+  p.state = 'show'; p.timer = 6; p.shownHit = false;
+  const t = new THREE.Group();
+  const bed = new THREE.Mesh(new THREE.CylinderGeometry(1.6, 1.6, .15, 10), M(0x2050d0)); bed.position.y = .7; t.add(bed);
+  for (let i = 0; i < 4; i++) { const l = new THREE.Mesh(new THREE.BoxGeometry(.1, .7, .1), M(0x333333)); l.position.set(Math.cos(i * 1.57) * 1.4, .35, Math.sin(i * 1.57) * 1.4); t.add(l); }
+  t.position.set(p.x, heightAt(p.x, p.z), p.z); scene.add(t); p.tramp = t;
+  radio(`${p.id} 號（小丑）開始表演！趁現在打他！`);
+}
+function updateShow(p, dt) {
+  p.timer -= dt;
+  const k = (6 - p.timer) / 1.2 % 1;
+  const base = heightAt(p.x, p.z) + .8;
+  p.g.position.y = base + Math.sin(k * Math.PI) * 5;
+  p.g.rotation.x = 0; p.g.rotation.y += dt * 6;
+  if (k < .05 && !p.boinged) { SFX.boing(); p.boinged = true; } if (k > .5) p.boinged = false;
+  setLimbs(p, .3, -.3, -2.8, -2.8);
+  if (p.timer <= 0) {
+    scene.remove(p.tramp); p.tramp = null; p.state = 'run';
+    if (!p.shownHit) { p.speedMul = Math.min(1.8, p.speedMul * (1 + .3 * abilityF)); addSprite(p, 'up', 2); radio(`${p.id} 號（小丑）表演成功，越跑越快了！`); stats.abil++; }
+  }
+}
+// 牧師：回復
+function healAround(p) {
+  stats.abil++;
+  SFX.heal();
+  for (const q of prisoners) if (active(q) && q.state !== 'inCar' && !q.hidden && Math.hypot(q.x - p.x, q.z - p.z) < 16) {
+    q.sta = Math.min(q.maxSta, q.sta + 30 * abilityF); addSprite(q, 'plus', 1.4);
+  }
+  radio(`${p.id} 號（牧師）禱告，附近犯人回復耐力！`);
+}
+// 超能力者：護盾
+function raiseShield(p) {
+  const m = new THREE.Mesh(new THREE.IcosahedronGeometry(9, 1), new THREE.MeshLambertMaterial({ color: 0x60c8ff, transparent: true, opacity: .32, flatShading: true, emissive: 0x103050 }));
+  m.position.set(p.x, heightAt(p.x, p.z) + 1.5, p.z); scene.add(m);
+  addCollider(m, 'shield');
+  p.shield = { m, t: 4.5 * abilityF }; SFX.shield();
+  radio(`${p.id} 號（超能力者）張開護盾！`);
+}
+function updateShield(p, dt) {
+  const s = p.shield; s.t -= dt;
+  s.m.position.set(p.x, heightAt(p.x, p.z) + 1.5, p.z); s.m.rotation.y += dt;
+  s.m.material.opacity = .25 + Math.sin(p.t * 8) * .07;
+  if (s.t <= 0) dropShield(p);
+}
+function dropShield(p) { scene.remove(p.shield.m); removeColliders(c => c === p.shield.m); p.shield = null; }
+// 吸血鬼：蝙蝠
+function startBats(p) {
+  p.state = 'bats'; p.hidden = true; p.g.visible = false; p.batT = 9; p.myBats = [];
+  puff(new THREE.Vector3(p.x, 2, p.z), 0x301020, 3, 1);
+  const n = (GUNS[gunIdx].id === 'lx9' ? 2 : 3) - (abilityF < 1 ? 1 : 0);   // 雷射只有兩發，蝙蝠少一隻；干擾電波再少一隻
+  for (let i = 0; i < n; i++) {
+    const a = rand(0, Math.PI * 2), r = rand(6, 14);
+    const bx = clamp(p.x + Math.cos(a) * r, -150, 150), bz = p.z + Math.sin(a) * r * .6;
+    const g = new THREE.Group();
+    const body = new THREE.Mesh(new THREE.BoxGeometry(.5, .5, .4), M(0x201018, map.dark ? { emissive: 0x3a1020 } : {})); g.add(body);
+    const eye = new THREE.Mesh(new THREE.BoxGeometry(.3, .08, .05), new THREE.MeshBasicMaterial({ color: 0xff2020 })); eye.position.set(0, .08, .21); g.add(eye);
+    const wl = new THREE.Group(), wr = new THREE.Group();
+    const wingL = new THREE.Mesh(new THREE.BoxGeometry(1, .06, .5), M(0x301824)); wingL.position.x = -.5; wl.add(wingL);
+    const wingR = new THREE.Mesh(new THREE.BoxGeometry(1, .06, .5), M(0x301824)); wingR.position.x = .5; wr.add(wingR);
+    wl.position.x = -.25; wr.position.x = .25; g.add(wl); g.add(wr);
+    g.scale.setScalar(1.6);
+    const by = heightAt(bx, bz) + rand(2.5, 5);
+    g.position.set(bx, by, bz); scene.add(g);
+    const bat = { g, wl, wr, y: by, x: bx, z: bz, dead: false, t: rand(0, 6), fall: 0, owner: p };
+    [body, wingL, wingR].forEach(m => { addCollider(m, 'bat'); m.userData.bat = bat; });
+    bats.push(bat); p.myBats.push(bat);
+  }
+  SFX.bat();
+  radio(`${p.id} 號（吸血鬼）化成蝙蝠！${p.batT} 秒內打光蝙蝠！`);
+  firstSight('vampire', ['那、那個人……整個散開，變成了一群蝙蝠！？', '臉色蒼白、從不在白天放風的那一個……原來不是我多疑。他真的不是人類。']);
+}
+function updateBatPhase(p, dt) {
+  p.batT -= dt;
+  const alive = p.myBats.filter(b => !b.dead);
+  if (!alive.length || p.batT <= 0) {
+    let nz, dazed = false;
+    if (!alive.length) { nz = p.z; dazed = true; radio(`蝙蝠全滅，${p.id} 號（吸血鬼）在原地昏過去了！快打！`); }
+    else { nz = Math.max(ESCAPE_Z + 20, p.z - 40 * abilityF); radio(`來不及！${p.id} 號（吸血鬼）往前瞬移了一大段！`); stats.abil++;
+      alive.forEach(b => { b.dead = true; b.fall = 1; scene.remove(b.g); removeColliders(c => c.userData.bat === b); }); }
+    if (!dazed) p.x = clamp(p.x + rand(-15, 15), -150, 150);
+    p.z = nz;
+    p.hidden = false; p.g.visible = true; p.state = 'run';
+    p.g.position.set(p.x, heightAt(p.x, p.z), p.z);
+    puff(new THREE.Vector3(p.x, 2, p.z), 0x301020, 3, 1);
+    planPath(p);
+    if (dazed) { p.state = 'stumble'; p.timer = 2.8; addSprite(p, 'star', 2.8); }
+  }
+}
+function updateBats(dt) {
+  for (const b of bats) {
+    b.t += dt;
+    if (!b.dead) {
+      const f = Math.sin(b.t * 18) * .8; b.wl.rotation.z = f; b.wr.rotation.z = -f;
+      b.g.position.y = b.y + Math.sin(b.t * 3) * .3;
+      b.g.lookAt(EYE.x, b.g.position.y, EYE.z);
+    } else if (b.fall < 1) {
+      b.fall += dt; b.g.position.y = b.y - b.fall * b.y; b.g.rotation.z += dt * 10;
+      if (b.fall >= 1) scene.remove(b.g);
+    }
+  }
+  bats = bats.filter(b => !(b.dead && b.fall >= 1));
+}
+
+// ================= 煙霧、立牌、車、爆炸、黏液 =================
+function spawnSmoke(x, z) {
+  const g = new THREE.Group(); const balls = [];
+  for (let i = 0; i < 10; i++) {
+    const m = new THREE.Mesh(new THREE.IcosahedronGeometry(1, 0), new THREE.MeshLambertMaterial({ color: 0xb8b8b0, transparent: true, opacity: .92, flatShading: true }));
+    m.position.set(rand(-4.5, 4.5), rand(1, 4.5), rand(-3, 3)); g.add(m); balls.push(m); addCollider(m, 'smoke');
+  }
+  g.position.set(x, heightAt(x, z), z); scene.add(g);
+  smokes.push({ g, balls, t: 0, life: 10 * abilityF }); SFX.miss(false);
+}
+function spawnDecoy(p) {
+  const b = buildBody(p.type, map.dark);
+  b.g.position.set(p.x, heightAt(p.x, p.z), p.z); b.g.rotation.y = p.g.rotation.y + rand(-.5, .5);
+  b.legL.rotation.x = .4; b.legR.rotation.x = -.4; b.armL.rotation.x = -.4; b.armR.rotation.x = .4;
+  // 人形立牌：身體做成扁平
+  b.g.children.forEach(c => { if (c.isMesh) c.scale.z = .15; else c.children.forEach(m => m.scale.z = .15); });
+  const stand = new THREE.Mesh(new THREE.BoxGeometry(.06, .6, .5), M(0x6b5a40)); stand.position.set(0, .3, -.25); b.g.add(stand);
+  scene.add(b.g);
+  const d = { g: b.g, fallen: false, f: 0 };
+  b.parts.forEach(m => { addCollider(m, 'decoy'); m.userData.decoy = d; });
+  decoys.push(d);
+}
+function boardCar(car, p) {
+  car.driver = p; car.state = 'drive';
+  car.maxHp = car.hp = Math.round(40 + p.sta * 1.6);   // 上車前打得越少，車越耐打
+  SFX.engine();
+  radio(p.sta > p.maxSta * .5 ? `${p.id} 號上車了！車子很難攔，快打！` : `${p.id} 號帶傷上車，車子撐不久！`);
+}
+function updateCar(c, dt) {
+  c.t += dt;
+  if (c.state === 'wait') { c.g.position.y = Math.sin(c.t * 40) * .02; return; }
+  if (c.state === 'drive') {
+    c.v = Math.min(c.v + 7 * dt, 21);
+    c.x += c.dir * c.v * dt; c.g.position.x = c.x;
+    c.wheels.forEach(w => w.rotation.x += c.v * dt * 2);
+    if (Math.abs(c.x) > 200) { c.state = 'gone'; c.driver.state = 'escaped'; }
+  }
+  if (c.state === 'stopped') {
+    c.v = Math.max(0, c.v - 18 * dt); c.x += c.dir * c.v * dt; c.g.position.x = c.x;
+    c.smokeT -= dt;
+    if (c.smokeT <= 0) { c.smokeT = .15; puff(new THREE.Vector3(c.x, 3, c.z), 0x333333, 1.6, 1.4); }
+  }
+}
+function hitCar(c, dmg, quiet) {
+  if (c.state !== 'drive') { if (c.state === 'wait' && !quiet) showHit('打到空車'); return false; }
+  c.hp -= dmg; if (!quiet) { stats.hits++; showHit('命中車輛'); SFX.hit(); }
+  if (c.hp <= 0) {
+    c.state = 'stopped'; const p = c.driver;
+    p.x = c.x; p.z = c.z + 4; p.g.position.set(p.x, 0, p.z); knockDown(p);
+    radio(`車子停下來了，${p.id} 號被制伏。`);
+  }
+  return true;
+}
+function explosion(x, z) {
+  const m = new THREE.Mesh(new THREE.IcosahedronGeometry(1, 0), new THREE.MeshBasicMaterial({ color: 0xffb040, transparent: true }));
+  m.position.set(x, 2, z); scene.add(m); fx.push({ m, t: 0, life: .9, kind: 'boom' });
+  SFX.boom(); shake = 1; spawnSmoke(x, z - 2); radio('爆炸！有人在製造混亂！');
+}
+function splat() {
+  if (itemId === 'xray') { SFX.splat(); showHit('黏液濺在外層鏡片上，熱像不受影響'); return; }
+  splatT = 4.5 * abilityF; scoped = false; SFX.splat();
+  let html = '';
+  for (let i = 0; i < 9; i++) {
+    const s = rand(14, 34);
+    html += `<div style="position:absolute;left:${rand(-5, 85)}%;top:${rand(-5, 80)}%;width:${s}%;height:${s * 1.2}%;border-radius:${rand(40, 60)}% ${rand(40, 60)}% ${rand(40, 60)}% ${rand(40, 60)}%;background:radial-gradient(circle at 35% 35%, rgba(190,255,140,.9), rgba(80,170,40,.85) 55%, rgba(40,110,20,.75));"></div>`;
+  }
+  $('splat').innerHTML = html;
+  radio('黏液濺到鏡頭了！暫時不能開鏡！');
+}
+
+// ================= 射擊 =================
+function fire() {
+  const gun = GUNS[gunIdx];
+  if (reloading > 0 || cool > 0) return;
+  if (mag <= 0) { SFX.empty(); startReload(); return; }
+  mag--; cool = gun.bolt; stats.shots++; shotCount++;
+  SFX.shot(gun);
+  camera.updateMatrixWorld();
+  const sid = ++shotId, spreadMul = scoped ? 1 : 1.6;
+  const origin = camera.getWorldPosition(new THREE.Vector3());
+  const aim = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion);
+  const shot = { sid, gun, mul: itemId === 'rhythm' ? combo : 1, hit: false, hitIds: new Set() };
+  const locked = itemId === 'lock' && shotCount % 5 === 0 ? lockTarget(origin, aim, Math.max(gun.spread * spreadMul, scoped ? 1.5 : 3)) : null;
+  if (locked) lockShot(origin, locked, gun, shot);
+  else for (let k = 0; k < gun.pellets; k++) {
+    const a = Math.random() * Math.PI * 2, r = Math.sqrt(Math.random()) * gun.spread * spreadMul * D2R;
+    const dir = new THREE.Vector3(Math.cos(a) * Math.tan(r), Math.sin(a) * Math.tan(r), -1).normalize().applyQuaternion(camera.quaternion);
+    if (gun.id === 'lx9') laser(origin, dir, gun, shot);
+    else hitscan(origin, dir, gun, shot);
+  }
+  if (itemId === 'rhythm') combo = shot.hit ? Math.min(1.25, combo + .25) : .75;
+  recoil += gun.kick * D2R * (scoped ? 1 : .6);
+  if (gunModel) gunModel.position.z = -.45;
+  if (gun.bolt >= .5) setTimeout(() => state === 'play' && SFX.bolt(), 50);
+  if (mag <= 0) setTimeout(() => state === 'play' && startReload(), gun.bolt * 1000 * .6);
+}
+function startReload() {
+  const gun = GUNS[gunIdx];
+  if (reloading > 0 || mag === gun.mag) return;
+  reloadTotal = gun.reload * (halfReload ? .5 : 1);
+  if (halfReload) { halfReload = false; showHit('快拔換彈！'); }
+  reloading = reloadTotal; SFX.reload();
+}
+function makeTracer() {
+  const geo = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(), new THREE.Vector3()]);
+  const l = new THREE.Line(geo, new THREE.LineBasicMaterial({ color: 0xfff2b0, transparent: true, opacity: .7 }));
+  scene.add(l); return l;
+}
+function castSegment(origin, dir, far, skipSmoke) {
+  ray.set(origin, dir); ray.far = far;
+  const hits = ray.intersectObjects(colliders, false);
+  for (const h of hits) {
+    const u = h.object.userData, k = u.kind;
+    if (k === 'smoke' && (skipSmoke || xrayOn || h.object.material.opacity < .35)) continue;
+    if (k === 'decoy' && u.decoy.fallen) continue;
+    if (k === 'bat' && u.bat.dead) continue;
+    if (k === 'prisoner' && (u.p.hidden || u.p.state === 'inCar' || u.p.state === 'escaped')) continue;
+    if (k === 'orn' && (u.orn.hp <= 0 || u.orn.off)) continue;
+    return h;
+  }
+  return null;
+}
+const multiHits = {};   // 散彈：同一發打中同一人的次數
+function resolveHit(h, dmg, shot, dist) {
+  const u = h.object.userData, k = u.kind, pt = h.point;
+  const gun = shot.gun;
+  dmg *= shot.mul || 1;   // 節拍器
+  if (gun.blast) { grenadeBlast(pt, gun, shot, dmg); return; }
+  if (gun.pellets > 1) dmg *= clamp(1 - (dist - 70) / 260, .55, 1);   // 散彈遠距離衰減
+  if (k === 'prisoner') {
+    const p = u.p;
+    if (gun.multi) { const key = shot.sid + ':' + p.id; const n = multiHits[key] || 0; multiHits[key] = n + 1; dmg *= 1 + gun.multi * n; }
+    if (hurtPrisoner(p, dmg, u.part)) { shot.hit = true; shot.hitIds.add(p.id); }
+    return;
+  }
+  if (k === 'car') { if (hitCar(u.car, dmg)) shot.hit = true; puff(pt, 0xffe080, .6, .3); return; }
+  if (k === 'bat') { const b = u.bat; b.dead = true; b.fall = 0; removeColliders(c => c.userData.bat === b); SFX.bat(); showHit('擊落蝙蝠'); stats.hits++; shot.hit = true; return; }
+  if (k === 'orn' || k === 'gem' || k === 'demon') { if (hitBoss(k, u, dmg, pt)) shot.hit = true; return; }
+  if (k === 'orb') { hitOrb(dmg, pt); shot.hit = true; return; }
+  if (k === 'decoy') { u.decoy.fallen = true; showHit('是人形立牌！'); SFX.thud(); return; }
+  if (k === 'sheep') { u.sheep.panic = 4; SFX.baa(); showHit('打到羊了…'); stats.sheep++; return; }
+  if (k === 'shield') { puff(pt, 0x80e0ff, .8, .4); SFX.ping(); showHit('被護盾擋下'); return; }
+  if (k === 'smoke') return;
+  const col = k === 'ground' ? 0x8a7a5a : k === 'bush' || k === 'tree' ? 0x3f5a2a : k === 'truck' ? 0xffe080 : 0x9a948a;
+  puff(pt, col, .7, .5);
+  SFX.miss(pt.distanceTo(EYE) < 60);
+}
+// 榴彈：落點炸開麻醉氣，範圍內依距離給傷害；在護盾外炸開時，護盾裡的人不受影響
+function grenadeBlast(pt, gun, shot, dmg) {
+  const R = gun.blast;
+  const m = new THREE.Mesh(new THREE.IcosahedronGeometry(1, 0), new THREE.MeshBasicMaterial({ color: 0xc8ff90, transparent: true, opacity: .8 }));
+  m.position.copy(pt); scene.add(m); fx.push({ m, t: 0, life: .5, kind: 'blast', r: R });
+  for (let i = 0; i < 5; i++) puff(pt.clone().add(new THREE.Vector3(rand(-2, 2), rand(0, 1.5), rand(-2, 2))), 0xd8e8c8, 2.2, 1.6);
+  noise(.6, 500, .7); tone('sine', 90, 35, .5, .5);
+  if (pt.distanceTo(EYE) < 40) shake = .4;
+  const shields = prisoners.filter(q => q.shield).map(q => q.shield.m.position), d0 = stats.downed;
+  const shielded = v => shields.some(c => c.distanceTo(v) < 9 && c.distanceTo(pt) > 9);
+  let n = 0;
+  for (const p of prisoners) {
+    if (!active(p) || p.hidden || p.state === 'inCar') continue;
+    const c = new THREE.Vector3(p.x, p.g.position.y + .9 * p.T.scale, p.z);
+    const d = Math.max(0, c.distanceTo(pt) - .4 * p.T.scale);
+    if (d > R || shielded(c)) continue;
+    if (hurtPrisoner(p, dmg * (1 - .5 * d / R), 'body')) { n++; shot.hitIds.add(p.id); }
+  }
+  for (const car of cars) if (car.state === 'drive' && Math.hypot(car.x - pt.x, car.z - pt.z) < R + 3) { if (hitCar(car, dmg * .8)) n++; }
+  for (const b of bats) if (!b.dead && b.g.position.distanceTo(pt) < R + 1) { b.dead = true; b.fall = 0; removeColliders(c => c.userData.bat === b); SFX.bat(); stats.hits++; n++; }
+  if (boss && boss.state !== 'down') {
+    const v = new THREE.Vector3();
+    for (const o of boss.orns) if (o.hp > 0 && !o.off && o.m.getWorldPosition(v).distanceTo(pt) < R + 3) { hitBoss('orn', { orn: o }, dmg * .8, pt); n++; }
+    if (boss.gemOpen && boss.gem.getWorldPosition(v).distanceTo(pt) < R + 3.5) { hitBoss('gem', {}, dmg * .8, pt); n++; }
+  }
+  if (orb && orb.g.position.distanceTo(pt) < R + 2.5) { hitOrb(dmg, pt); n++; }
+  if (n) shot.hit = true;
+  if (stats.downed - d0 >= 2) stats.multiBlast = true;
+  for (const d of decoys) if (!d.fallen && d.g.position.distanceTo(pt) < R + 1) d.fallen = true;
+  for (const s of sheep) if (Math.hypot(s.x - pt.x, s.z - pt.z) < R + 4) s.panic = 4;
+  if (n > 1) showHit(`爆炸波及 ${n} 個目標！`);
+  else if (!n) showHit(shields.some(c => c.distanceTo(pt) < 9.5) ? '被護盾擋下' : '沒炸到人');
+}
+// ---- 道具：屍變藥劑 ----
+const ZOMBIE_R = 12;
+function becomeZombie(p) {
+  p.zombie = 20;
+  const green = new THREE.Color(0x7aa860);
+  p.g.traverse(o => { if (o.isMesh && o.material.emissive && !o.material.zTinted) { o.material.zTinted = true; o.material.color.lerp(green, .55); o.material.emissive.setHex(0x183010); } });
+  if (p.sprite) { p.g.remove(p.sprite.s); p.sprite = null; }
+  p.g.rotation.set(0, Math.PI, 0); p.g.position.y = p.z > 0 ? 0 : heightAt(p.x, p.z);
+  const ring = new THREE.Mesh(new THREE.RingGeometry(ZOMBIE_R - .6, ZOMBIE_R, 24), new THREE.MeshBasicMaterial({ color: 0x8aff60, transparent: true, opacity: .35, side: THREE.DoubleSide }));
+  ring.rotation.x = -Math.PI / 2; ring.position.set(p.x, p.g.position.y + .2, p.z); scene.add(ring); p.zRing = ring;
+  puff(new THREE.Vector3(p.x, 2, p.z), 0x8aff60, 3, 1); SFX.groan();
+  radio(`${p.id} 號爬起來變成殭屍了！附近的人會被他拖慢！`);
+}
+function updateZombie(p, dt) {
+  p.zombie -= dt;
+  const near = prisoners.filter(q => active(q) && !q.hidden && q.state !== 'inCar').sort((a, b) => Math.hypot(a.x - p.x, a.z - p.z) - Math.hypot(b.x - p.x, b.z - p.z))[0];
+  if (near) { const ty = Math.atan2(near.x - p.x, near.z - p.z); p.g.rotation.y += Math.atan2(Math.sin(ty - p.g.rotation.y), Math.cos(ty - p.g.rotation.y)) * Math.min(1, dt * 2); }
+  p.g.rotation.x = 0; p.g.rotation.z = Math.sin(p.t * 2.2) * .1;
+  const sw = Math.sin(p.t * 3) * .25; setLimbs(p, sw, -sw, -1.5 + sw * .3, -1.5 - sw * .3);
+  if (p.zRing) p.zRing.material.opacity = .25 + Math.sin(p.t * 4) * .1;
+  if (p.zombie <= 0) {
+    p.zombie = 0; p.fall = 0; p.g.rotation.z = 0;
+    if (p.zRing) { scene.remove(p.zRing); p.zRing = null; }
+    addSprite(p, 'z', 999); radio(`${p.id} 號的藥效退了，又倒下了。`);
+  }
+}
+function zombieSlow(p) {
+  for (const q of prisoners) if (q.zombie > 0 && q !== p && Math.hypot(q.x - p.x, q.z - p.z) < ZOMBIE_R) return .5;
+  return 1;
+}
+// ---- 道具：鷹眼、傳送信標 ----
+function bodyCenter(p) { return new THREE.Vector3(p.x, p.g.position.y + 1.2 * p.T.scale * (p.state === 'hide' ? .62 : 1), p.z); }
+function lockTarget(origin, aim, deg) {
+  const cands = [];
+  for (const p of prisoners) if (active(p) && !p.hidden && p.state !== 'inCar' && !(p.wolf && p.wolf.dash) && !(p.type === 'succubus' && p.guards.some(active)))
+    cands.push({ obj: p.parts.find(m => m.userData.part === 'body'), pt: bodyCenter(p) });
+  for (const b of bats) if (!b.dead) cands.push({ obj: b.g.children[0], pt: b.g.position.clone() });
+  if (boss && boss.state !== 'down') {
+    for (const o of boss.orns) if (o.hp > 0 && !o.off) cands.push({ obj: o.m, pt: o.m.getWorldPosition(new THREE.Vector3()) });
+    if (boss.gemOpen) cands.push({ obj: boss.gem, pt: boss.gem.getWorldPosition(new THREE.Vector3()) });
+  }
+  let best = null, bd = deg;
+  for (const c of cands) { const a = aim.angleTo(c.pt.clone().sub(origin)) / D2R; if (a < bd) { bd = a; best = c; } }
+  return best;
+}
+function lockShot(origin, tgt, gun, shot) {
+  const dist = tgt.pt.distanceTo(origin);
+  const start = origin.clone().add(new THREE.Vector3(.3, -.35, -1).applyQuaternion(camera.quaternion));
+  const l = new THREE.Line(new THREE.BufferGeometry().setFromPoints([start, tgt.pt]), new THREE.LineBasicMaterial({ color: 0xffd040, transparent: true }));
+  scene.add(l); fx.push({ m: l, t: 0, life: .3, kind: 'beam' });
+  puff(tgt.pt, 0xffd040, 1.4, .4); SFX.lock();
+  let obj = tgt.obj;
+  if (obj.userData.kind === 'prisoner') {   // 鷹眼穿得過掩體，穿不過護盾
+    const sh = prisoners.find(q => q.shield && q.shield.m.position.distanceTo(tgt.pt) < 9 && q.shield.m.position.distanceTo(origin) > 9);
+    if (sh) obj = sh.shield.m;
+  }
+  for (let k = 0; k < (gun.blast ? 1 : gun.pellets); k++) resolveHit({ object: obj, point: tgt.pt, distance: dist }, gun.dmg, shot, dist);
+  $('hitmark').textContent = '◎ 鷹眼鎖定・' + $('hitmark').textContent;
+}
+function tryRecall(p) {
+  if (itemId !== 'recall' || recallUsed) return false;
+  recallUsed = true;
+  puff(new THREE.Vector3(p.x, 3, Math.max(p.z, ESCAPE_Z)), 0x9a80ff, 5, 1);
+  if (p.car) { p.car = null; p.hidden = false; }
+  p.g.visible = true; p.state = 'run'; p.master = null; p.charm = null;
+  p.x = clamp(p.x, -70, 70); p.z = -3;
+  p.g.position.set(p.x, 0, p.z); planPath(p);
+  puff(new THREE.Vector3(p.x, 3, p.z), 0x9a80ff, 5, 1); SFX.warp();
+  radio(`傳送信標啟動！${p.id} 號被拉回圍牆邊了！`); showHit('傳送信標啟動！');
+  return true;
+}
+// ---- 道具：天雷寶珠 ----
+function spawnOrb() {
+  const g = new THREE.Group();
+  const halo = new THREE.Sprite(new THREE.SpriteMaterial({ map: GLOW_TEX, color: 0xffe080, transparent: true, fog: false, depthWrite: false }));
+  halo.scale.set(16, 16, 1); g.add(halo);
+  const core = new THREE.Mesh(new THREE.IcosahedronGeometry(2.4, 1), new THREE.MeshBasicMaterial({ color: 0xfff2a0, fog: false })); g.add(core);
+  const x = rand(-35, 35); g.position.set(x, 44, -165); scene.add(g);
+  addCollider(core, 'orb');
+  orb = { g, core, hp: 400, max: 400, t: 0, x };
+}
+function updateOrb(dt) {
+  if (!orb) return;
+  orb.t += dt; orb.g.position.set(orb.x + Math.sin(orb.t * .3) * 12, 44 + Math.sin(orb.t * 1.1) * 1.5, -165);
+  orb.core.rotation.y += dt; orb.core.rotation.x += dt * .6;
+}
+function hitOrb(dmg, pt) {
+  if (!orb) return;
+  orb.hp -= dmg; puff(pt, 0xfff0a0, 2, .4); SFX.ping(); showHit(`寶珠 ${Math.max(0, Math.ceil(orb.hp / orb.max * 100))}%`);
+  if (orb.hp <= 0) breakOrb();
+}
+function breakOrb() {
+  scene.remove(orb.g); removeColliders(c => c === orb.core); orb = null;
+  flashA = 1; shake = .8; SFX.thunder(); SFX.boom();
+  for (const b of bats) if (!b.dead) { b.dead = true; b.fall = 0; removeColliders(c => c.userData.bat === b); }
+  // 只劈現在場上的人；之後才翻牆的劈不到
+  aura = { t: 4, tick: .5, targets: prisoners.filter(p => active(p) && !p.hidden && p.state !== 'inCar'), cars: cars.filter(c => c.state === 'drive'), boss: !!boss };
+  zapAll(40);
+  showMsg('天雷落下！', 2); radio(`天雷劈中了場上 ${aura.targets.length} 個人！`);
+}
+function zapAll(dmg) {
+  for (const p of aura.targets) if (active(p) && !p.hidden && p.state !== 'inCar') { skyBolt(p.x, p.z, p.g.position.y + p.T.scale); hurtPrisoner(p, dmg, 'body', true); }
+  for (const c of aura.cars) if (c.state === 'drive') { skyBolt(c.x, c.z); hitCar(c, dmg, true); }
+  if (aura.boss && boss && boss.state !== 'down') {
+    const v = new THREE.Vector3();
+    boss.orns.forEach(o => { if (o.hp > 0 && !o.off) hitBoss('orn', { orn: o }, dmg * .5, o.m.getWorldPosition(v).clone(), true); });
+    if (boss.gemOpen) hitBoss('gem', {}, dmg, boss.gem.getWorldPosition(v).clone(), true);
+    skyBolt(boss.x, boss.z + 3, 20);
+  }
+}
+function skyBolt(x, z, y0) {
+  const top = 150; y0 = y0 ?? heightAt(x, z);
+  const pts = []; let cx = x + rand(-20, 20);
+  for (let i = 0; i <= 8; i++) { pts.push(new THREE.Vector3(i === 8 ? x : cx, top - (top - y0) * i / 8, z)); cx += (x - cx) * .35 + rand(-6, 6); }
+  const l = new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts), new THREE.LineBasicMaterial({ color: 0xf4f8ff, transparent: true, fog: false }));
+  scene.add(l); fx.push({ m: l, t: 0, life: .3, kind: 'beam' });
+}
+// ---- 惡魔（第六關魔王）----
+function buildDemon() {
+  const g = new THREE.Group();
+  const skin = M(0x8e1e16), dark = M(0x2a0c0a), horn = M(0xd8ccb0);
+  const add = (geo, mat, x, y, z, parent = g) => { const m = new THREE.Mesh(geo, mat); m.position.set(x, y, z); parent.add(m); return m; };
+  const body = [];
+  body.push(add(new THREE.BoxGeometry(.9, .95, .5), skin, 0, 1.45, 0));
+  body.push(add(new THREE.BoxGeometry(.72, .3, .44), dark, 0, .95, 0));
+  body.push(add(new THREE.BoxGeometry(.44, .42, .42), skin, 0, 2.15, .02));
+  for (const s of [-1, 1]) { const h = add(new THREE.ConeGeometry(.07, .42, 5), horn, s * .2, 2.5, 0); h.rotation.z = -s * .5; body.push(h); }
+  for (const s of [-1, 1]) add(new THREE.BoxGeometry(.09, .05, .02), new THREE.MeshBasicMaterial({ color: 0xffe040 }), s * .1, 2.2, .235);
+  for (const s of [-1, 1]) { const w = add(new THREE.BoxGeometry(1.3, .9, .04), M(0x3a0c10), s * .8, 1.75, -.32); w.rotation.z = s * .35; w.rotation.y = s * .4; body.push(w); }
+  const limb = (w, h, x, y) => { const pv = new THREE.Group(); pv.position.set(x, y, 0);
+    const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, w), skin); m.position.y = -h / 2; pv.add(m); g.add(pv); body.push(m); return pv; };
+  const armL = limb(.24, .9, -.6, 1.88), armR = limb(.24, .9, .6, 1.88), legL = limb(.3, .95, -.22, .95), legR = limb(.3, .95, .22, .95);
+  const gold = () => M(0xe0b040, { emissive: 0x3a2800 });
+  // 四個金飾：小的、會閃的、會飄的、普通的
+  const orns = [
+    { m: add(new THREE.BoxGeometry(.15, .13, .15), gold(), -.17, -.7, 0, armL), name: '左手環', kind: 'small' },
+    { m: add(new THREE.BoxGeometry(.32, .2, .32), gold(), 0, -.72, 0, armR), name: '右手環', kind: 'blink' },
+    { m: add(new THREE.BoxGeometry(.38, .18, .38), gold(), 0, -.78, 0, legL), name: '左腳環', kind: 'drift' },
+    { m: add(new THREE.BoxGeometry(.38, .18, .38), gold(), 0, -.78, 0, legR), name: '右腳環', kind: 'normal' },
+  ];
+  orns.forEach(o => { o.home = o.m.position.clone(); o.parent = o.m.parent; o.t = 0; });
+  const gem = new THREE.Mesh(new THREE.OctahedronGeometry(.2, 0), new THREE.MeshBasicMaterial({ color: 0xff40d0 }));
+  gem.position.set(0, 1.5, .3); gem.visible = false; g.add(gem);
+  const dome = new THREE.Mesh(new THREE.IcosahedronGeometry(1.55, 1), new THREE.MeshBasicMaterial({ color: 0xffd040, transparent: true, opacity: .2, depthWrite: false, side: THREE.DoubleSide }));
+  dome.position.y = 1.3; dome.visible = false; g.add(dome);
+  return { g, body, orns, gem, dome, armL, armR, legL, legR };
+}
+const BOSS_Z0 = -236, BOSS_WALL = -24;
+function spawnBoss() {
+  const b = buildDemon();
+  boss = { ...b, x: 0, z: BOSS_Z0, t: 0, phase: 0, state: 'walk', stagger: 0, roarT: 8, fall: 0, lastS: 1, gemOpen: false, gemHp: 300 * hpMul, gemMax: 300 * hpMul,
+    captain: null, capT: 0, shieldT: 0, bt: 0, firing: false, halfSaid: false };
+  boss.orns.forEach(o => { o.hp = o.max = 180 * hpMul; addCollider(o.m, 'orn'); o.m.userData.orn = o; });
+  b.body.forEach(m => addCollider(m, 'demon'));
+  b.g.scale.setScalar(16); b.g.position.set(0, 0, BOSS_Z0); scene.add(b.g);
+  // 寶石的強光（世界座標，從胸口射向高塔）
+  boss.beam = new THREE.Mesh(new THREE.CylinderGeometry(1.5, 14, 1, 10, 1, true), new THREE.MeshBasicMaterial({ color: 0xfff0c0, transparent: true, opacity: .4, depthWrite: false, fog: false, side: THREE.DoubleSide }));
+  boss.beam.visible = false; scene.add(boss.beam);
+  spawnArmy();
+  SFX.roar(); SFX.siren(); shake = .8; showMsg('惡魔現身！', 3);
+  radio('森林裡走出一個大傢伙！打掉他手腳上的四個金飾！');
+  say('demon', '吾之子民啊……莫怕。吾親自來接你們回家了。');
+  say('me', '那……那是什麼東西？守則裡可沒寫這個！');
+  say('me', '他腳邊那群兵裡，有個發金光的在指揮……先處理他！');
+}
+// 惡魔兵：8 個，其中一個是隊長
+const IMP_N = 8, CAP_T = 15, SHIELD_T = 6;
+function spawnArmy() {
+  for (let i = 0; i < IMP_N; i++) {
+    const b = buildBody('imp', map.dark), T = PTYPES.imp;
+    const row = Math.floor(i / 4), col = i % 4, ox = (col - 1.5) * 9 + (row ? 4.5 : 0), oz = 10 + row * 7;
+    const p = { id: 6601 + i, type: 'imp', T, ...b, sta: T.sta * hpMul, maxSta: T.sta * hpMul, legMul: 1, speedMul: 1, state: 'run', t: 0, ct: 0, phase: rand(0, 6), timer: 0,
+      x: boss.x + ox, z: boss.z + oz, path: [], i: 0, boost: 0, sprite: null, fall: 0, hidden: false, smoke: null, abT: 1e9, decoys: 0, shownHit: false, batDone: 0, shield: null,
+      wolf: null, guards: [], charm: null, master: null, escort: { ox, oz }, imp: true };
+    p.parts.forEach(m => { addCollider(m, 'prisoner'); m.userData.p = p; });
+    p.g.position.set(p.x, heightAt(p.x, p.z), p.z); scene.add(p.g);
+    prisoners.push(p);
+  }
+  pickCaptain();
+}
+function pickCaptain() {
+  const alive = prisoners.filter(q => q.imp && active(q));
+  boss.captain = null; boss.capT = 0;
+  if (!alive.length) { radio('惡魔兵全倒了，再也沒有人替他張防護罩了！'); return; }
+  const c = alive[Math.floor(Math.random() * alive.length)];
+  c.captain = true; boss.captain = c; boss.capT = CAP_T;
+  const gold = new THREE.Color(0xf0c030);
+  c.g.traverse(o => { if (o.isMesh && o.material.emissive) { o.material = o.material.clone(); o.material.color.lerp(gold, .7); o.material.emissive.setHex(0x6a4a00); } });
+  const mk = new THREE.Sprite(SPR.crown); mk.scale.set(.6, .6, 1); mk.position.set(0, 2.45, 0); c.g.add(mk);
+  radio(`金色的隊長出現了！${CAP_T} 秒內打倒他，不然他會替惡魔張開防護罩！`);
+}
+function onImpDown(p) {
+  if (!boss || !p.captain) return;
+  p.captain = false;
+  if (boss.state !== 'down') { radio('隊長倒下了！'); pickCaptain(); }
+}
+function updateBoss(dt) {
+  const b = boss; b.t += dt;
+  if (b.state === 'down') {
+    b.beam.visible = false; b.dome.visible = false; b.firing = false;
+    b.fall = Math.min(1, b.fall + dt * .45);
+    b.g.rotation.x = -b.fall * Math.PI / 2 * .95;
+    if (Math.random() < dt * 10) puff(new THREE.Vector3(b.x + rand(-12, 12), rand(2, 20), b.z + rand(-6, 6)), 0x9a7aa0, 4, 1.4);
+    if (b.fall >= 1 && !stage.bossDone) { stage.bossDone = true; shake = 1; SFX.boom(); }
+    return;
+  }
+  // 金飾的花樣
+  for (const o of b.orns) if (o.hp > 0) {
+    o.t += dt;
+    if (o.kind === 'blink') {   // 出現 3 秒 → 閃 0.9 秒 → 消失 2 秒
+      const c = o.t % 5.9;
+      o.off = c >= 3.9;
+      o.m.visible = c < 3 || (!o.off && Math.floor(c * 6.67) % 2 === 0);
+    }
+    if (o.kind === 'drift') {   // 每 10 秒離開腳踝，繞著惡魔慢慢飄一圈
+      if (!o.drift && o.t > 10) { o.drift = true; o.t = 0; o.a = 0; b.g.add(o.m); radio('左腳環離開腳踝，繞著惡魔飄起來了！'); }
+      if (o.drift) {
+        o.a += dt * .33; o.m.position.set(Math.sin(o.a) * .95, .55 + Math.sin(o.a * 2) * .15, Math.cos(o.a) * .95); o.m.rotation.y += dt * 2;
+        if (o.t > 5.5) { o.drift = false; o.t = 0; o.parent.add(o.m); o.m.position.copy(o.home); o.m.rotation.set(0, 0, 0); }
+      }
+    }
+  }
+  // 隊長倒數 → 防護罩
+  if (b.shieldT > 0) {
+    b.shieldT -= dt; b.dome.visible = true; b.dome.material.opacity = .16 + Math.sin(b.t * 6) * .06; b.dome.rotation.y += dt * .4;
+    if (b.shieldT <= 0) { b.dome.visible = false; if (b.captain) b.capT = CAP_T; radio('防護罩消失了！'); }
+  } else if (b.captain && active(b.captain)) {
+    b.capT -= dt;
+    if (b.capT <= 0) { b.shieldT = SHIELD_T; SFX.shield(); radio(`隊長替惡魔張開了防護罩！${SHIELD_T} 秒內打不到金飾和寶石！`); say('demon', '護住吾！'); }
+  }
+  // 寶石：每 7 秒蓄力 1 秒、噴光 3 秒
+  if (b.gemOpen) {
+    b.gem.rotation.y += dt * 3;
+    b.bt += dt; const c = b.bt % 7;
+    const charging = c >= 3 && c < 4; b.firing = c >= 4;
+    b.gem.scale.setScalar(charging ? 1 + (c - 3) * 1.2 : b.firing ? 2 + Math.sin(b.t * 30) * .2 : 1 + Math.sin(b.t * 8) * .25);
+    if (charging && !b.warned) { b.warned = true; radio('惡魔的胸口越來越亮……要噴光了！'); }
+    if (!charging) b.warned = false;
+    b.beam.visible = b.firing;
+    if (b.firing) {
+      const gp = b.gem.getWorldPosition(new THREE.Vector3()), to = EYE.clone().add(new THREE.Vector3(0, -3, 0));
+      const len = gp.distanceTo(to);
+      b.beam.position.copy(gp).lerp(to, .5); b.beam.scale.set(1, len, 1);
+      b.beam.quaternion.setFromUnitVectors(new THREE.Vector3(0, -1, 0), to.clone().sub(gp).normalize());
+      b.beam.material.opacity = .3 + Math.sin(b.t * 25) * .08;
+    }
+  }
+  if (b.stagger > 0) { b.stagger -= dt; b.g.rotation.z = Math.sin(b.t * 6) * .05; return; }
+  b.g.rotation.z = 0;
+  b.roarT -= dt;
+  if (b.roarT <= 0) { b.roarT = rand(12, 16); SFX.roar(); shake = .7; radio('惡魔在咆哮！'); }
+  b.z += 1.8 * dt; b.phase += dt * 1.6;
+  const s = Math.sin(b.phase);
+  b.legL.rotation.x = s * .45; b.legR.rotation.x = -s * .45; b.armL.rotation.x = -s * .35; b.armR.rotation.x = s * .35;
+  b.g.position.set(b.x, Math.abs(Math.cos(b.phase)) * .8, b.z);
+  if (Math.sign(s) !== b.lastS) { b.lastS = Math.sign(s); SFX.thud(); if (b.z > -120) shake = Math.max(shake, .25); }
+}
+function hitBoss(k, u, dmg, pt, quiet) {
+  const b = boss; if (!b || b.state === 'down') return false;
+  if (k === 'demon') {
+    if (!quiet) { showHit(b.gemOpen ? '打胸口的寶石！' : '鏗！要打金飾'); SFX.ping(); puff(pt, 0xffa080, 1.5, .4); }
+    return false;
+  }
+  if ((k === 'orn' || k === 'gem') && b.shieldT > 0) {
+    if (!quiet) { showHit('被防護罩擋下！'); SFX.ping(); puff(pt, 0xffd040, 1.5, .4); }
+    return false;
+  }
+  if (k === 'orn') {
+    const o = u.orn; if (o.hp <= 0 || o.off) return false;
+    o.hp -= dmg; puff(pt, 0xffe080, 2, .5);
+    o.m.material.emissive.setHex(0xffffff); setTimeout(() => o.m.material.emissive.setHex(0x3a2800), 90);
+    if (!quiet) { stats.hits++; SFX.hit(true); }
+    if (o.hp <= 0) {
+      o.m.parent.remove(o.m); removeColliders(c => c === o.m); o.off = true;
+      for (let i = 0; i < 4; i++) puff(pt.clone().add(new THREE.Vector3(rand(-3, 3), rand(-3, 3), rand(-2, 2))), 0xffd040, 3, 1);
+      SFX.boom(); showHit(`${o.name}被打掉了！`);
+      const left = b.orns.filter(x => x.hp > 0).length;
+      if (left) radio(`${o.name}打掉了，還剩 ${left} 個金飾！`); else openGem();
+      if (left === 2 && !b.halfSaid) { b.halfSaid = true; say('demon', '區區凡人的玩具，也敢傷吾之軀？'); say('me', '有效！繼續打，絕對不能讓他走到圍牆！'); }
+    } else if (!quiet) showHit(`${o.name} ${Math.ceil(o.hp / o.max * 100)}%`);
+    return true;
+  }
+  if (k === 'gem') {
+    if (!b.gemOpen) return false;
+    b.gemHp -= dmg; puff(pt, 0xff60e0, 2, .5);
+    if (!quiet) { stats.hits++; SFX.hit(true); showHit(`寶石 ${Math.max(0, Math.ceil(b.gemHp / b.gemMax * 100))}%`); }
+    if (b.gemHp <= 0) defeatBoss();
+    return true;
+  }
+  return false;
+}
+function openGem() {
+  boss.gemOpen = true; boss.gem.visible = true; addCollider(boss.gem, 'gem'); boss.stagger = 3;
+  SFX.roar(); shake = .8; radio('金飾全打掉了！胸口浮出寶石，打碎它！'); showMsg('打碎寶石！', 2);
+  say('demon', '好……好啊！那就讓你瞧瞧地獄之光！');
+  say('me', '胸口那顆寶石……就是他的弱點吧。別直視那道光，等它停下來再打。');
+}
+function defeatBoss() {
+  boss.state = 'down'; boss.gem.visible = false;
+  removeColliders(c => c === boss.gem || c.userData.kind === 'demon');
+  SFX.boom(); SFX.roar(); shake = 1.2; stats.boss = true;
+  radio('惡魔倒下了！惡魔兵也跟著倒了。'); showMsg('惡魔倒下了！', 3);
+  for (const q of prisoners) if (q.imp && active(q)) knockDown(q);
+  requestPhoto(1000, '惡魔倒下的瞬間', () => new THREE.Vector3(boss.x, 16, boss.z), 58, .35);
+  talkQ.length = 0; talkT = 0;
+  say('demon', '這扇門……還會再打開的。下一次，吾會帶來更多……');
+  say('me', '……結束了嗎？今天的報告，到底該怎麼寫啊。');
+}
+// ---- 對話（主角與惡魔）----
+const talkQ = []; let talkT = 0;
+// 主角第一次看見某件事時才說的話（破關模式重新開始會重置）
+function firstSight(key, lines) {
+  let seen = false; try { seen = !!localStorage.getItem('sniper_seen_' + key); localStorage.setItem('sniper_seen_' + key, '1'); } catch (e) {}
+  if (!seen) for (const l of lines) say('me', l);
+}
+function say(who, text) { talkQ.push({ who, text }); }
+function updateTalk(dt) {
+  if (talkT > 0) { talkT -= dt; return; }
+  const l = talkQ.shift(); if (!l) return;
+  $('talk').innerHTML = `<b class="${l.who === 'demon' ? 'd' : 'g'}">${l.who === 'demon' ? '惡魔' : '我'}</b>「${l.text}」`;
+  talkT = 3.4 + l.text.length * .05;
+}
+// ---- 現場照片：挑這一關最值得留下的一刻 ----
+let photo = null, photos = [], photoQ = [];
+function requestPhoto(score, cap, aim, h, delay) { if (photos.length < 3 || score > photos[photos.length - 1].score) photoQ.push({ score, cap, aim, h, t: delay || 0 }); }
+// 用長焦鏡頭對準目標另外拍一張，不是直接截遊戲畫面
+function takePhoto() {
+  const w = photoQ.shift();
+  const fov = camera.fov, q = camera.quaternion.clone(), gv = gunModel ? gunModel.visible : false;
+  try {
+    if (w.aim) {
+      const tgt = w.aim(), d = tgt.distanceTo(EYE);
+      camera.position.copy(EYE); camera.lookAt(tgt);
+      camera.fov = clamp(2 * Math.atan(w.h / 2 / d) / D2R, 1.2, 40); camera.updateProjectionMatrix();
+      if (gunModel) gunModel.visible = false;
+      renderer.render(scene, camera);
+    }
+    photos.push({ score: w.score, cap: w.cap, url: cvs.toDataURL('image/jpeg', .85) });
+    photos.sort((a, b) => b.score - a.score); photos.length = Math.min(photos.length, 3); photo = photos[0];
+  } catch (e) {}
+  camera.quaternion.copy(q); camera.fov = fov; camera.updateProjectionMatrix();
+  if (gunModel) gunModel.visible = gv;
+  if (w.aim) renderer.render(scene, camera);
+}
+// ---- 天候：雷雨、岩漿、火星 ----
+function updateWeather(dt) {
+  if (map.rain) {
+    lightT -= dt;
+    if (lightT <= 0) {
+      lightT = rand(6, 12); flashA = .7; map.flashT = .2;
+      skyBolt(rand(-260, 260), rand(-380, -440), 0);
+      setTimeout(() => state === 'play' && SFX.thunder(), 300 + Math.random() * 900);
+    }
+  }
+  if (map.flashT > 0) map.flashT -= dt;
+  map.hemi.intensity = map.hemiI + (map.flashT > 0 ? 1.1 : 0);
+  map.lavaMats.forEach((m, i) => m.color.setRGB(1, .32 + .2 * Math.sin(stageT * 2 + i * 1.7), .06));
+  if (state === 'play') for (const l of map.lava) updateEruption(l, dt);
+  for (const e of map.embers) { e.position.y += dt * 2.2; e.position.x += Math.sin(stageT + e.position.z) * dt; if (e.position.y > 32) e.position.y = 0; }
+}
+// 岩漿池每隔一段時間噴發：先冒泡 1 秒，再噴出岩漿柱，留下一大團濃煙擋住視線
+function updateEruption(l, dt) {
+  const [x, z, r] = l, y = heightAt(x, z);
+  l[3] -= dt;
+  if (l[3] > 0 && l[3] < 1 && Math.random() < dt * 14) puff(new THREE.Vector3(x + rand(-r, r) * .6, y + .4, z + rand(-r, r) * .6), 0xff7020, 1, .5);
+  if (l[3] > 0) return;
+  l[3] = rand(9, 15);
+  const col = new THREE.Mesh(new THREE.CylinderGeometry(r * .35, r * .55, 1, 7), new THREE.MeshBasicMaterial({ color: 0xff6a18, transparent: true }));
+  col.position.set(x, y, z); scene.add(col); fx.push({ m: col, t: 0, life: 1.4, kind: 'geyser', y, h: 18 + r * 2.5 });
+  for (let i = 0; i < 14; i++) puff(new THREE.Vector3(x + rand(-3, 3), y + rand(2, 22), z + rand(-3, 3)), i % 2 ? 0xffb030 : 0xff4a10, rand(2.5, 4.5), rand(.6, 1.2));
+  for (let i = 0; i < 11; i++) {
+    const sm = new THREE.Sprite(new THREE.SpriteMaterial({ color: [0x4a3834, 0x5a4440, 0x3a2a26][i % 3], transparent: true, opacity: 0 }));
+    sm.position.set(x + rand(-r, r) * 1.4, y + rand(3, 22), z + rand(-r, r) * 1.4); scene.add(sm);
+    fx.push({ m: sm, t: -rand(.3, 1.1), life: rand(5, 7), kind: 'smog', size: rand(13, 20) });
+  }
+  if (Math.abs(z) < 260) { SFX.thud(); if (Math.hypot(x, z) < 120) shake = Math.max(shake, .2); }
+}
+// 熱像瞄準鏡：開鏡時把擋視線的東西變透明、藏起煙霧
+let xrayOn = false;
+const XRAY_KINDS = new Set(['rock', 'bush', 'tree', 'truck']);
+function applyXray() {
+  const on = itemId === 'xray' && scoped && state === 'play';
+  if (on !== xrayOn) {
+    xrayOn = on;
+    for (const c of colliders) if (XRAY_KINDS.has(c.userData.kind)) {
+      if (!c.userData.xm) { c.material = c.material.clone(); c.userData.xm = true; }
+      c.material.transparent = on; c.material.opacity = on ? .18 : 1; c.material.depthWrite = !on;
+    }
+    cvs.style.filter = on ? 'contrast(1.12) brightness(1.08)' : '';
+  }
+  for (const sm of smokes) sm.g.visible = !on;
+  for (const f of fx) if (f.kind === 'smog') f.m.visible = !on;
+}
+const rain = []; for (let i = 0; i < 110; i++) rain.push({ x: Math.random() * 230, y: Math.random() * 150, v: 160 + Math.random() * 80 });
+const rgc = $('rain').getContext('2d');
+function drawRain(dt) {
+  rgc.clearRect(0, 0, 200, 150); rgc.strokeStyle = 'rgba(190,205,230,.42)'; rgc.lineWidth = 1; rgc.beginPath();
+  for (const d of rain) {
+    d.y += d.v * dt; d.x -= d.v * .25 * dt;
+    if (d.y > 150) { d.y = -6; d.x = Math.random() * 230; }
+    rgc.moveTo(d.x, d.y); rgc.lineTo(d.x - 1.5, d.y + 6);
+  }
+  rgc.stroke();
+}
+const canScope = () => splatT <= 0;
+// 刺眼程度：開鏡看著太陽或惡魔的強光，越久越白
+let glareSrc = null;
+function updateGlare(dt) {
+  const f = new THREE.Vector3(-Math.sin(yaw) * Math.cos(pitch), Math.sin(pitch), -Math.cos(yaw) * Math.cos(pitch));
+  let rate = 0; glareSrc = null; sunAng = 90;
+  if (map.sun) {
+    sunAng = f.angleTo(SUN_DIR) / D2R;
+    if (sunAng < 40) { rate = sunAng < 12 ? 1 / 3 : 1 / (3 + (sunAng - 12) / 28 * 5); glareSrc = EYE.clone().addScaledVector(SUN_DIR, 600); }
+  }
+  if (boss && boss.firing) {
+    const gp = boss.gem.getWorldPosition(new THREE.Vector3());
+    if (f.angleTo(gp.clone().sub(EYE)) / D2R < 30) { rate = Math.max(rate, 1 / 1.2); glareSrc = gp; }
+  }
+  if (itemId === 'xray') rate *= .5;
+  if (scoped && rate > 0) sunGlare = Math.min(1, sunGlare + dt * rate);
+  else sunGlare = Math.max(0, sunGlare - dt / 1.5);
+}
+// 所有子彈瞬間命中，只畫一道很快消失的彈道線
+function hitscan(origin, dir, gun, shot) {
+  const h = castSegment(origin, dir, 700, !!gun.blast);
+  const end = h ? h.point : origin.clone().addScaledVector(dir, 700);
+  const start = origin.clone().add(new THREE.Vector3(.3, -.35, -1).applyQuaternion(camera.quaternion));
+  const geo = new THREE.BufferGeometry().setFromPoints([start, end]);
+  const l = new THREE.Line(geo, new THREE.LineBasicMaterial({ color: gun.blast ? 0xc8ff90 : 0xfff2b0, transparent: true, opacity: .55 }));
+  scene.add(l); fx.push({ m: l, t: 0, life: .12, kind: 'beam' });
+  if (h) resolveHit(h, gun.dmg, shot, h.distance);
+}
+function laser(origin, dir, gun, shot) {
+  const h = castSegment(origin, dir, 700);
+  const end = h ? h.point : origin.clone().addScaledVector(dir, 700);
+  const start = origin.clone().add(new THREE.Vector3(.4, -.4, 0).applyQuaternion(camera.quaternion));
+  const geo = new THREE.BufferGeometry().setFromPoints([start, end]);
+  const l = new THREE.Line(geo, new THREE.LineBasicMaterial({ color: 0xff3a2a, transparent: true }));
+  scene.add(l); fx.push({ m: l, t: 0, life: .35, kind: 'beam' });
+  if (h) resolveHit(h, gun.dmg, shot, h.distance);
+}
+function updateBullets(dt) {
+  for (const b of bullets) {
+    if (b.grav) { const v = b.dir.clone().multiplyScalar(b.speed); v.y -= b.grav * dt; b.speed = v.length(); b.dir.copy(v.normalize()); }
+    const step = b.speed * dt;
+    const h = castSegment(b.pos, b.dir, step, !!b.grav);
+    const tail = b.pos.clone();
+    if (h) { resolveHit(h, b.dmg, b.shot, b.dist + h.distance); b.dead = true; }
+    b.pos.addScaledVector(b.dir, step); b.dist += step; b.life -= dt;
+    if (b.life <= 0 || b.pos.y < -5) b.dead = true;
+    const a = b.tr.geometry.attributes.position;
+    a.setXYZ(0, tail.x, tail.y - .05, tail.z); a.setXYZ(1, b.pos.x, b.pos.y - .05, b.pos.z); a.needsUpdate = true;
+    b.tr.visible = b.dist > 8;
+    if (b.dead) { scene.remove(b.tr); b.tr.geometry.dispose(); }
+  }
+  bullets = bullets.filter(b => !b.dead);
+}
+function puff(pt, color, size, life) {
+  const s = new THREE.Sprite(new THREE.SpriteMaterial({ color, transparent: true, opacity: .9 }));
+  s.position.copy(pt); s.scale.set(size, size, 1); scene.add(s);
+  fx.push({ m: s, t: 0, life, kind: 'puff', size });
+}
+function updateFx(dt) {
+  for (const f of fx) {
+    f.t += dt; const k = f.t / f.life;
+    if (f.kind === 'puff') { f.m.scale.setScalar(f.size * (1 + k * 2)); f.m.material.opacity = .9 * (1 - k); f.m.position.y += dt * .8; }
+    if (f.kind === 'beam') f.m.material.opacity = 1 - k;
+    if (f.kind === 'blast') { f.m.scale.setScalar(.5 + k * f.r); f.m.material.opacity = .8 * (1 - k); }
+    if (f.kind === 'geyser') { const u = Math.sin(Math.min(1, k) * Math.PI); f.m.scale.y = .1 + f.h * u; f.m.position.y = f.y + f.m.scale.y / 2; f.m.material.opacity = 1 - k * .5; }
+    if (f.kind === 'smog') { if (f.t < 0) continue; f.m.scale.setScalar(f.size * (.6 + Math.min(1, k * 3) * .5 + k * .3)); f.m.material.opacity = k < .6 ? Math.min(.88, f.t * 2) : .88 * (1 - (k - .6) / .4); f.m.position.y += dt * .6; }
+    if (f.kind === 'boom') { f.m.scale.setScalar(1 + k * 12); f.m.material.opacity = 1 - k; }
+    if (k >= 1) { scene.remove(f.m); f.dead = true; }
+  }
+  fx = fx.filter(f => !f.dead);
+  for (const s of smokes) {
+    s.t += dt; const k = s.t / s.life;
+    s.balls.forEach((b, i) => { b.scale.setScalar(Math.min(1, s.t * 1.5) * (2.6 + i % 3 * .7) * (1 + k * .6)); b.material.opacity = k < .7 ? .92 : .92 * (1 - (k - .7) / .3); b.position.y += dt * .15; });
+    if (k >= 1) { scene.remove(s.g); removeColliders(c => s.balls.includes(c)); s.dead = true; }
+  }
+  smokes = smokes.filter(s => !s.dead);
+  for (const d of decoys) if (d.fallen && d.f < 1) { d.f = Math.min(1, d.f + dt * 3); d.g.rotation.x = -d.f * Math.PI / 2; }
+  for (const s of sheep) {
+    s.t += dt;
+    const sp = s.panic > 0 ? 4 : .4;
+    if (s.panic > 0) s.panic -= dt; else if (Math.random() < dt * .3) s.dir += (Math.random() - .5) * 2;
+    if (Math.hypot(s.x - s.cx, s.z - s.cz) > 25) s.dir = Math.atan2(s.cx - s.x, s.cz - s.z);
+    if (s.panic > 0 || Math.sin(s.t * .7) > 0) { s.x += Math.sin(s.dir) * sp * dt; s.z += Math.cos(s.dir) * sp * dt; }
+    s.g.position.set(s.x, heightAt(s.x, s.z), s.z); s.g.rotation.y = s.dir;
+  }
+  updateBats(dt);
+}
+
+// ================= 介面 =================
+function radio(t) { $('radio').textContent = '📻 ' + t; radioT = 4; }
+function showMsg(t, dur = 2.2) { $('msg').innerHTML = t; msgT = dur; }
+let hitT = 0;
+function showHit(t) { $('hitmark').textContent = t; hitT = .8; }
+function crossPx(deg, fov) { return Math.tan(deg * D2R) / Math.tan(fov / 2 * D2R) * (box.clientHeight / 2); }
+function pbar(label, v, color) { return `<div class="pbar">${label}<em><i style="width:${clamp(v, 0, 1) * 100}%;background:${color}"></i></em></div>`; }
+function updateHud() {
+  const gun = GUNS[gunIdx];
+  $('info').innerHTML = `${stage.name}<br>時間 ${stageT.toFixed(1)}s<br>制伏 ${stats.downed}${stage.endless ? `　第 ${stage.level + 1} 波` : ` / ${stage.total}`}　<span style="color:${stats.escaped ? '#e05a4a' : 'inherit'}">逃脫 ${stats.escaped} / ${stage.allowEscape + 1}</span>`;
+  const list = prisoners.filter(p => active(p) && !(p.state === 'inCar' && p.car.state !== 'drive') && (!p.imp || p.captain));
+  $('targets').innerHTML = list.slice(0, 7).map(p => {
+    const left = Math.max(0, Math.round(p.z - ESCAPE_Z));
+    let st = `<span style="color:${left < 60 ? '#e05a4a' : 'inherit'}">離出口 ${left}m</span>`, bar = p.sta / p.maxSta;
+    if (p.state === 'inCar') { st = `<span style="color:#e05a4a">開車中</span>`; bar = p.car.hp / p.car.maxHp; }
+    else if (p.state === 'bats') st = `<span style="color:#ff7ad0">蝙蝠 ${p.myBats.filter(b => !b.dead).length}　${Math.ceil(p.batT)}s</span>`;
+    else if (p.state === 'climb') st = '翻牆中';
+    else if (p.captain) st = `<span style="color:#ffd040">隊長 ${boss ? Math.ceil(boss.capT) : 0}s</span>`;
+    else if (zombieSlow(p) < 1) st = '<span style="color:#8aff60">被殭屍拖住</span>';
+    else if (p.wolf && p.wolf.dash) st = '<span style="color:#e05a4a">衝刺中</span>';
+    else if (p.state === 'charm') st = '<span style="color:#ff7ad0">施法中</span>';
+    else if (p.charm) st = '<span style="color:#ff7ad0">被迷住</span>';
+    else if (p.type === 'succubus' && p.guards.some(active)) st = '<span style="color:#ff7ad0">受護衛保護</span>';
+    else if (p.state === 'stumble' && p.timer > .6) st = '<span style="color:#7fd18b">昏厥中</span>';
+    else if (p.state === 'show') st = '<span style="color:#ffd020">表演中</span>';
+    else if (p.shield) st = '<span style="color:#60c8ff">護盾</span>';
+    return `<div class="t">${p.T.name} ${st}<span class="bar"><i style="width:${clamp(bar, 0, 1) * 100}%"></i></span></div>`;
+  }).join('') + (list.length > 7 ? `<div class="t">…還有 ${list.length - 7} 人</div>` : '');
+  const rounds = gun.mag > 12 ? `${mag} / ${gun.mag}` : '▮'.repeat(mag) + '<span style="opacity:.25">' + '▮'.repeat(gun.mag - mag) + '</span>';
+  const boltV = reloading > 0 ? 0 : 1 - Math.max(0, cool) / gun.bolt;
+  const relV = reloading > 0 ? 1 - reloading / reloadTotal : 1;
+  $('ammo').innerHTML = `<div>${gun.name}</div><div class="rounds">${rounds}</div>` +
+    pbar(boltV < 1 && reloading <= 0 ? '拉栓中' : '拉栓', boltV, boltV < 1 ? '#e8c45a' : '#7fd18b') +
+    pbar(reloading > 0 ? '換彈中' : '換彈', relV, reloading > 0 ? '#e05a4a' : '#7fd18b') + itemHud();
+  const bb = $('bossbar');
+  if (boss && boss.state !== 'down') {
+    const left = boss.orns.filter(o => o.hp > 0);
+    const v = boss.gemOpen ? boss.gemHp / boss.gemMax : left.reduce((a, o) => a + o.hp, 0) / boss.orns.reduce((a, o) => a + o.max, 0);
+    bb.style.display = 'block';
+    const cap = boss.shieldT > 0 ? `<span style="color:#ffd040">防護罩 ${Math.ceil(boss.shieldT)}s</span>` : boss.captain ? `<span style="color:${boss.capT < 5 ? '#ff6a50' : '#ffd040'}">隊長 ${Math.ceil(boss.capT)}s</span>` : '';
+    bb.innerHTML = `惡魔　${boss.gemOpen ? `<span style="color:#ff70e0">胸口的寶石</span>${boss.firing ? '　<span style="color:#fff0a0">強光中！</span>' : ''}` : `金飾 ${left.length} / ${boss.orns.length}`}　${cap}　距圍牆 ${Math.max(0, Math.round(BOSS_WALL - boss.z))} m` +
+      `<div class="bb"><i style="width:${clamp(v, 0, 1) * 100}%;background:${boss.gemOpen ? '#ff40d0' : '#e0b040'}"></i></div>`;
+  } else bb.style.display = 'none';
+  $('breathbar').style.width = breath * 100 + '%';
+  $('breathbar').style.background = gasp > 0 ? '#e05a4a' : '#8fc8ff';
+  $('radio').style.opacity = radioT > 0 ? 1 : 0;
+  $('msg').style.opacity = msgT > 0 ? 1 : 0;
+  $('hitmark').style.opacity = hitT > 0 ? 1 : 0;
+  $('splat').style.opacity = splatT > 0 ? Math.min(1, splatT) : 0;
+  const fov = camera.fov;
+  $('scope').style.display = scoped ? 'block' : 'none';
+  $('cross').style.display = scoped ? 'none' : 'block';
+  if (gunModel) gunModel.visible = !scoped;
+  const r = Math.max(5, crossPx(gun.spread * (scoped ? 1 : 1.6), fov));
+  if (scoped) { const sr = $('sring'); sr.style.display = r > 10 ? 'block' : 'none'; sr.style.width = sr.style.height = r * 2 + 'px'; }
+  else { const c = $('cross'); c.style.width = c.style.height = r * 2 + 'px'; }
+  $('range').style.display = scoped ? 'block' : 'none';
+}
+
+function itemHud() {
+  const it = ITEMS[itemIdx]; if (it.id === 'none') return '';
+  const hi = t => `<span style="color:#ffd040">${t}</span>`;
+  let st = '';
+  if (it.id === 'recall') st = recallUsed ? '已用' : '待命';
+  if (it.id === 'lock') st = shotCount % 5 === 4 ? hi('下一發必中') : `${shotCount % 5} / 5`;
+  if (it.id === 'quick') st = halfReload ? hi('下次換彈減半') : '等爆頭';
+  if (it.id === 'rhythm') st = (combo > 1 ? hi : t => t)('×' + combo.toFixed(2));
+  if (it.id === 'zombie') { const n = prisoners.filter(p => p.zombie > 0).length; st = n ? hi(`殭屍 ${n} 隻`) : '等人倒下'; }
+  if (it.id === 'suppress') st = '作用中';
+  if (it.id === 'orb') st = orb ? `寶珠 ${Math.ceil(orb.hp / orb.max * 100)}%` : aura ? hi('天雷中') : '已用';
+  return `<div class="item">${it.icon} ${it.name}　${st}</div>`;
+}
+
+// ================= 選單 =================
+function menu(html, isTitle) {
+  state = 'menu'; scoped = false; firing = false; paused = false; $('pause').style.display = 'none';
+  if (document.exitPointerLock) document.exitPointerLock();
+  $('menu').style.display = 'block'; box.classList.add('menuon');
+  $('menu').classList.toggle('titlebg', !!isTitle);
+  $('menu').innerHTML = html; $('menu').scrollTop = 0;
+}
+function on(id, fn) { const el = $(id); if (el) el.onclick = () => { audio(); fn(); }; }
+function showMain() {
+  menu(`<div class="title">
+    <div class="tag">— 第 7 號監獄・北側高塔 —</div>
+    <h1 class="big">高塔狙擊手</h1>
+    <div class="lead">「警報一響，就有人翻牆。<br>在他們跑進森林之前，用麻醉彈讓他們睡著。」</div>
+    <div class="mlist">
+      <div class="mitem" id="mCamp"><b>破關模式</b><small>依序守完六區</small></div>
+      <div class="mitem" id="mStage"><b>關卡選擇</b><small>挑一區來守</small></div>
+      <div class="mitem" id="mCustom"><b>自訂關卡</b><small>自己排一場演習</small></div>
+      <div class="mitem" id="mEndless"><b>無盡模式</b><small>撐越久越好</small></div>
+      <div class="mitem" id="mRank"><b>排行榜</b><small>看看誰守得最好</small></div>
+      <div class="mitem" id="mHelp"><b>說明</b><small>典獄長的守則與檔案</small></div>
+    </div>
+    <div class="foot">滑鼠瞄準・左鍵射擊・右鍵開鏡・Shift 屏息・R 換彈・P 暫停</div>
+  </div>`, true);
+  on('mCamp', () => { try { for (const k of ['slime', 'vampire']) localStorage.removeItem('sniper_seen_' + k); } catch (e) {} mode = 'campaign'; campaign = { res: [] }; showBriefing(0); });
+  on('mEndless', () => { mode = 'endless'; showGuns(-2); });
+  on('mStage', showStageSelect);
+  on('mCustom', showCustom);
+  on('mHelp', () => showHelp('rules'));
+  on('mRank', () => showRank());
+}
+// ---- 說明頁 ----
+// 非人的犯人：放倒過一次之前，典獄長只寫看得到的部分
+const SECRET = {
+  psychic:  '入監時說自己「看得見別人看不見的東西」，醫務室判定是妄想。放風時常一個人對著空氣比畫。有人說子彈靠近他會「偏掉」，我是不信。',
+  slime:    '他的身體總是分泌出不明的黏液，醫務室也查不出原因。他摸過的東西都濕答答的，放倒他的時候離遠一點，別讓那東西沾到你。',
+  werewolf: '體毛很重，脾氣很差，一到晚上就在牢房裡低吼。跑起來偶爾會突然暴衝一段，盯緊一點。',
+  succubus: '長得很漂亮，牢房裡的人都聽她的話。別跟她對上眼。她身邊的人，看起來都不太對勁。',
+  vampire:  '臉色蒼白，從不在白天放風，送去的飯一口也沒動。他身上有種說不出來的怪，別讓他離開你的視線。',
+  guard:    null,
+};
+function known(k) { if (!(k in SECRET)) return true; try { return !!localStorage.getItem('sniper_known_' + k); } catch (e) { return false; } }
+function learn(k) { if (known(k)) return false; try { localStorage.setItem('sniper_known_' + k, '1'); } catch (e) {} return true; }
+function wardenText(k) { return known(k) ? WARDEN[k] : SECRET[k] || '檔案上什麼也沒有。'; }
+const GUN_NOTES = {
+  m24:  '這是發給每個新人的槍。拉一次栓打一發，一匣五發，不快也不慢。打身體兩發就能放倒一般犯人。先拿它練熟怎麼在晃動中抓準時機扣扳機。',
+  gl79: '榴彈槍。打出去的不是麻醉針，是落地就炸開的麻醉氣彈，落點五公尺內的人都會吸到，一群人擠在一起時最划算。比散彈穩，不用管中了幾顆，藥效也更強。一次只裝四發，換彈要將近五秒。煙霧擋不住它，護盾擋得住。',
+  lx9:  '研究所借我們試用的，別給我弄壞。準到可以點中額頭，晃動也比別的槍小，打中哪裡都是一發就倒。可是一匣只有兩發，充能要四秒多，失手一次就很難補救。',
+  sr25: '半自動，扣一次扳機打一發，不用拉栓，一匣十二發。藥量輕，要多打幾發才放得倒人。人多的時候拿它一個一個快速點過去。',
+  r870: '這不是狙擊槍，是散彈槍。一發噴出八顆小彈，打中同一個人的越多顆效果越強，近距離幾乎一發解決。距離一遠彈就散開、藥效也變弱，趁他們剛翻過牆就動手。',
+  m249: '按住就一直射，一條彈鏈六十發。每發藥量很少，連射起來槍口晃得厲害，要靠數量壓過去。換彈鏈要五秒多，換的時候外面的人可不會等你。',
+};
+let thumbs = null, gunThumbs = null;
+function makeThumbs() {
+  const r = new THREE.WebGLRenderer({ antialias: false, preserveDrawingBuffer: true });
+  r.setPixelRatio(1); r.setSize(54, 72);
+  const sc = new THREE.Scene(); sc.background = new THREE.Color(0x2a2f2a);
+  sc.add(new THREE.HemisphereLight(0xdfe8ff, 0x4a4030, .8));
+  const sun = new THREE.DirectionalLight(0xfff0d0, .8); sun.position.set(2, 4, 5); sc.add(sun);
+  const cam = new THREE.PerspectiveCamera(30, 54 / 72, .1, 50);
+  const out = {};
+  for (const k of Object.keys(PTYPES)) {
+    const b = buildBody(k);
+    b.g.scale.setScalar(1); b.g.rotation.y = .5;
+    b.legL.rotation.x = .35; b.legR.rotation.x = -.35; b.armL.rotation.x = -.4; b.armR.rotation.x = .4;
+    sc.add(b.g);
+    cam.position.set(0, 1.15, 4.6); cam.lookAt(0, 1.05, 0);
+    r.render(sc, cam);
+    out[k] = r.domElement.toDataURL();
+    sc.remove(b.g);
+  }
+  const d = buildDemon(); d.g.rotation.y = .5; sc.add(d.g);
+  cam.position.set(0, 1.4, 6.6); cam.lookAt(0, 1.35, 0);
+  r.render(sc, cam); out.demon = r.domElement.toDataURL(); sc.remove(d.g);
+  // 槍械側面圖
+  r.setSize(132, 44);
+  sc.background = new THREE.Color(0x7c8576);
+  const gcam = new THREE.PerspectiveCamera(20, 132 / 44, .1, 50);
+  gcam.position.set(0, .15, 4.2); gcam.lookAt(0, 0, 0);
+  const gout = {};
+  for (const gun of GUNS) {
+    const m = makeGunModel(gun);
+    m.scale.setScalar(1); m.position.set(0, 0, 0); m.rotation.set(0, Math.PI / 2, 0);
+    m.position.x = gun.id === 'gl79' ? .5 : .85;
+    sc.add(m); r.render(sc, gcam); gout[gun.id] = r.domElement.toDataURL(); sc.remove(m);
+  }
+  r.dispose();
+  gunThumbs = gout;
+  return out;
+}
+function cleared() { try { return !!localStorage.getItem('sniper_cleared'); } catch (e) { return false; } }
+function showHelp(tab) {
+  if (!thumbs) { try { thumbs = makeThumbs(); } catch (e) { thumbs = {}; gunThumbs = {}; } }
+  const files = `<div class="sub" style="margin-bottom:8px">典獄長留給高塔守衛的筆記。編號是牢房號碼。</div>
+    <div class="files">${[...Object.keys(PTYPES), 'demon'].map((k, i) => `<div class="file"><img src="${thumbs[k] || ''}" alt=""><div>
+      <b>${k === 'demon' ? '惡魔' : PTYPES[k].name}</b> <span class="no">${k === 'demon' ? '#??' : '#' + String(i + 1).padStart(2, '0')}</span><p>「${wardenText(k)}」</p></div></div>`).join('')}</div>`
+    .replace(/<div class="file"><img src="[^"]*" alt=""><div>\s*<b>護衛<\/b>[\s\S]*?<\/p><\/div><\/div>/, m => known('guard') ? m :
+      '<div class="file"><img alt="" style="filter:brightness(0)"><div><b>？？？</b> <span class="no">#12</span><p>「這一格是空的。我還不知道該寫什麼。」</p></div></div>')
+    .replace(/<div class="file"><img src="[^"]*" alt=""><div>\s*<b>(惡魔|惡魔兵)<\/b>[\s\S]*?<\/p><\/div><\/div>/g, m => cleared() ? m :
+      '<div class="file"><img alt="" style="filter:brightness(0)"><div><b>？？？</b> <span class="no">#??</span><p>「這份檔案被典獄長鎖在抽屜裡。守完最後一區，或許他會拿出來給你看。」</p></div></div>');
+  const items = `<div class="sub" style="margin-bottom:8px">選好槍以後，裝備室可以再讓你帶一樣東西。典獄長的交代：</div>
+    <div class="gfiles">${ITEMS.map(it => `<div class="file"><span class="icon">${it.icon}</span><div>
+      <b>${it.name}</b><p>「${ITEM_NOTES[it.id]}」</p></div></div>`).join('')}</div>`;
+  const guns = `<div class="sub" style="margin-bottom:8px">軍械室的槍都在這裡，每一關開始前挑一把。典獄長的交代：</div>
+    <div class="gfiles">${GUNS.map(g => `<div class="file"><img class="gimg" src="${gunThumbs[g.id] || ''}" alt=""><div>
+      <b>${g.name}</b><p>「${GUN_NOTES[g.id]}」</p></div></div>`).join('')}</div>`;
+  const rules = `<div class="help">
+    <p>「聽好，新來的。這座塔是整座監獄看得最遠的地方，所以把你放在這裡。」</p>
+    <p><b>你的工作</b>　「警報一響，就會有人從圍牆裡面爬繩子翻出去，往外面那片森林跑。人一進森林我們就追不到了。在那之前，用麻醉彈把他們放倒。爬牆爬到一半的也能打，別客氣。」</p>
+    <p><b>什麼叫做完成任務</b>　「這一波翻出去的人全部放倒，就算你過關。上面能容忍幾個漏網之魚，每一區能放走幾個人不一樣，左上角寫著。放走的人超過那個數字，任務就算失敗，你就等著寫報告吧。最後一區不一樣：人全處理完之後，森林裡會走出一個大傢伙，把他放倒才算數。他要是走到圍牆，一切就完了。」</p>
+    <p><b>打哪裡</b>　「打頭最有效，大概是打身體的一倍半，可惜頭小不好打。身體最大、最好瞄。打腿藥效差一點，但他們會一跛一跛跑不快。被打到半條命的人也會開始喘、自己慢下來。」</p>
+    <p><b>開槍的時機</b>　「我們的麻醉彈是最新型的，扣下扳機就打到，不用管距離。難的是遠處的人看起來很小、瞄準鏡又會晃，憋住氣、等準心晃回人身上再扣。」</p>
+    <p><b>擋路的東西</b>　「他們會躲在岩石、樹叢、卡車後面，羊群和煙霧也會吃掉你的子彈。等他探頭再打，別浪費彈藥。站著一動也不動的那種，十之八九是紙板。」</p>
+    <p><b>接應車</b>　「車隊那一區常有車在路邊等。人上了車就很難攔，上車前盡量多打幾發。他上車時越虛弱，那台車越容易打停。」</p>
+    <p><b>雷達</b>　「沒在用瞄準鏡的時候，左下角是雷達。最下面那個方塊是你，最上面的紅線是森林。點旁邊的數字是那個人離森林還有幾公尺，數字變紅就快來不及了。灰色扇形是你現在面對的方向。」</p>
+    <p><b>警戒線</b>　「森林前面那排紅燈就是逃脫警戒線。有人跑到離線六十公尺以內，燈就會閃，畫面上方也會報出他還剩幾公尺。那個人身上也會被紅框框起來，不在你視野裡的話，畫面邊緣會有箭頭指給你看。看到燈在閃，手上在打誰都先放下，去處理那個人。」</p>
+    <p><b>槍怎麼用</b>　「滑鼠瞄準，第一次點畫面會把游標鎖住，按 <b>Esc</b> 放開。<b>左鍵</b>開槍。<b>右鍵</b>按住用瞄準鏡，或按 <b>Q</b> 切換，<b>滾輪</b>調倍率。開鏡時按住 <b>Shift</b> 憋氣，槍會穩很多，但別憋太久，一喘起來晃得更兇。<b>R</b> 隨時可以換彈，不用等打光。右下角兩條槓，上面是拉栓、下面是換彈，綠了才能開槍。要喘口氣就按 <b>P</b> 或 <b>Esc</b>，可以選擇繼續、重新開始這一關，或回到主選單。」</p>
+    <p><b>天候</b>　「第四區碰上雷雨夜，天色暗、雨又大，閃電一打下來整片地都亮，趁那一瞬間看清楚。第五區天剛亮，太陽貼在地平線上，朝那個方向開鏡，眼前會越來越白，看越久越白，到最後什麼都看不見，只能放下瞄準鏡讓眼睛休息一下。第六區……別問我那是什麼地方，地上到處冒著岩漿，每隔一陣子就噴一次，濃煙一冒出來什麼都看不見。那些人走過岩漿，連眉頭都不皺一下。」</p>
+    <p><b>道具</b>　「挑完槍，裝備室還會讓你帶一樣東西出去。每一樣怎麼用，看『道具』那一頁。右下角彈藥底下會顯示它現在的狀態。」</p>
+    <p><b>值班表</b>　「<b>破關模式</b>照順序輪六區的班，每一區出發前會先給你任務簡報。槍和道具在第一天就要挑好，之後六天都得用同一套，想清楚。<b>關卡選擇</b>讓你挑一區去守。<b>無盡模式</b>在沙漠，人會一直來，天氣也說變就變，放走五個人就收工，看你能撐多久。<b>自訂關卡</b>是演習，人數、種類、地圖你自己排。」</p>
+    <p><b>值勤報告</b>　「每一區守完，我都會寫一份評核報告給你，附一張現場照片。打得怎麼樣，評語寫得清清楚楚。六區全守完，還有一份年度考績。」</p>
+    <p><b>得分</b>　「報告上會算分：放倒一個人 100、爆頭每次 50、命中率每 1% 算 10 分；放走一個人扣 300。過關加 1000，一個都沒放走再加 500，比預定時間早收工每秒加 10（最多 1000），每個徽章 200，打倒惡魔 3000，打到羊一次扣 100。無盡模式不扣逃脫分，改成每撐一秒加 5。過關的分數會記在主選單的『排行榜』，可以只看同一把槍的人比。」</p></div>`;
+  const keys = `<div class="help">
+    <p>「操作就這些，背起來。」</p>
+    <div class="form" style="grid-template-columns:170px 1fr">
+      <b>滑鼠移動</b><span>瞄準（第一次點畫面會鎖住游標）</span>
+      <b>左鍵</b><span>開槍（M-249 按住連射）</span>
+      <b>右鍵（按住）／ Q</b><span>開瞄準鏡／切換瞄準鏡</span>
+      <b>滾輪</b><span>調整瞄準鏡倍率（2.5～12 倍）</span>
+      <b>Shift（按住）</b><span>開鏡時屏息，槍會很穩；撐太久會喘，晃得更兇</span>
+      <b>R</b><span>換彈（不用等打光）</span>
+      <b>P ／ Esc</b><span>暫停：繼續、重新開始這一關、回到主選單</span>
+    </div>
+    <p style="margin-top:10px">「畫面上：左上是任務進度，右上是場上犯人和他們離森林多遠，左下是雷達和屏息槓，右下是彈藥、拉栓、換彈和道具狀態。有人離森林六十公尺以內，畫面上會用紅框把他框起來，不在視野內就在邊緣用箭頭指給你看。」</p></div>`;
+  const tabBtn = (id, key, label) => `<span class="tab ${tab === key ? 'on' : ''}" id="${id}">${label}</span>`;
+  menu(`<h1>說明</h1>
+    <div class="tabs">${tabBtn('tRules', 'rules', '守衛守則')}${tabBtn('tKeys', 'keys', '操作')}${tabBtn('tFiles', 'files', '犯人檔案')}${tabBtn('tGuns', 'guns', '槍械')}${tabBtn('tItems', 'items', '道具')}</div>
+    ${tab === 'files' ? files : tab === 'guns' ? guns : tab === 'items' ? items : tab === 'keys' ? keys : rules}
+    <div><span class="btn dim" id="back">← 返回</span></div>`);
+  on('tRules', () => showHelp('rules')); on('tKeys', () => showHelp('keys')); on('tFiles', () => showHelp('files')); on('tGuns', () => showHelp('guns')); on('tItems', () => showHelp('items')); on('back', showMain);
+}
+function showStageSelect() {
+  menu(`<h1>關卡選擇</h1>
+    <div class="cards" style="margin-top:14px">${STAGES.map((s, i) => `<div class="card" id="st${i}" style="flex:1 1 30%"><b>${s.name}</b><small>「${s.brief}」<br><span style="color:#8a8670">${s.desc}</span><br>共 ${s.total} 人・同時最多 ${s.maxAlive} 人・可容許逃脫 ${s.allowEscape} 人</small></div>`).join('')}</div>
+    <span class="btn dim" id="back">← 返回</span>`);
+  STAGES.forEach((s, i) => on('st' + i, () => { mode = 'select'; showBriefing(i); }));
+  on('back', showMain);
+}
+let custom = (() => { try { return JSON.parse(localStorage.getItem('sniper_custom')) || null; } catch (e) { return null; } })() ||
+  { map:'waste', total:10, maxAlive:3, allowEscape:2, types:['normal','fast','brute'], smoke:false, boom:false, cars:false, boss:false };
+function showCustom() {
+  const c = custom;
+  menu(`<h1>自訂關卡</h1>
+    <div class="form" style="margin-top:14px">
+      <span>地圖</span><select id="cMap">${Object.entries(MAPS).map(([k, m]) => `<option value="${k}" ${c.map === k ? 'selected' : ''}>${m.name}</option>`).join('')}</select>
+      <span>總共犯人數</span><span><input type="range" id="cTotal" min="1" max="40" value="${c.total}"> <b id="vTotal">${c.total}</b> 人</span>
+      <span>同時最多出現</span><span><input type="range" id="cMax" min="1" max="10" value="${c.maxAlive}"> <b id="vMax">${c.maxAlive}</b> 人</span>
+      <span>可容許逃脫</span><span><input type="range" id="cEsc" min="0" max="10" value="${c.allowEscape}"> <b id="vEsc">${c.allowEscape}</b> 人</span>
+      <span>特殊事件</span><span>
+        <label><input type="checkbox" id="cSmoke" ${c.smoke ? 'checked' : ''}> 煙霧彈</label>
+        <label><input type="checkbox" id="cBoom" ${c.boom ? 'checked' : ''}> 爆炸</label>
+        <label><input type="checkbox" id="cCars" ${c.cars ? 'checked' : ''}> 接應車（限車隊地圖）</label>
+        <label><input type="checkbox" id="cBoss" ${c.boss ? 'checked' : ''}> 最後出現惡魔</label></span>
+    </div>
+    <h2>▸ 犯人種類</h2>
+    <div class="types">${TYPE_KEYS.map(k => `<label><input type="checkbox" data-t="${k}" ${c.types.includes(k) ? 'checked' : ''}> ${PTYPES[k].name}</label>`).join('')}</div>
+    <div id="cErr" style="color:var(--red);height:20px;margin-top:6px"></div>
+    <span class="btn" id="go">下一步：選槍 →</span><span class="btn dim" id="back">← 返回</span>`);
+  for (const [i, v] of [['cTotal', 'vTotal'], ['cMax', 'vMax'], ['cEsc', 'vEsc']]) $(i).oninput = () => $(v).textContent = $(i).value;
+  on('back', showMain);
+  on('go', () => {
+    const types = [...document.querySelectorAll('[data-t]')].filter(x => x.checked).map(x => x.dataset.t);
+    if (!types.length) { $('cErr').textContent = '至少要選一種犯人。'; return; }
+    custom = { map: $('cMap').value, total: +$('cTotal').value, maxAlive: +$('cMax').value, allowEscape: +$('cEsc').value, types,
+      smoke: $('cSmoke').checked, boom: $('cBoom').checked, cars: $('cCars').checked, boss: $('cBoss').checked };
+    try { localStorage.setItem('sniper_custom', JSON.stringify(custom)); } catch (e) {}
+    mode = 'custom'; showGuns(-1);
+  });
+}
+// ---- 無盡模式：沙漠，越撐越難，天氣不定期變化 ----
+const ENDLESS_TIERS = [['normal', 'normal', 'fast', 'brute'], ['fraud', 'clown'], ['priest', 'slime'], ['psychic', 'werewolf'], ['vampire', 'succubus']];
+function endlessStage() {
+  return { name:'無盡模式　沙漠', map:'desert', endless:true, total:0, maxAlive:2, allowEscape:4, smoke:.2, pool:[...ENDLESS_TIERS[0]], level:0, wT:rand(35, 50), weather:null, idx:-2,
+    brief:'沒有輪班表，人會一直來，越來越多、越來越怪。放走五個人就收工。', desc:'沙漠。天氣會突然變成雷雨或刺眼的低角度陽光。' };
+}
+function stageDef(si) { return si >= 0 ? STAGES[si] : si === -2 ? endlessStage() : customStage(); }
+function updateEndless(dt) {
+  const lv = Math.floor(stageT / 45);
+  if (lv !== stage.level) {
+    stage.level = lv;
+    if (ENDLESS_TIERS[lv]) { stage.pool.push(...ENDLESS_TIERS[lv]); radio(`第 ${lv + 1} 波：${[...new Set(ENDLESS_TIERS[lv])].map(k => PTYPES[k].name).join('、')}也開始出現了！`); }
+    else radio(`第 ${lv + 1} 波：人越來越多了！`);
+  }
+  stage.maxAlive = Math.min(7, 2 + lv);
+  while (stage.bag.length < 3) stage.bag.push(stage.pool[Math.floor(Math.random() * stage.pool.length)]);
+  // 天氣
+  stage.wT -= dt;
+  if (stage.wT <= 0) {
+    if (stage.weather) {
+      map.rain = false; map.sun = false; map.sunSprites.forEach(x => x.visible = false);
+      scene.background.setHex(map.sky); scene.fog.color.setHex(map.sky); map.hemiI = map.light.hemi[2];
+      stage.weather = null; stage.wT = rand(30, 50); radio('天氣恢復了。');
+    } else if (Math.random() < .5) {
+      stage.weather = 'rain'; stage.wT = rand(25, 35); map.rain = true; lightT = rand(2, 4);
+      scene.background.setHex(0x5a5e66); scene.fog.color.setHex(0x5a5e66); map.hemiI = .55;
+      radio('烏雲壓過來，下起雷雨了！');
+    } else {
+      stage.weather = 'sun'; stage.wT = rand(25, 35); map.sun = true; map.sunSprites.forEach(x => x.visible = true);
+      scene.background.setHex(0xf0c080); scene.fog.color.setHex(0xf0c080);
+      radio('雲散了，太陽低低地照過來，朝那邊開鏡會越來越刺眼！');
+    }
+  }
+}
+function customStage() {
+  const c = custom;
+  const booms = []; if (c.boom) for (let t = 1; t < 400; t += rand(35, 55)) booms.push(t);
+  return { name:'自訂關卡　' + MAPS[c.map].name, map:c.map, total:c.total, maxAlive:c.maxAlive, allowEscape:c.allowEscape,
+    smoke: c.smoke ? .3 : 0, cars: c.cars && c.map === 'convoy', explosions: booms, pool: c.types, boss: !!c.boss, idx: -1 };
+}
+// ---- 任務簡報：情報＋主角的值勤筆記 ----
+let campaign = { res: [] };
+function showBriefing(si) {
+  if (!thumbs) { try { thumbs = makeThumbs(); } catch (e) { thumbs = {}; gunThumbs = {}; } }
+  const s = STAGES[si], seen = new Set(STAGES.slice(0, si).flatMap(x => x.pool));
+  const tip = t => `<div class="tip">「${t}」<span>— 典獄長</span></div>`;
+  const types = [...new Set(s.pool)].map(k => `<div class="bt"><img src="${thumbs[k] || ''}" alt="">${PTYPES[k].name}${seen.has(k) ? '' : '<em>新</em>'}${tip(wardenText(k))}</div>`).join('') +
+    (s.boss ? (cleared() ? `<div class="bt"><img src="${thumbs.demon || ''}" alt="">惡魔<em>最後出現</em>${tip(WARDEN.demon)}</div>`
+      : `<div class="bt"><img src="${thumbs.demon || ''}" alt="" style="filter:brightness(0)">？？？<em>最後出現</em>${tip('……這一個，我不知道該怎麼跟你說。到時候你自己看吧。')}</div>`) : '');
+  const locked = mode === 'campaign' && si > 0;
+  menu(`<h1>任務簡報</h1>
+    <div class="sub">${s.name}　共 ${s.total} 人・同時最多 ${s.maxAlive} 人・可容許逃脫 ${s.allowEscape} 人</div>
+    <div class="brief">
+      <div><h2 style="margin-top:4px">▸ 地形</h2><p class="help">${s.terrain}</p>
+        <h2>▸ 預計出現</h2><div class="btypes">${types}</div>
+        ${locked ? `<p class="sub" style="margin-top:10px">裝備：${GUNS[gunIdx].name}　／　${ITEMS[itemIdx].name}（破關模式中途不能更換）</p>` : ''}</div>
+      <div class="note"><div class="nh">值勤筆記　第 ${si + 1} 天</div><p>${s.note}</p></div>
+    </div>
+    <div class="mfoot"><span class="btn dim" id="back">← ${mode === 'select' ? '返回' : '回主選單'}</span><span class="btn go" id="go">${locked ? '出擊！' : '選擇裝備 →'}</span></div>`);
+  on('go', () => locked ? startStage(si) : showGuns(si));
+  on('back', () => mode === 'select' ? showStageSelect() : showMain());
+}
+function statBar(label, v) { return `<div class="stat"><span>${label}</span><em><i style="width:${clamp(v, .04, 1) * 100}%"></i></em></div>`; }
+function showGuns(si) {
+  const s = stageDef(si);
+  menu(`<h1>選擇槍械</h1>
+    <div class="sub">${s.name}　${s.endless ? `可容許逃脫 ${s.allowEscape} 人` : `共 ${s.total} 人・同時最多 ${s.maxAlive} 人・可容許逃脫 ${s.allowEscape} 人`}</div>
+    <h2>▸ 點選槍械，再選道具${mode === 'campaign' ? '（破關模式中途不能更換）' : ''}</h2>
+    <div class="guns">${GUNS.map((g, i) => `
+      <div class="gun ${i === gunIdx ? 'on' : ''}" data-g="${i}"><b>${g.name}</b><small>${g.note}</small>
+      ${statBar('威力', g.dmg * g.pellets / 130)}${statBar('射速', .09 / g.bolt + (g.auto ? .2 : 0) + .1)}
+      ${statBar('彈匣', g.mag / 60 + .08)}${statBar('換彈', 1.6 / g.reload)}
+      ${statBar('穩定', .7 / g.sway)}${statBar('精準', .05 / g.spread + .04)}</div>`).join('')}</div>
+    <div class="mfoot"><span class="btn dim" id="back">← 返回</span><span class="btn go" id="go">下一步：道具 →</span></div>`);
+  document.querySelectorAll('.gun').forEach(el => el.onclick = () => {
+    gunIdx = +el.dataset.g; document.querySelectorAll('.gun').forEach(x => x.classList.toggle('on', x === el));
+  });
+  document.querySelectorAll('.gun').forEach(el => el.ondblclick = () => { audio(); showItems(si); });
+  on('go', () => showItems(si));
+  on('back', () => mode === 'custom' ? showCustom() : si >= 0 ? showBriefing(si) : showMain());
+}
+function showItems(si) {
+  const s = stageDef(si);
+  menu(`<h1>選擇道具</h1>
+    <div class="sub">${s.name}　使用槍械：${GUNS[gunIdx].name}</div>
+    <h2>▸ 從裝備室帶一樣東西（詳細說明在「說明 → 道具」）</h2>
+    <div class="items">${ITEMS.map((it, i) => `<div class="gun ${i === itemIdx ? 'on' : ''}" data-i="${i}"><b><span class="icon">${it.icon}</span>${it.name}</b><small>${it.note}</small></div>`).join('')}</div>
+    <div class="mfoot"><span class="btn dim" id="back">← 回到選槍</span><span class="btn go" id="go">出擊！</span></div>`);
+  document.querySelectorAll('[data-i]').forEach(el => el.onclick = () => {
+    itemIdx = +el.dataset.i; document.querySelectorAll('[data-i]').forEach(x => x.classList.toggle('on', x === el));
+  });
+  document.querySelectorAll('[data-i]').forEach(el => el.ondblclick = () => { audio(); startStage(si); });
+  on('go', () => startStage(si));
+  on('back', () => showGuns(si));
+}
+function startStage(si) {
+  stage = si >= 0 ? { ...STAGES[si], idx: si } : stageDef(si);
+  buildMap(stage.map);
+  if (stage.cars) for (const x of [-70, 75]) map.carSlots.push(addCar(x, -232));
+  // 出場順序：照比例填滿總人數後洗牌
+  const bag = []; for (let i = 0; i < stage.total; i++) bag.push(stage.pool[i % stage.pool.length]);
+  for (let i = bag.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [bag[i], bag[j]] = [bag[j], bag[i]]; }
+  stage.bag = bag; stage.nextSpawn = 1.5; stage.booms = [...(stage.explosions || [])];
+  stageT = 0; yaw = 0; pitch = -10 * D2R; recoil = 0; zoom = 4; breath = 1; gasp = 0; splatT = 0;
+  mag = GUNS[gunIdx].mag; cool = 0; reloading = 0; firing = false; shake = 0; endT = 0;
+  stats = { shots: 0, hits: 0, heads: 0, sheep: 0, downed: 0, escaped: 0, spawned: 0, boss: false, downs: [], abil: 0, itemDowns: 0, multiBlast: false }; pCount = 0;
+  itemId = ITEMS[itemIdx].id; abilityF = itemId === 'suppress' ? .7 : 1; hpMul = itemId === 'suppress' ? 1.2 : 1;
+  recallUsed = false; shotCount = 0; halfReload = false; combo = .75; reloadTotal = GUNS[gunIdx].reload;
+  sunGlare = 0; sunBlind = 0; lightT = rand(3, 6); flashA = 0;
+  photo = null; photos = []; photoQ.length = 0; xrayOn = false; cvs.style.filter = ''; talkQ.length = 0; talkT = 0;
+  if (itemId === 'orb') spawnOrb();
+  $('menu').style.display = 'none'; box.classList.remove('menuon');
+  state = 'play'; paused = false;
+  showMsg(stage.name + '<br><span style="font-size:16px;color:#e8e2c8">點擊畫面開始瞄準</span>', 3);
+  SFX.siren();
+  lockPointer();
+}
+const TITLES = {
+  head:   { name:'爆頭專家', say:'專挑頭打。醫務室說那些人醒來全在揉額頭，我就當作是稱讚吧。' },
+  eagle:  { name:'鷹眼', say:'子彈都打在該打的地方。這種守衛，我十年也見不到幾個。' },
+  wall:   { name:'牆邊攔截', say:'人才剛落地就倒了。外面的森林今天很安靜，我喜歡安靜。' },
+  late:   { name:'驚險過關', say:'每次都讓他們跑到森林邊才動手，你是在測試我的心臟嗎？' },
+  show:   { name:'看戲的觀眾', say:'我付你薪水，不是讓你在塔上看表演的。' },
+  spray:  { name:'天女散花', say:'打出去的子彈比放倒的人多太多了。彈藥費，我會從你薪水裡扣。' },
+  normal: { name:'盡責的守衛', say:'沒什麼好挑剔的，也沒什麼好誇獎的。明天準時來。' },
+  fail:   { name:'失職', say:'放走的人太多了。去寫報告，寫完再來找我。' },
+  endless:{ name:'耐力測驗', say:'沒有人能一直守下去，但你撐得比我想的久。' },
+};
+function judge(win) {
+  const acc = stats.shots ? stats.hits / stats.shots : 0, n = stats.downs.length;
+  const late = n ? stats.downs.filter(d => d.left < 60).length / n : 0, early = n ? stats.downs.filter(d => d.fromWall < 50).length / n : 0;
+  const headR = stats.hits ? stats.heads / stats.hits : 0;
+  let t = null;
+  if (!win && !stage.endless) t = TITLES.fail;
+  else if (stats.hits >= 4 && headR >= .4) t = TITLES.head;
+  else if (stats.shots >= 5 && acc >= .7) t = TITLES.eagle;
+  else if (n >= 3 && early >= .5) t = TITLES.wall;
+  else if (n >= 3 && late >= .4) t = TITLES.late;
+  else if (stats.abil >= Math.max(6, (stats.spawned || 0) * .35)) t = TITLES.show;
+  else if (stats.shots >= 5 && acc < .3) t = TITLES.spray;
+  else t = stage.endless ? TITLES.endless : TITLES.normal;
+  const b = [];
+  if (stats.boss) b.push('屠魔者');
+  if (win && !stats.escaped) b.push('無一漏網');
+  if (win && stage.allowEscape > 0 && stats.escaped === stage.allowEscape) b.push('千鈞一髮');
+  if (win && stageT < stage.total * 7 + (stage.boss ? 120 : 0)) b.push('速戰速決');
+  if (win && stats.shots <= stats.downed * 1.5) b.push('精打細算');
+  if (stats.multiBlast) b.push('爆破專家');
+  if (stats.itemDowns >= 3) b.push('借刀殺人');
+  if (stats.sheep >= 3) b.push('羊群公敵');
+  return { t, badges: b.slice(0, 3) };
+}
+function reportHtml(win, j, stars, extra, sc, rk) {
+  const acc = stats.shots ? Math.min(100, Math.round(stats.hits / stats.shots * 100)) : 0;
+  const d = new Date(), date = `${d.getFullYear()}.${d.getMonth() + 1}.${d.getDate()}`;
+  const rows = [
+    ['值勤時間', `${stageT.toFixed(1)} 秒`],
+    ['制伏人數', `${stats.downed} 人`], ['逃脫人數', `${stats.escaped} 人`],
+    ['射擊／命中', `${stats.shots} 發／${stats.hits}（頭部 ${stats.heads}）`], ['命中率', `${acc}%`],
+    ...(stats.sheep ? [['誤擊羊隻', `${stats.sheep} 次`]] : []), ...(stats.boss ? [['擊倒惡魔', '是']] : []),
+    ['配備', `${GUNS[gunIdx].name}／${ITEMS[itemIdx].name}`],
+    ...(stage.endless ? [['撐到', `第 ${stage.level + 1} 波`]] : [['評等', '★'.repeat(stars) + '☆'.repeat(3 - stars)]]),
+    ...(extra || []),
+    ...(sc ? [['得分', scoreHtml(sc)]] : []), ...(rk ? [['排行', rk]] : []),
+  ];
+  const ph = stage.boss && photos.length > 1 ? `<div class="collage">${photos.map((x, i) => `<div class="photo" style="animation-delay:${.75 + i * .3}s">${i ? '' : '<div class="clip"></div>'}<img src="${x.url}" alt=""><div class="cap">${x.cap}</div></div>`).join('')}</div>` : photo ? `<div class="photo"><div class="clip"></div><img src="${photo.url}" alt=""><div class="cap">${photo.cap}</div></div>` : `<div class="photo"><img alt=""><div class="cap">（沒有拍到照片）</div></div>`;
+  return `<div class="report">
+    <div class="rh">第 7 號監獄　北側高塔<b>值勤評核報告</b></div>
+    <div class="rm"><span>區域：${stage.name}</span><span>日期：${date}</span><span>值勤員：${playerName()}</span></div>
+    <div class="rb"><table>${rows.map(r => `<tr><td>${r[0]}</td><td>${r[1]}</td></tr>`).join('')}</table>${ph}</div>
+    <div class="rt">評定：<b>${j.t.name}</b>　${j.badges.map(x => `<span class="badge">${x}</span>`).join('')}</div>
+    <div class="rc">「${j.t.say}」<span class="sg">— 典獄長</span></div>
+    <div class="stamp">${stage.endless ? '紀錄' : win ? '合格' : '不合格'}</div>
+  </div>`;
+}
+function endStage(win) {
+  state = 'end'; scoped = false; firing = false;
+  if (document.exitPointerLock) document.exitPointerLock();
+  const acc = stats.shots ? Math.round(stats.hits / stats.shots * 100) : 0;
+  const stars = win ? 1 + (acc >= 45) + (stats.escaped === 0) : 0;
+  const j = judge(win);
+  const camp = mode === 'campaign' && stage.idx >= 0;
+  const hasNext = win && stage.idx >= 0 && stage.idx < STAGES.length - 1;
+  const allClear = win && camp && stage.idx === STAGES.length - 1;
+  if (allClear) { try { localStorage.setItem('sniper_cleared', '1'); } catch (e) {} }
+  const sc = stage.idx === -1 ? null : calcScore(win, j);
+  const rk = sc && (win || stage.endless) ? addScore(stage.endless ? 'endless' : 's' + stage.idx, sc.total, stage.endless ? `第 ${stage.level + 1} 波` : '★'.repeat(stars)) : null;
+  if (camp && win) campaign.res[stage.idx] = { score: sc.total, name: stage.name, stars, acc: Math.min(100, acc), esc: stats.escaped, time: stageT, title: j.t.name, photo, shots: stats.shots, hits: stats.hits, downed: stats.downed };
+  let extra = null;
+  if (stage.endless) {
+    let best = null; try { best = JSON.parse(localStorage.getItem('sniper_endless_best')); } catch (e) {}
+    const isNew = !best || stats.downed > best.downed;
+    if (isNew) { best = { downed: stats.downed, time: stageT }; try { localStorage.setItem('sniper_endless_best', JSON.stringify(best)); } catch (e) {} }
+    extra = [['最佳紀錄', `${best.downed} 人${isNew ? '（新紀錄！）' : ''}`]];
+  }
+  setTimeout(() => {
+    const next = allClear ? '<span class="btn go" id="sum">年度考績 →</span>'
+      : hasNext ? `<span class="btn go" id="next">${camp ? '下一區任務簡報 →' : '下一關 →'}</span>` : '';
+    menu(`${reportHtml(win, j, stars, extra, sc, rk)}
+      <div class="mfoot"><span><span class="btn dim" id="back">回主選單</span><span class="btn" id="again" style="margin-left:8px">${camp ? '重新挑戰這一區' : '再玩一次'}</span></span>${next}</div>`);
+    setTimeout(() => { if (state === 'end') { SFX.thud(); SFX.thud(); } }, 1750);   // 蓋章
+    on('again', () => camp ? startStage(stage.idx) : stage.endless ? showGuns(-2) : showGuns(stage.idx));
+    on('next', () => camp ? showBriefing(stage.idx + 1) : (mode = 'select', showBriefing(stage.idx + 1)));
+    on('sum', showSummary);
+    on('back', showMain);
+  }, 1500);
+}
+// ---- 得分 ----
+const SCORE = { down:100, head:50, acc:10, escape:-300, clear:1000, perfect:500, time:10, boss:3000, badge:200, sheep:-100, endlessSec:5, timeCap:1000 };
+function calcScore(win, j) {
+  const acc = stats.shots ? Math.min(100, Math.round(stats.hits / stats.shots * 100)) : 0, P = [];
+  const add = (label, v) => { if (v) P.push([label, Math.round(v)]); };
+  add(`制伏 ${stats.downed} 人`, stats.downed * SCORE.down);
+  add(`爆頭 ${stats.heads} 次`, stats.heads * SCORE.head);
+  add(`命中率 ${acc}%`, acc * SCORE.acc);
+  if (stage.endless) add(`撐了 ${Math.floor(stageT)} 秒`, Math.floor(stageT) * SCORE.endlessSec);
+  else {
+    add(`放走 ${stats.escaped} 人`, stats.escaped * SCORE.escape);
+    if (win) { add('過關', SCORE.clear); if (!stats.escaped) add('無一漏網', SCORE.perfect);
+      add('提早完成', Math.min(SCORE.timeCap, Math.max(0, stage.total * 7 + (stage.boss ? 120 : 0) - stageT) * SCORE.time)); }
+    if (stats.boss) add('擊倒惡魔', SCORE.boss);
+  }
+  add(`徽章 ${j.badges.length} 個`, j.badges.length * SCORE.badge);
+  add(`誤擊羊 ${stats.sheep} 次`, stats.sheep * SCORE.sheep);
+  return { total: Math.max(0, P.reduce((a, x) => a + x[1], 0)), parts: P };
+}
+function scoreHtml(sc) { return `<span class="sc">${sc.total.toLocaleString()} 分<div class="tip">${sc.parts.map(x => `<div><span>${x[0]}</span><b>${x[1] > 0 ? '+' : ''}${x[1].toLocaleString()}</b></div>`).join('')}</div></span>`; }
+// 排行榜：存在這台電腦的瀏覽器裡
+const BOARDS = [['camp', '破關總分'], ...STAGES.map((s, i) => ['s' + i, s.name.split('　')[0]]), ['endless', '無盡模式']];
+let lastEntry = null;
+function playerName() { try { return localStorage.getItem('sniper_name') || '新進守衛'; } catch (e) { return '新進守衛'; } }
+function loadBoards() { try { return JSON.parse(localStorage.getItem('sniper_board')) || {}; } catch (e) { return {}; } }
+function addScore(key, score, note) {
+  const all = loadBoards(), list = all[key] || [], d = new Date();
+  const e = { id: Date.now() + Math.random(), s: score, g: GUNS[gunIdx].id, i: ITEMS[itemIdx].id, n: playerName(), d: `${d.getFullYear()}.${d.getMonth() + 1}.${d.getDate()}`, x: note || '' };
+  list.push(e); list.sort((a, b) => b.s - a.s); all[key] = list.slice(0, 100);
+  try { localStorage.setItem('sniper_board', JSON.stringify(all)); } catch (e2) {}
+  lastEntry = e.id;
+  const rk = all[key].indexOf(e) + 1, rg = all[key].filter(x => x.g === e.g).indexOf(e) + 1;
+  return rk ? `全部第 ${rk} 名・${GUNS[gunIdx].name.split(' ')[0]} 第 ${rg} 名` : '未進榜';
+}
+function showRank(key = 'camp', gun = 'all') {
+  const list = (loadBoards()[key] || []).filter(x => gun === 'all' || x.g === gun).slice(0, 10);
+  const gname = id => (GUNS.find(g => g.id === id) || { name: id }).name, iname = id => (ITEMS.find(t => t.id === id) || { name: id }).name;
+  menu(`<h1>排行榜</h1>
+    <div class="sub">紀錄只存在這台電腦的瀏覽器裡。值勤員名字：<input id="nameIn" maxlength="10" value="${playerName().replace(/"/g, '&quot;')}"></div>
+    <div class="tabs">${BOARDS.map(([k, n]) => `<span class="tab ${k === key ? 'on' : ''}" data-b="${k}">${n}</span>`).join('')}</div>
+    <div class="tabs small">${[['all', '全部槍械'], ...GUNS.map(g => [g.id, g.name.split(' ')[0]])].map(([k, n]) => `<span class="tab ${k === gun ? 'on' : ''}" data-g="${k}">${n}</span>`).join('')}</div>
+    ${list.length ? `<table class="rank"><tr><th>名次</th><th>值勤員</th><th style="text-align:right">得分</th><th>槍械</th><th>道具</th><th>${key === 'endless' ? '撐到' : '評等'}</th><th>日期</th></tr>
+      ${list.map((x, i) => `<tr class="${x.id === lastEntry ? 'me' : ''}"><td class="no${i + 1}">${i + 1}</td><td>${x.n}</td><td class="s">${x.s.toLocaleString()}</td><td>${gname(x.g)}</td><td>${iname(x.i)}</td><td>${x.x}</td><td>${x.d}</td></tr>`).join('')}</table>`
+      : `<p class="help" style="margin-top:20px">「這一欄還是空的。去塔上寫下第一筆紀錄吧。」</p>`}
+    <div class="mfoot"><span class="btn dim" id="back">← 回主選單</span><span></span></div>`);
+  document.querySelectorAll('[data-b]').forEach(el => el.onclick = () => showRank(el.dataset.b, gun));
+  document.querySelectorAll('[data-g]').forEach(el => el.onclick = () => showRank(key, el.dataset.g));
+  $('nameIn').onchange = () => { try { localStorage.setItem('sniper_name', $('nameIn').value.trim() || '新進守衛'); } catch (e) {} };
+  $('nameIn').onkeydown = ev => ev.stopPropagation();
+  on('back', showMain);
+}
+// ---- 破關：年度考績＋結局 ----
+const ENDING = '惡魔倒下的那一刻，森林裡的紅光也跟著熄了。來自地獄的侵襲，總算暫時畫下了休止符。典獄長拍了拍我的肩膀，什麼也沒說。可是我知道，那扇門還在監獄底下。下一次它打開的時候……他們什麼時候會再過來？';
+const GRADE_SAY = {
+  S: '我在這座監獄待了二十年，沒見過哪個新人做得比你好。北塔從今天起是你的了。',
+  A: '表現很好。有幾天手忙腳亂，但該守住的你都守住了。明年繼續。',
+  B: '勉強及格。上面問起來，我會說你還在學。多練練。',
+  C: '我會替你說好話的……大概吧。下次別讓我那麼難做。',
+};
+function showSummary() {
+  const r = campaign.res.filter(Boolean), st = r.reduce((a, x) => a + x.stars, 0);
+  const shots = r.reduce((a, x) => a + x.shots, 0), hits = r.reduce((a, x) => a + x.hits, 0), acc = shots ? Math.min(100, Math.round(hits / shots * 100)) : 0;
+  const g = st >= 16 ? 'S' : st >= 12 ? 'A' : st >= 8 ? 'B' : 'C';
+  const total = r.reduce((a, x) => a + (x.score || 0), 0);
+  if (!campaign.rk) campaign.rk = addScore('camp', total, '★' + st);
+  menu(`<div class="report">
+    <div class="rh">第 7 號監獄　北側高塔<b>年度考績</b></div>
+    <div class="rm"><span>值勤員：${playerName()}</span><span>使用配備：${GUNS[gunIdx].name}／${ITEMS[itemIdx].name}</span></div>
+    <table><tr><td><b>區域</b></td><td><b>評等／評定／時間／命中率／逃脫／得分</b></td></tr>
+      ${r.map(x => `<tr><td>${x.name}</td><td>${'★'.repeat(x.stars)}${'☆'.repeat(3 - x.stars)}　${x.title}　${x.time.toFixed(0)}s　${x.acc}%　${x.esc} 人　${(x.score || 0).toLocaleString()}</td></tr>`).join('')}
+      <tr><td>總計</td><td>★ ${st} / 18　制伏 ${r.reduce((a, x) => a + x.downed, 0)} 人　命中率 ${acc}%</td></tr>
+      <tr><td><b>總得分</b></td><td><b style="font-size:18px">${total.toLocaleString()} 分</b>　${campaign.rk}</td></tr></table>
+    <div class="photos">${r.map(x => x.photo ? `<div class="photo"><img src="${x.photo.url}" alt=""><div class="cap">${x.name.split('　')[1] || x.name}</div></div>` : '').join('')}</div>
+    <div class="rt">總評：<b style="font-size:26px">${g}</b></div>
+    <div class="rc">「${GRADE_SAY[g]}」<span class="sg">— 典獄長</span></div>
+    <div class="stamp">結業</div>
+  </div>
+  <div class="note" style="max-width:640px;margin:18px auto 0"><div class="nh">值勤筆記　最後一頁</div><p>${ENDING}</p></div>
+  <div class="mfoot"><span></span><span class="btn go" id="back">回主選單</span></div>`);
+  setTimeout(() => { SFX.thud(); SFX.thud(); }, 1750);
+  on('back', showMain);
+}
+
+// ================= 輸入 =================
+function lockPointer() { try { const r = cvs.requestPointerLock && cvs.requestPointerLock(); if (r && r.catch) r.catch(() => {}); } catch (e) {} }
+let paused = false, wasLocked = false;
+function setPause(v) {
+  paused = v; const el = $('pause');
+  if (!v) { el.style.display = 'none'; return; }
+  firing = false; scoped = false; msgT = 0;
+  if (document.exitPointerLock) document.exitPointerLock();
+  el.innerHTML = `<h1>暫停中</h1>
+    <div class="mitem" id="pResume"><b>繼續</b></div>
+    <div class="mitem" id="pRetry"><b>重新開始這一關</b></div>
+    <div class="mitem" id="pMain"><b>回到主選單</b></div>
+    <div class="foot">再按一次 P 也可以繼續</div>`;
+  el.style.display = 'flex';
+  on('pResume', () => { setPause(false); lockPointer(); });
+  on('pRetry', () => { setPause(false); startStage(stage.idx); });
+  on('pMain', () => { setPause(false); showMain(); });
+}
+// 按 Esc 放開滑鼠時自動暫停
+document.addEventListener('pointerlockchange', () => {
+  if (document.pointerLockElement === cvs) { wasLocked = true; return; }
+  if (wasLocked && state === 'play' && !paused) setPause(true);
+  wasLocked = false;
+});
+cvs.addEventListener('mousedown', e => {
+  if (state !== 'play') return;
+  audio();
+  if (document.pointerLockElement !== cvs) lockPointer();
+  if (paused) return;
+  if (e.button === 0) { firing = true; fire(); }
+  if (e.button === 2 && canScope()) scoped = true;
+});
+addEventListener('mouseup', e => { if (e.button === 0) firing = false; if (e.button === 2) scoped = false; });
+cvs.addEventListener('contextmenu', e => e.preventDefault());
+addEventListener('mousemove', e => {
+  if (state !== 'play' || paused) return;
+  const sens = .0022 * (camera.fov / FOV);
+  yaw -= e.movementX * sens; pitch -= e.movementY * sens;
+  yaw = clamp(yaw, -75 * D2R, 75 * D2R); pitch = clamp(pitch, -55 * D2R, 8 * D2R);
+});
+cvs.addEventListener('wheel', e => { if (state === 'play') { zoom = clamp(zoom * (e.deltaY > 0 ? .85 : 1.18), 2.5, 12); e.preventDefault(); } }, { passive: false });
+addEventListener('keydown', e => {
+  if (e.code === 'ShiftLeft' || e.code === 'ShiftRight') holdBreath = true;
+  if (state !== 'play') return;
+  if (e.code === 'KeyR') startReload();
+  if (e.code === 'KeyP') { setPause(!paused); if (!paused) lockPointer(); }
+  if (e.code === 'KeyQ' && canScope()) scoped = !scoped;
+});
+addEventListener('keyup', e => { if (e.code === 'ShiftLeft' || e.code === 'ShiftRight') holdBreath = false; });
+
+// ================= 主迴圈 =================
+let last = performance.now(), simSpeed = 1;   // simSpeed 只給測試用
+function tick(now) {
+  requestAnimationFrame(tick);
+  const dt = Math.min(.05, (now - last) / 1000); last = now;
+  if (state === 'menu' || !scene) { renderMenuBg(dt); return; }
+  if (!paused) for (let i = 0; i < simSpeed; i++) step(dt);
+  render(dt);
+}
+let menuT = 0;
+function renderMenuBg(dt) {
+  menuT += dt;
+  if (!scene) buildMap('waste');
+  camera.position.copy(EYE); camera.fov = FOV; camera.updateProjectionMatrix();
+  camera.rotation.set(-8 * D2R, Math.sin(menuT * .1) * .5, 0);
+  if (gunModel) gunModel.visible = false;
+  updateFx(dt);
+  renderer.render(scene, camera);
+}
+function step(dt) {
+  const gun = GUNS[gunIdx];
+  if (state === 'play') {
+    stageT += dt;
+    // 出場
+    const alive = prisoners.filter(p => active(p) && !p.imp).length;
+    if (stage.bag.length && alive < stage.maxAlive && stageT >= stage.nextSpawn) {
+      spawnPrisoner(stage.bag.shift());
+      stage.nextSpawn = stageT + rand(2, 4.5) * (stage.endless ? Math.max(.5, 1 - stage.level * .08) : 1);
+    }
+    if (alive === 0 && stage.bag.length && stage.nextSpawn > stageT + .8) stage.nextSpawn = stageT + .8;
+    while (stage.booms.length && stage.booms[0] <= stageT) { stage.booms.shift(); explosion(rand(-60, 60), rand(-30, -70)); }
+    prisoners.forEach(p => { const was = p.state; updatePrisoner(p, dt);
+      if (was !== 'escaped' && p.state === 'escaped' && !tryRecall(p)) { stats.escaped++; removePrisoner(p); radio(p.car ? `${p.id} 號開車逃走了！` : `${p.id} 號逃進森林了！`); showHit('有人逃脫！'); } });
+    cars.forEach(c => { const was = c.driver && c.driver.state; updateCar(c, dt);
+      if (c.driver && was !== 'escaped' && c.driver.state === 'escaped' && !tryRecall(c.driver)) { stats.escaped++; removePrisoner(c.driver); radio(`${c.driver.id} 號開車逃走了！`); showHit('有人逃脫！'); } });
+    if (boss) updateBoss(dt);
+    updateOrb(dt); updateWeather(dt);
+    if (aura) { aura.t -= dt; aura.tick -= dt; if (aura.tick <= 0) { aura.tick = .5; zapAll(12); } if (aura.t <= 0) aura = null; }
+    if (stats.escaped > stage.allowEscape) { showMsg('逃脫人數過多', 3); endStage(false); }
+    else if (boss && boss.state !== 'down' && boss.z > BOSS_WALL) { showMsg('惡魔衝破了圍牆……', 3); endStage(false); }
+    else if (!stage.endless && !stage.bag.length && !prisoners.some(active)) {
+      if (stage.boss && !stage.bossDone) {   // 最後一區：人都處理完，惡魔才出來
+        if (stage.bossAt === undefined) { stage.bossAt = stageT + 3; radio('地面在震動……森林裡有東西過來了。'); SFX.thud(); shake = .5; }
+        else if (!boss && stageT >= stage.bossAt) spawnBoss();
+      } else { showMsg(stats.boss ? '惡魔被擊倒了！' : stats.escaped ? '任務完成' : '全員制伏！', 3); endStage(true); }
+    }
+    if (cool > 0) cool -= dt;
+    if (reloading > 0) { reloading -= dt; if (reloading <= 0) { reloading = 0; mag = gun.mag; } }
+    if (firing && gun.auto) fire();
+    if (splatT > 0) { splatT -= dt; scoped = false; }
+    updateGlare(dt); updateTalk(dt);
+    if (stage.endless) updateEndless(dt);
+  }
+  if (holdBreath && scoped && gasp <= 0 && breath > 0) { breath -= dt / 3.5; if (breath <= 0) { breath = 0; gasp = 2.2; } }
+  else { breath = Math.min(1, breath + dt * .22); if (gasp > 0) gasp -= dt; }
+  updateBullets(dt);
+  updateFx(dt);
+  if (radioT > 0) radioT -= dt; if (msgT > 0) msgT -= dt; if (hitT > 0) hitT -= dt;
+}
+function removePrisoner(p) {
+  scene.remove(p.g); removeColliders(c => c.userData.p === p);
+  if (p.shield) dropShield(p);
+  if (p.tramp) { scene.remove(p.tramp); p.tramp = null; }
+}
+// ---- 逃脫警戒 ----
+const ALERT_DIST = 60;
+// 接近逃脫線的人：畫面上框起來；不在畫面內就在邊緣放箭頭
+function updateMarks() {
+  const el = $('marks');
+  if (state !== 'play') { el.innerHTML = ''; return; }
+  camera.updateMatrixWorld();
+  const W = box.clientWidth, H = box.clientHeight, blink = Math.sin(performance.now() / 110) > 0;
+  let html = '';
+  for (const p of prisoners) {
+    if (!active(p) || p.hidden || p.state === 'inCar' || p.state === 'climb' || p.imp) continue;
+    const left = p.z - ESCAPE_Z; if (left >= ALERT_DIST) continue;
+    const gy = p.g.position.y, h = 1.95 * p.T.scale;
+    const top = new THREE.Vector3(p.x, gy + h, p.z).project(camera), bot = new THREE.Vector3(p.x, gy, p.z).project(camera);
+    const label = `<span>${p.T.name} ${Math.max(0, Math.round(left))}m</span>`;
+    const on = top.z < 1 && Math.abs(top.x) < 1 && Math.abs(bot.y) < 1.05 && top.y > -1;
+    if (on) {
+      const x = (top.x + 1) / 2 * W, y1 = (1 - top.y) / 2 * H, y2 = (1 - bot.y) / 2 * H;
+      const bh = Math.max(16, y2 - y1 + 6), bw = Math.max(12, bh * .5);
+      html += `<div class="mk" style="left:${x}px;top:${(y1 + y2) / 2}px;width:${bw}px;height:${bh}px;opacity:${blink ? 1 : .55}">${label}</div>`;
+    } else {
+      let vx = top.x, vy = top.y; if (top.z > 1) { vx = -vx; vy = -vy; }
+      const k = Math.max(Math.abs(vx) / .92, Math.abs(vy) / .85, 1e-3); vx /= k; vy /= k;
+      const arrow = Math.abs(vx) > .9 ? (vx > 0 ? '▶' : '◀') : (vy > 0 ? '▲' : '▼');
+      html += `<div class="mk edge" style="left:${(vx + 1) / 2 * W}px;top:${(1 - vy) / 2 * H}px;opacity:${blink ? 1 : .55}">${arrow}${label}</div>`;
+    }
+  }
+  el.innerHTML = html;
+}
+function updateAlarm() {
+  if (!map || !map.alarm) return;
+  let near = null;
+  if (state === 'play') for (const p of prisoners) {
+    if (!active(p) || p.state === 'inCar' || p.state === 'climb' || p.imp) continue;
+    const left = p.z - ESCAPE_Z;
+    if (left < ALERT_DIST && (!near || left < near.left)) near = { p, left };
+  }
+  const blink = Math.sin(performance.now() / 110) > 0;
+  map.alarm.strip.material.opacity = near ? (blink ? .95 : .35) : .3;
+  map.alarm.lampMat.color.setHex(near && blink ? 0xff2a10 : 0x661008);
+  const el = $('alert');
+  if (near) {
+    const n = prisoners.filter(p => active(p) && !p.imp && p.state !== 'inCar' && p.z - ESCAPE_Z < ALERT_DIST).length;
+    el.innerHTML = `⚠ ${near.p.T.name} 距逃脫線 ${Math.max(0, Math.round(near.left))} m${n > 1 ? `（另有 ${n - 1} 人接近）` : ''}`;
+    el.style.opacity = blink ? 1 : .45;
+  } else if (state === 'play' && boss && boss.state !== 'down' && boss.z > -110) {
+    el.innerHTML = `⚠ 惡魔距圍牆 ${Math.max(0, Math.round(BOSS_WALL - boss.z))} m`;
+    el.style.opacity = blink ? 1 : .45;
+  } else el.style.opacity = 0;
+}
+// ---- 雷達（俯視）----
+const rctx = $('radar').getContext('2d');
+function drawRadar() {
+  const c = rctx, W = 112, H = 96, X0 = -165, X1 = 165, Z0 = 12, Z1 = ESCAPE_Z - 8;
+  const px = x => (x - X0) / (X1 - X0) * W, pz = z => (z - Z1) / (Z0 - Z1) * (H - 11) + 11;
+  c.clearRect(0, 0, W, H);
+  c.fillStyle = 'rgba(8,20,10,.88)'; c.fillRect(0, 0, W, H);
+  c.strokeStyle = 'rgba(127,209,139,.6)'; c.strokeRect(.5, .5, W - 1, H - 1);
+  // 距離刻度
+  c.strokeStyle = 'rgba(127,209,139,.15)'; c.fillStyle = 'rgba(127,209,139,.45)'; c.font = '8px monospace'; c.textAlign = 'left';
+  for (const d of [100, 200]) { const y = pz(ESCAPE_Z + d); c.beginPath(); c.moveTo(0, y); c.lineTo(W, y); c.stroke(); c.fillText(d + 'm', 2, y - 2); }
+  // 出口（森林）
+  c.fillStyle = 'rgba(40,90,40,.8)'; c.fillRect(0, 0, W, pz(ESCAPE_Z));
+  c.strokeStyle = '#e05a4a'; c.beginPath(); c.moveTo(0, pz(ESCAPE_Z)); c.lineTo(W, pz(ESCAPE_Z)); c.stroke();
+  c.fillStyle = '#e8c45a'; c.textAlign = 'center'; c.fillText('森林（出口）', W / 2, 8);
+  // 圍牆、高塔、視線
+  c.fillStyle = '#888'; c.fillRect(0, pz(0) - 1, W, 2);
+  const tx = px(EYE.x), tz = pz(EYE.z), half = camera.fov / 2 * D2R * 4 / 3;
+  c.fillStyle = 'rgba(232,226,200,.22)'; c.beginPath(); c.moveTo(tx, tz);
+  for (const a of [yaw + half, yaw - half]) c.lineTo(tx - Math.sin(a) * 300, tz - Math.cos(a) * 300 * (H / W));
+  c.closePath(); c.fill();
+  c.fillStyle = '#e8e2c8'; c.fillRect(tx - 2.5, tz - 2.5, 5, 5);
+  // 車
+  for (const car of cars) if (car.state === 'wait' || car.state === 'drive') {
+    c.fillStyle = car.state === 'drive' ? '#e05a4a' : '#7a5a50'; c.fillRect(px(car.x) - 3, pz(car.z) - 2, 6, 4);
+  }
+  // 蝙蝠
+  c.fillStyle = '#ff7ad0';
+  for (const b of bats) if (!b.dead) { c.beginPath(); c.arc(px(b.x), pz(b.z), 2, 0, 7); c.fill(); }
+  // 惡魔
+  if (boss && boss.state !== 'down') { c.fillStyle = '#ff3040'; c.fillRect(px(boss.x) - 6, pz(boss.z) - 4, 12, 8); }
+  // 犯人
+  c.textAlign = 'center';
+  for (const p of prisoners) {
+    if (!active(p) || p.hidden || p.state === 'inCar') continue;
+    const x = px(p.x), y = pz(p.z), left = Math.max(0, Math.round(p.z - ESCAPE_Z));
+    if (p.imp) { c.fillStyle = p.captain ? '#ffd040' : '#c04030'; c.fillRect(x - 1.5, y - 1.5, p.captain ? 4 : 3, p.captain ? 4 : 3); continue; }
+    const col = left < 60 ? '#ff5a4a' : p.shield ? '#60c8ff' : p.type === 'guard' || p.charm ? '#ff7ad0' : '#e8c45a';
+    c.fillStyle = col; c.beginPath(); c.arc(x, y, p.type === 'brute' || p.type === 'guard' ? 3 : 2.2, 0, 7); c.fill();
+    if (p.state !== 'climb') { c.fillStyle = col; c.fillText(left, x, y - 5); }
+  }
+  for (const p of prisoners) if (p.zombie > 0) { c.fillStyle = '#8aff60'; c.fillRect(px(p.x) - 2, pz(p.z) - 2, 4, 4); c.strokeStyle = 'rgba(138,255,96,.35)'; c.beginPath(); c.arc(px(p.x), pz(p.z), ZOMBIE_R / 330 * W, 0, 7); c.stroke(); }
+  for (const p of prisoners) if (p.state === 'down' && !(p.zombie > 0)) { c.fillStyle = 'rgba(160,160,160,.6)'; c.fillRect(px(p.x) - 1.5, pz(p.z) - 1.5, 3, 3); }
+}
+let swayT = 0;
+function render(dt) {
+  const gun = GUNS[gunIdx];
+  swayT += dt;
+  const steady = holdBreath && scoped && gasp <= 0 && breath > 0 ? .15 : gasp > 0 ? 2 : 1;
+  const amp = .22 * gun.sway * steady * D2R * (firing && gun.auto ? 1.8 : 1);
+  const sx = amp * (Math.sin(swayT * .9) * .65 + Math.sin(swayT * 2.3 + 1) * .35);
+  const sy = amp * (Math.sin(swayT * 1.3 + 2) * .6 + Math.cos(swayT * 2.9) * .4);
+  recoil *= Math.pow(.004, dt);
+  const sh = shake > 0 ? (shake -= dt, shake * .02) : 0;
+  const targetFov = scoped ? FOV / zoom : FOV;
+  camera.fov += (targetFov - camera.fov) * Math.min(1, dt * 18); camera.updateProjectionMatrix();
+  camera.position.copy(EYE);
+  camera.rotation.set(pitch + sy + recoil + (Math.random() - .5) * sh, yaw + sx + (Math.random() - .5) * sh, 0);
+  if (gunModel) { gunModel.position.z += (-.6 - gunModel.position.z) * Math.min(1, dt * 10); gunModel.position.y = -.3 - (reloading > 0 ? .15 : 0); }
+  if (scoped) {
+    camera.updateMatrixWorld();
+    const dir = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion);
+    const h = castSegment(camera.position, dir, 700);
+    $('range').textContent = (h ? `${Math.round(h.distance)} m　×${zoom.toFixed(1)}` : `--- m　×${zoom.toFixed(1)}`) + (sunGlare > .3 ? '　☀ 刺眼！' : '');
+  }
+  // 天候畫面效果
+  const playing = state === 'play' || state === 'end';
+  flashA = Math.max(0, flashA - dt * 2.5); $('flash').style.opacity = flashA;
+  if (map.rain && playing) { $('rain').style.display = 'block'; if (!paused) drawRain(dt); } else $('rain').style.display = 'none';
+  const gl = $('glare');
+  if (playing && (map.sun || sunGlare > 0 || (boss && boss.firing))) {
+    const src = glareSrc || (map.sun ? EYE.clone().addScaledVector(SUN_DIR, 600) : null);
+    const v = src ? src.clone().project(camera) : { x: 0, y: 0, z: 0 };
+    const sx = v.z < 1 ? (v.x + 1) * 50 : 50, sy = v.z < 1 ? (1 - v.y) * 50 : 50;
+    const amb = map.sun ? clamp(1 - sunAng / 30, 0, 1) * .3 : glareSrc ? .2 : 0;
+    const a = scoped ? Math.max(sunGlare * .98, amb * .5) : Math.max(amb, sunGlare * .5), g2 = scoped ? clamp((sunGlare - .5) * 2, 0, 1) : 0;
+    gl.style.background = `radial-gradient(circle at ${sx}% ${sy}%, rgba(255,252,230,1) 0%, rgba(255,225,160,.8) 22%, rgba(255,195,120,${(.35 + g2 * .55).toFixed(2)}) 55%, rgba(255,180,100,${(.18 + g2 * .75).toFixed(2)}) 100%)`;
+    gl.style.opacity = a;
+  } else gl.style.opacity = 0;
+  if (state === 'play' || state === 'end') updateHud();
+  updateAlarm(); updateMarks();
+  $('radar').style.display = state === 'play' && !scoped ? 'block' : 'none';
+  if (state === 'play' && !scoped) drawRadar();
+  applyXray();
+  $('talk').style.opacity = talkT > 0 && (state === 'play' || state === 'end') ? 1 : 0;
+  renderer.render(scene, camera);
+  for (const w of photoQ) w.t -= dt;
+  if (photoQ.length && photoQ[0].t <= 0) takePhoto();   // 現場照片：倒下後一小段時間再拍
+}
+showMain();
+requestAnimationFrame(tick);
+window.__dbg = { get prisoners() { return prisoners; }, get cars() { return cars; }, get bats() { return bats; }, get stats() { return stats; }, get t() { return stageT; },
+  get state() { return state; }, setGun(i) { gunIdx = i; }, startStage, fire, setAim(y, p) { yaw = y; pitch = p; }, setScope(v) { scoped = v; },
+  get cool() { return cool; }, get reloading() { return reloading; },
+  setItem(i) { itemIdx = i; }, get boss() { return boss; }, get orb() { return orb; }, spawnBoss, get sunAng() { return sunAng; }, get sunBlind() { return sunBlind; }, get scoped() { return scoped; },
+  get combo() { return combo; }, get stage() { return stage; }, set speed(v) { simSpeed = v; }, hurt(p, d) { return hurtPrisoner(p, d, "body"); }, endStage, showSummary, get campaign() { return campaign; }, get sunGlare() { return sunGlare; }, get talk() { return talkQ.length; }, get photo() { return photo; }, hitBoss: (k, o, d) => hitBoss(k, o, d, new THREE.Vector3()) };
+})();
+</script>
+</body>
+</html>
+
+</body></html>
