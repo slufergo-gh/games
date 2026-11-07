@@ -1,0 +1,784 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1"><style>:root{color-scheme:light}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>逃出客廳</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=LXGW+WenKai+TC:wght@400;700&family=Noto+Sans+TC:wght@500;700;900&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg1:#3a2516; --bg2:#6b4428; --paper:#fff4dc; --ink:#3a2414; --red:#d2453a; --gold:#e6b04a;
+  --cell:80px;
+  --brush:'LXGW WenKai TC','KaiTi','STKaiti','BiauKai','DFKai-SB',serif;
+  --sans:'Noto Sans TC','Microsoft JhengHei','PingFang TC',sans-serif;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;overflow:hidden}
+body{background:radial-gradient(ellipse at 50% 25%,var(--bg2),var(--bg1) 72%);color:var(--paper);font-family:var(--sans);user-select:none;-webkit-user-select:none;touch-action:none}
+button{font-family:var(--sans);cursor:pointer}
+.screen{position:fixed;inset:0;display:none;flex-direction:column;align-items:center;justify-content:center;padding:16px}
+.screen.on{display:flex}
+/* 主選單 */
+#menu{background:#2a1a12 url(assets/images/cover.jpg) center/cover no-repeat;align-items:flex-start;padding:16px 16px 16px max(16px,6vw)}
+#menu::before{content:"";position:absolute;inset:0;background:linear-gradient(90deg,#1c0f0ae6 0%,#1c0f0aa8 32%,#1c0f0a00 58%);pointer-events:none}
+#menu .menubox{position:relative;display:flex;flex-direction:column;align-items:center;width:min(300px,100%)}
+#menu h1{font-family:var(--brush);font-weight:700;font-size:clamp(46px,min(11vw,13vh),96px);margin:0;color:#fff4dc;letter-spacing:.06em;line-height:1.1;white-space:nowrap;
+  text-shadow:0 0 2px #5a2a10,3px 3px 0 #c0392b,6px 6px 0 #3a1a0c,0 10px 24px #000c;transform:rotate(-3deg)}
+#menu .sub{margin:10px 0 18px;padding:5px 14px;font-size:15px;font-weight:700;color:#3a2414;background:#fff4dcee;border-radius:20px;box-shadow:0 3px 0 #0005;transform:rotate(-1.5deg);white-space:nowrap}
+#menu .btn{width:min(220px,64vw)}
+@media (max-aspect-ratio:1/1){
+  #menu{background-size:auto 58%;background-position:68% top;align-items:center;justify-content:flex-end;padding:16px 16px 5vh}
+  #menu::before{background:linear-gradient(0deg,#2a1a12 0%,#2a1a12 42%,#2a1a1200 60%)}
+}
+#select{background:#2a1a12 url(assets/images/cover.jpg) center/cover no-repeat}
+#select::before{content:"";position:absolute;inset:0;background:#1c0f0ad0;backdrop-filter:blur(6px);pointer-events:none}
+#select>*{position:relative}
+@keyframes bob{50%{transform:translateY(-8px) rotate(-3deg)}}
+.btn{display:block;width:min(220px,70vw);margin:6px auto;padding:8px 0;font-size:16px;font-weight:700;letter-spacing:.2em;color:var(--ink);background:linear-gradient(#fff6e2,#f0d9a8);border:2px solid #8a5e34;border-radius:12px;box-shadow:0 3px 0 #7a5030,0 5px 10px #0006;transition:transform .08s}
+.btn:active{transform:translateY(3px);box-shadow:0 1px 0 #7a5030}
+.btn.red{background:linear-gradient(#e85b4f,#c03a30);color:#fff6e6;border-color:#7a1d16;box-shadow:0 4px 0 #7a1d16,0 6px 12px #0006}
+.btn.small{display:inline-block;width:auto;padding:8px 14px;font-size:15px;letter-spacing:.08em;margin:4px}
+/* 選關 */
+h2{font-family:var(--brush);font-weight:400;font-size:34px;margin:0 0 6px;letter-spacing:.15em}
+#tabs{display:flex;gap:8px;margin-bottom:12px}
+.tab{padding:8px 18px;border-radius:20px;border:2px solid #fff4dc88;background:#0003;color:var(--paper);font-size:17px;font-weight:700}
+.tab.on{background:var(--paper);color:var(--ink)}
+.tab small{font-weight:500;opacity:.75;font-size:12px;margin-left:4px}
+#lvgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:8px;width:min(720px,100%);max-height:calc(100vh - 190px);overflow:auto;padding:6px;touch-action:pan-y}
+.lv{background:linear-gradient(#fff3d8,#ead09c);color:var(--ink);border:2px solid #8a5e34;border-radius:12px;padding:8px 4px;text-align:center;box-shadow:0 3px 0 #7a5030;cursor:pointer}
+.lv .no{font-size:20px;font-weight:900;line-height:1.1}.lv .nm{font-size:13px;color:var(--red);min-height:18px;font-weight:700}
+.lv .st{color:#d39a10;font-size:16px;letter-spacing:2px;min-height:20px}.lv .bs{font-size:11px;opacity:.7}
+.lv.lock{filter:grayscale(1) brightness(.6);cursor:not-allowed}
+.lv.done{background:linear-gradient(#fff8e6,#f6e2b0)}
+/* 遊戲畫面 */
+#game{justify-content:flex-start;padding-top:10px}
+#hud{display:flex;align-items:center;gap:10px;width:min(560px,100%);justify-content:space-between;margin-bottom:8px}
+#hud .title{font-size:22px;font-weight:900;line-height:1.15}
+#hud .title small{font-size:12px;font-weight:500;opacity:.75;display:block}
+.stats{display:flex;gap:6px}
+.stat{background:#0004;border:1px solid #e6b04a55;border-radius:10px;padding:4px 8px;text-align:center;min-width:58px}
+.stat b{display:block;font-size:19px;color:var(--gold);font-variant-numeric:tabular-nums}
+.stat span{font-size:11px;opacity:.75}
+.iconbtn{width:38px;height:38px;border-radius:50%;border:2px solid #e6b04a99;background:#0005;color:var(--paper);font-size:18px;flex:none}
+#boardwrap{position:relative;padding:12px 12px 30px;background:linear-gradient(135deg,#9a6a3e,#6e4526);border-radius:18px;box-shadow:inset 0 0 0 3px #4a2e18,inset 0 3px 0 #ffffff33,0 12px 30px #000a}
+#board{position:relative;width:calc(var(--cell)*4);height:calc(var(--cell)*5);background:repeating-linear-gradient(90deg,#00000022 0 1px,transparent 1px var(--cell)),repeating-linear-gradient(0deg,#00000022 0 1px,transparent 1px var(--cell)),linear-gradient(#e9cf9f,#d6b47c);border-radius:6px;box-shadow:inset 0 0 14px #0007}
+#exit{position:absolute;left:calc(12px + var(--cell));width:calc(var(--cell)*2);bottom:0;height:30px;background:#3d2414;border-radius:0 0 10px 10px;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:900;color:var(--gold);letter-spacing:.4em;text-indent:.4em}
+.pc{position:absolute;border-radius:12px;display:flex;align-items:center;justify-content:center;flex-direction:column;cursor:grab;transition:left .12s ease-out,top .12s ease-out,transform .12s;touch-action:none;overflow:hidden;
+  background:linear-gradient(160deg,#fffaf0,#f3e1bd);border:3px solid #b98a52;box-shadow:inset 0 -4px 0 #0001,0 4px 5px #0008;color:var(--ink)}
+.pc img{pointer-events:none;object-fit:contain;max-width:92%;flex:1 1 auto;min-height:0;width:100%;margin-top:2px;filter:drop-shadow(0 2px 2px #0004)}
+.pc .nm{pointer-events:none;line-height:1;font-weight:900;white-space:nowrap;padding:2px 6px 3px;margin-bottom:3px;border-radius:8px;background:#ffffffaa}
+.pc.boss{background:radial-gradient(circle at 50% 40%,#fff3c8,#ffd36b 70%,#f0a93a);border-color:#c0392b;border-width:4px}
+.pc.boss .nm{background:#c0392b;color:#fff}
+.pc.genh{background:linear-gradient(160deg,#eaf7e2,#c4e3b2);border-color:#5d9a4f}
+.pc.genv{background:linear-gradient(160deg,#e6f1ff,#bcd6f4);border-color:#4f78b0}
+.pc.sol{background:linear-gradient(160deg,#fff,#f5e7cf);border-color:#c9a26a}
+.pc.sol img{max-width:100%;margin-top:0}
+.pc.drag{cursor:grabbing;z-index:5;transform:scale(1.04);transition:left .06s linear,top .06s linear,transform .12s}
+.pc.hint{animation:glow .7s ease-in-out infinite alternate;z-index:4}
+@keyframes glow{from{box-shadow:0 0 0 4px #fff16b,0 0 14px #ffd86b}to{box-shadow:0 0 0 4px #fff,0 0 30px #ffd86b}}
+.pc.bump{animation:bump .18s}
+@keyframes bump{50%{transform:translate(var(--bx),var(--by))}}
+#ghost{position:absolute;border:3px dashed #fff;border-radius:12px;pointer-events:none;display:none;background:#fff5;box-shadow:0 0 12px #fff8;animation:gh .7s infinite alternate}
+@keyframes gh{to{background:#fff2}}
+#tools{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;justify-content:center}
+#tools .btn{width:auto;padding:6px 14px;font-size:14px;letter-spacing:.08em;margin:0}
+#toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:#000c;color:#fff;padding:8px 16px;border-radius:20px;font-size:15px;opacity:0;transition:opacity .3s;pointer-events:none;z-index:50;white-space:nowrap}
+#toast.on{opacity:1}
+#coach.on ~ #toast{bottom:auto;top:70px}
+/* 疊層 */
+.overlay{position:fixed;inset:0;background:#1a0f08cc;display:none;align-items:center;justify-content:center;z-index:20;padding:12px;backdrop-filter:blur(4px)}
+.overlay.on{display:flex}
+.panel{background:linear-gradient(#fff7e6,#f0dcb2);color:var(--ink);border:3px solid #8a5e34;border-radius:16px;padding:14px 18px;width:min(400px,100%);max-height:calc(100vh - 24px);max-height:calc(100dvh - 24px);overflow-y:auto;touch-action:pan-y;overscroll-behavior:contain;text-align:center;box-shadow:0 20px 50px #000c}
+.panel h2{color:var(--red)}
+.row{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:6px 0;text-align:left}
+.row label{font-size:14px;font-weight:700}
+.row input[type=range]{flex:1;max-width:170px;accent-color:var(--red)}
+.row .val{width:36px;text-align:right;font-variant-numeric:tabular-nums}
+.row select{font-family:var(--sans);font-size:15px;padding:4px 6px;border-radius:8px;border:2px solid #8a5e34;background:#fff}
+.sw{position:relative;width:52px;height:28px;flex:none}
+.sw input{display:none}
+.sw span{position:absolute;inset:0;background:#c3ab83;border-radius:14px;transition:.2s}
+.sw span::after{content:"";position:absolute;left:3px;top:3px;width:22px;height:22px;border-radius:50%;background:#fff;transition:.2s;box-shadow:0 1px 3px #0005}
+.sw input:checked+span{background:var(--red)}
+.sw input:checked+span::after{left:27px}
+.help{text-align:left;font-size:15px;line-height:1.75}
+.help h3{margin:14px 0 4px;color:var(--red);font-size:17px}
+.help ul{margin:0;padding-left:20px}
+.cast{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin:8px 0}
+.cast div{text-align:center;font-size:12px;background:#fff8;border-radius:8px;padding:4px 2px}
+.cast img{width:100%;height:46px;object-fit:contain}
+#win .hero{width:min(90px,13vh);height:min(90px,13vh);object-fit:contain;animation:bob 1.6s ease-in-out infinite}
+#win .stars{font-size:36px;color:#e2a514;letter-spacing:8px;margin:0;text-shadow:0 2px 0 #8a5e34}
+#win .stars .off{color:#0002;text-shadow:none}
+.res{display:flex;justify-content:center;gap:12px;margin:8px 0 14px}
+.res div{background:#0000000d;border-radius:10px;padding:6px 12px}
+.res b{display:block;font-size:24px;color:var(--red)}
+.res span{font-size:12px;opacity:.7}
+#win .newbest{color:var(--red);font-weight:700;min-height:22px}
+#game.paused #board{filter:blur(10px)}
+#coach{position:fixed;left:50%;bottom:10px;transform:translateX(-50%);width:min(520px,calc(100% - 20px));background:linear-gradient(#fff7e6,#f0dcb2);color:var(--ink);border:3px solid #8a5e34;border-radius:16px;padding:10px 12px;display:none;gap:10px;align-items:center;z-index:15;box-shadow:0 8px 24px #000a}
+#coach.on{display:flex}
+#coach img{width:54px;height:54px;object-fit:contain;flex:none}
+#coach .txt{flex:1;font-size:15px;line-height:1.5}
+#coach .txt b{color:var(--red)}
+#coach .cbtns{display:flex;flex-direction:column;gap:6px;flex:none}
+#coach .btn{margin:0;padding:6px 12px;font-size:14px;letter-spacing:.05em;width:auto}
+#coach .skip{background:none;border:none;box-shadow:none;color:#8a5e34;text-decoration:underline;font-size:13px;padding:2px}
+#coach .stepno{font-size:11px;opacity:.6}
+.tut-focus{animation:tutf .8s ease-in-out infinite alternate !important;position:relative;z-index:6}
+@keyframes tutf{from{box-shadow:0 0 0 3px #fff16b,0 0 10px #ffd86b}to{box-shadow:0 0 0 5px #fff,0 0 26px #ffd86b}}
+@media (max-height:640px){.btn{padding:6px 0;font-size:15px;margin:4px auto}.panel h2{font-size:28px;margin-bottom:2px}.row{margin:4px 0}#menu .sub{margin:2px 0 8px}#hud{margin-bottom:4px}#tools{margin-top:6px}}
+@media (min-height:641px) and (min-width:700px){#settings .panel{width:min(440px,100%)}}
+@media (max-width:480px){#hud .title{font-size:15px}.stat{min-width:48px;padding:3px 5px}.stat b{font-size:16px}.tab{padding:7px 12px;font-size:15px}}
+</style>
+</head>
+<body>
+
+<!-- 主選單 -->
+<section id="menu" class="screen on">
+  <div class="menubox">
+    <h1>逃出客廳</h1>
+    <div class="sub">客廳已經太擠了，烏雞出不去了!</div>
+    <button class="btn red" data-act="continue">開始遊戲</button>
+    <button class="btn" data-act="select">選擇關卡</button>
+    <button class="btn" data-act="help">說明</button>
+    <button class="btn" data-act="settings">設定</button>
+  </div>
+</section>
+
+<!-- 選關 -->
+<section id="select" class="screen">
+  <h2>選擇關卡</h2>
+  <div id="tabs"></div>
+  <div id="lvgrid"></div>
+  <div style="margin-top:12px"><button class="btn small" data-act="menu">回主選單</button></div>
+</section>
+
+<!-- 遊戲 -->
+<section id="game" class="screen">
+  <div id="hud">
+    <div class="title" id="lvTitle"></div>
+    <div class="stats">
+      <div class="stat"><b id="sMoves">0</b><span>步數</span></div>
+      <div class="stat" id="timeBox"><b id="sTime">0:00</b><span>時間</span></div>
+      <div class="stat"><b id="sBest">-</b><span>最佳</span></div>
+    </div>
+    <button class="iconbtn" data-act="pause" title="暫停 (Esc)">❚❚</button>
+  </div>
+  <div id="boardwrap">
+    <div id="board"><div id="ghost"></div></div>
+    <div id="exit">出口</div>
+  </div>
+  <div id="tools">
+    <button class="btn" data-act="undo">↶ 復原</button>
+    <button class="btn" data-act="hint">💡 下一步</button>
+    <button class="btn" data-act="restart">↻ 重來</button>
+  </div>
+</section>
+
+<!-- 暫停 -->
+<div id="pause" class="overlay"><div class="panel">
+  <h2>暫停</h2>
+  <button class="btn red" data-act="resume">繼續</button>
+  <button class="btn" data-act="settings">設定</button>
+  <button class="btn" data-act="help">說明</button>
+  <button class="btn" data-act="restart">重新開始</button>
+  <button class="btn" data-act="select">選擇關卡</button>
+  <button class="btn" data-act="menu">回主選單</button>
+</div></div>
+
+<!-- 設定 -->
+<div id="settings" class="overlay"><div class="panel">
+  <h2>設定</h2>
+  <div class="row"><label>音樂</label><label class="sw"><input type="checkbox" id="setMusicOn"><span></span></label></div>
+  <div class="row"><label>音樂音量</label><input type="range" id="setMusicVol" min="0" max="100"><span class="val" id="vMusic"></span></div>
+  <div class="row"><label>音效</label><label class="sw"><input type="checkbox" id="setSfxOn"><span></span></label></div>
+  <div class="row"><label>音效音量</label><input type="range" id="setSfxVol" min="0" max="100"><span class="val" id="vSfx"></span></div>
+  <div class="row"><label>顯示計時</label><label class="sw"><input type="checkbox" id="setTimer"><span></span></label></div>
+  <div class="row"><label>下一步顯示目標位置</label><label class="sw"><input type="checkbox" id="setGhost"><span></span></label></div>
+  <div style="display:flex;gap:8px;justify-content:center;align-items:center;margin-top:8px">
+    <button class="btn small" data-act="resetProgress" style="margin:0">清除紀錄</button>
+    <button class="btn red small" data-act="closeSettings" style="margin:0;padding:8px 28px">完成</button>
+  </div>
+</div></div>
+
+<!-- 說明 -->
+<div id="help" class="overlay"><div class="panel">
+  <h2>說明</h2>
+  <div class="help">
+    <p>客廳已經太擠了，烏雞出不去了！上下左右滑動棋子讓出空位，把最大的<b>烏雞</b>（2×2）移到棋盤最下方中央的<b>出口</b>，就過關了。</p>
+    <div class="cast" id="cast"></div>
+    <h3>操作方式</h3>
+    <ul>
+      <li><b>拖曳</b>棋子往空格滑，一次拖曳可以連續走好幾格，也能轉彎。</li>
+      <li><b>點一下</b>只有一個方向能走的棋子，它會自己滑過去。</li>
+      <li><b>↶ 復原</b>：退回上一步，可以一直退到開局，不限次數。</li>
+      <li><b>💡 下一步</b>：電腦算出最短解，告訴你下一步要動哪顆、移到哪裡，不限次數。</li>
+      <li>鍵盤：點選棋子後用<b>方向鍵</b>移動；<b>Z</b> 復原、<b>H</b> 下一步、<b>R</b> 重來、<b>Esc</b> 暫停。</li>
+    </ul>
+    <h3>關卡</h3>
+    <ul><li>分成<b>簡單、普通、困難</b>三個難度，各 15 關，共 45 關。每個難度的第 1 關都能直接玩，過一關就開下一關。</li>
+    <li>每關都經過電腦驗證有解，並標出「最少步數」。困難裡有傳統名局「橫刀立馬」（81 步）。</li></ul>
+    <h3>計步與星等</h3>
+    <ul>
+      <li>同一顆棋子一次拖曳算 1 步，不管走幾格或轉彎（傳統華容道的計法）。</li>
+      <li>★★★ 步數 ≤ 最少步數 × 1.25；★★ ≤ × 2；★ 過關就有。</li>
+      <li>復原與下一步都不扣分，放心玩。</li>
+    </ul>
+    <h3>小技巧</h3>
+    <ul><li>先讓兩個空格靠在一起，大棋子才有路走。</li></ul>
+  </div>
+  <div style="display:flex;gap:8px;justify-content:center">
+    <button class="btn small" data-act="replayTutorial" style="margin:0">重看教學</button>
+    <button class="btn red small" data-act="closeHelp" style="margin:0;padding:8px 28px">知道了</button>
+  </div>
+</div></div>
+
+<!-- 過關 -->
+<div id="win" class="overlay"><div class="panel">
+  <img class="hero" src="assets/images/wuji.png" alt="">
+  <h2>烏雞逃出來了！</h2>
+  <div class="stars" id="wStars"></div>
+  <div class="newbest" id="wBest"></div>
+  <div class="res">
+    <div><b id="wMoves">0</b><span>你的步數</span></div>
+    <div><b id="wMin">0</b><span>最少步數</span></div>
+    <div><b id="wTime">0:00</b><span>用時</span></div>
+  </div>
+  <button class="btn red" data-act="next" id="wNext">下一關</button>
+  <button class="btn" data-act="restart">再玩一次</button>
+  <button class="btn" data-act="select">選擇關卡</button>
+</div></div>
+
+<div id="coach"><img src="assets/images/wuji.png" alt=""><div class="txt"><div class="stepno" id="coachNo"></div><div id="coachTxt"></div></div><div class="cbtns"><button class="btn red" id="coachNext">下一步</button><button class="btn skip" id="coachSkip">跳過教學</button></div></div>
+<div id="toast"></div>
+
+<script>
+/* ==================== 數值設定（對照 數值表.md） ==================== */
+const CONFIG = {
+  star3Ratio: 1.25,        // 步數 ≤ 最少步數 × 此值 → 三星
+  star2Ratio: 2.0,         // 步數 ≤ 最少步數 × 此值 → 二星，其餘過關一星
+  hintMaxStars: 3,         // 用過「下一步」的關卡最高星數（3 = 不扣分）
+  unlockAll: false,        // true = 所有關卡一開始就解鎖
+  dragThreshold: 0.45,     // 拖曳超過幾格寬度才移動一格（0~1，越小越靈敏）
+  slideMs: 120,            // 棋子滑動動畫時間（毫秒）
+  winDelayMs: 1100,        // 烏雞出口動畫到結算畫面的時間
+  music: { defaultVol: 50 },
+  sfx:   { defaultVol: 70 },
+};
+// 關卡：5 列 × 4 欄，同字母為同一顆棋子，"." 為空格；min = 電腦驗證的最少步數；name 空白的關卡只顯示編號
+const DIFFS = [
+  { key:'easy',   name:'簡單', range:'1–19 步', levels:[
+    { name:"初出茅廬", min:1, g:[".AA.", ".AA.", "B..C", "B..C", "...."] },
+    { name:"", min:4, g:["IGBB", ".AAE", ".AAE", "..CD", "HFCD"] },
+    { name:"", min:7, g:["BB.D", "EAAD", "EAA.", "C.HF", "CG.F"] },
+    { name:"", min:9, g:["BBIC", "AAHC", "AADF", "..DE", "GKJE"] },
+    { name:"", min:11, g:["EDAA", "EDAA", "FH.C", "FBBC", "...G"] },
+    { name:"", min:12, g:["AABB", "AA..", "F.DC", "EHDC", "EIG."] },
+    { name:"", min:14, g:["H.DF", "AADG", "AACE", "I.CE", "..BB"] },
+    { name:"", min:14, g:["G...", "HAAD", "FAAD", "ECI.", "ECBB"] },
+    { name:"一路順風", min:15, g:["BAAC", "BAAC", "DEEF", "DGHF", "...."] },
+    { name:"", min:15, g:["DCAA", "DCAA", ".HGI", "BBFE", "...E"] },
+    { name:"", min:15, g:["AAGI", "AA.D", "BBCD", ".EC.", ".EHF"] },
+    { name:"", min:16, g:["FAAH", "FAA.", "BB.C", ".DEC", "GDE."] },
+    { name:"", min:17, g:["CAAF", "CAA.", "..ED", "BBED", ".HIG"] },
+    { name:"", min:18, g:[".EGH", "FEAA", ".CAA", ".CD.", "BBDI"] },
+    { name:"", min:19, g:["AAGD", "AAED", ".HEC", "BBFC", "..F."] }
+  ]},
+  { key:'normal', name:'普通', range:'21–44 步', levels:[
+    { name:"", min:21, g:["GIHD", "CAAD", "CAA.", "J.KE", "BBFE"] },
+    { name:"", min:23, g:["IBBF", "AAJF", "AACG", "EDC.", "EDH."] },
+    { name:"", min:25, g:[".BB.", "AACC", "AAJE", "DIFE", "DHFG"] },
+    { name:"", min:27, g:["E.IF", "EAAD", "CAAD", "CHBB", "KG.J"] },
+    { name:"", min:30, g:[".BBJ", "ECAA", "ECAA", "G.DF", "IHDF"] },
+    { name:"", min:32, g:["K.JI", "CDAA", "CDAA", "EHBB", "EF.G"] },
+    { name:"", min:34, g:["CDAA", "CDAA", "GKIF", "H..E", "BBJE"] },
+    { name:"", min:36, g:["GHAA", "CDAA", "CDJE", "..IE", "KFBB"] },
+    { name:"", min:38, g:[".HDD", "AAIF", "AAGF", "CCE.", "BBEJ"] },
+    { name:"", min:38, g:["AAED", "AAED", "KICG", "HJC.", "FBB."] },
+    { name:"左右布兵", min:40, g:["ABBC", "ABBC", "DEEF", "GHIJ", "K..L"] },
+    { name:"", min:40, g:["AA.E", "AAHE", "FBBJ", "IKCD", ".GCD"] },
+    { name:"", min:41, g:["AAED", "AAED", "J..C", "IBBC", "HGKF"] },
+    { name:"層層設防", min:44, g:["ABBC", "ABBC", "DEEF", "GHHI", "J..K"] },
+    { name:"", min:44, g:["FCAA", "ECAA", "EBB.", "DIJG", "DH.K"] }
+  ]},
+  { key:'hard',   name:'困難', range:'45–135 步', levels:[
+    { name:"", min:45, g:["AAGF", "AA.F", "DJIE", "DCHE", ".CBB"] },
+    { name:"", min:50, g:["EAAH", "EAA.", "F.IJ", "FBBG", "CCDD"] },
+    { name:"", min:56, g:[".IDD", "JEAA", "GEAA", "CCHF", ".BBF"] },
+    { name:"齊頭並進", min:60, g:["ABBC", "ABBC", "DEFG", "HIIJ", "H..J"] },
+    { name:"", min:61, g:["IJAA", "GCAA", "FCHE", "F.DE", "BBD."] },
+    { name:"", min:66, g:["CCAA", "E.AA", "EDHI", "FDBB", "FJ.G"] },
+    { name:"四將連關", min:67, g:["AABC", "AABC", "DDEF", "GHEF", "I..J"] },
+    { name:"指揮若定", min:70, g:["ABBC", "ABBC", "GEEH", "DIJF", "D..F"] },
+    { name:"雨聲淅瀝", min:70, g:["BAAC", "BAAC", "GEEH", "D..F", "DIJF"] },
+    { name:"", min:71, g:["JFAA", "CFAA", "CI.D", "EBBD", "EH.G"] },
+    { name:"峰迴路轉", min:72, g:["ABBC", "DBBE", "DFFE", "GHIJ", "G..J"] },
+    { name:"", min:79, g:[".FAA", ".FAA", "BBEC", "GDEC", "HDIJ"] },
+    { name:"橫刀立馬", min:81, g:["ABBC", "ABBC", "DEEF", "DGHF", "I..J"] },
+    { name:"", min:90, g:["ECCG", "EAA.", "DAAH", "DF.I", "JFBB"] },
+    { name:"", min:135, g:["GJHF", "AA.F", "AADE", "BBDE", "I.CC"] }
+  ]},
+];
+// 角色：棋子依形狀分配（大塊固定是烏雞）
+const CHARS = {
+  wuji:{n:'烏雞'}, laoda:{n:'老大'}, lala:{n:'略略'}, mei:{n:'妹妹'}, didi:{n:'弟弟'}, gf:{n:'女朋友'},
+  rabbit:{n:'兔兔'}, kuku:{n:'kuku'}, cookie:{n:'餅乾怪獸'}, devil:{n:'惡魔'}, bean:{n:'小綠豆'}, kwuji:{n:'韓國烏雞'},
+};
+const POOL_H = ['laoda','cookie','devil','kuku'];               // 橫的 2×1
+const POOL_V = ['lala','mei','didi','gf','rabbit','kwuji'];     // 直的 1×2
+const POOL_S = ['bean','kwuji','kuku','rabbit','devil','didi','mei','lala','gf','cookie','laoda']; // 1×1，優先用沒出場的角色
+
+/* ==================== 存檔 ==================== */
+const store = {
+  get(k, d){ try{ const v = localStorage.getItem('hrd_'+k); return v==null ? d : JSON.parse(v); }catch(e){ return d; } },
+  set(k, v){ try{ localStorage.setItem('hrd_'+k, JSON.stringify(v)); }catch(e){} }
+};
+const settings = Object.assign({ musicOn:true, musicVol:CONFIG.music.defaultVol, sfxOn:true, sfxVol:CONFIG.sfx.defaultVol, timer:true, ghost:true }, store.get('settings', {}));
+let progress = store.get('progress2', {}); // { 'easy-0': {stars, moves, time} }
+
+/* ==================== 音訊 ==================== */
+// 音樂：assets/audio 的 mp3（menu = 封面/選關，play = 遊戲中）；音效由程式產生
+const SONGS = { menu: new Audio('assets/audio/menu.mp3'), play: new Audio('assets/audio/play.mp3') };
+Object.values(SONGS).forEach(a => { a.loop = true; a.preload = 'auto'; });
+let scene = 'menu', audioReady = false;
+let AC = null, musicGain, sfxGain;
+function initAudio(){
+  audioReady = true;
+  if (!AC) {
+    try { AC = new (window.AudioContext || window.webkitAudioContext)(); } catch(e){}
+    if (AC) {
+      musicGain = AC.createGain(); sfxGain = AC.createGain();
+      musicGain.connect(AC.destination); sfxGain.connect(AC.destination);
+    }
+  }
+  if (AC && AC.state === 'suspended') AC.resume();
+  applyVolumes(); updateMusic();
+}
+function applyVolumes(){
+  const mv = settings.musicOn ? settings.musicVol/100 : 0;
+  Object.values(SONGS).forEach(a => a.volume = mv * 0.8);
+  if (!AC) return;
+  musicGain.gain.setTargetAtTime(mv*0.5, AC.currentTime, 0.05);
+  sfxGain.gain.setTargetAtTime(settings.sfxOn ? settings.sfxVol/100 : 0, AC.currentTime, 0.02);
+}
+function setScene(s){ scene = s; updateMusic(); }
+function updateMusic(){
+  if (!audioReady) return;
+  const on = settings.musicOn && settings.musicVol > 0;
+  const want = on ? SONGS[scene === 'menu' ? 'menu' : 'play'] : null;
+  Object.values(SONGS).forEach(a => { if (a !== want && !a.paused) a.pause(); });
+  if (want && want.paused) want.play().catch(()=>{});
+}
+function tone(freq, t, dur, type, vol, slideTo){
+  const o = AC.createOscillator(), g = AC.createGain();
+  o.type = type; o.frequency.setValueAtTime(freq, t); if (slideTo) o.frequency.exponentialRampToValueAtTime(slideTo, t+dur);
+  g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(0.0001, t+dur);
+  o.connect(g); g.connect(sfxGain); o.start(t); o.stop(t+dur+0.02);
+}
+function noise(t, dur, freq, vol){
+  const len = Math.floor(AC.sampleRate*dur), buf = AC.createBuffer(1, len, AC.sampleRate), d = buf.getChannelData(0);
+  for (let i=0;i<len;i++) d[i] = (Math.random()*2-1) * (1 - i/len);
+  const s = AC.createBufferSource(), f = AC.createBiquadFilter(), g = AC.createGain();
+  s.buffer = buf; f.type='bandpass'; f.frequency.value = freq; f.Q.value = 1.2; g.gain.value = vol;
+  s.connect(f); f.connect(g); g.connect(sfxGain); s.start(t);
+}
+const SFX = {
+  slide(){ if(!AC) return; const t=AC.currentTime; noise(t, 0.08, 900, 0.5); tone(520, t+0.05, 0.08, 'sine', 0.3, 360); },
+  bump(){ if(!AC) return; const t=AC.currentTime; tone(130, t, 0.12, 'sine', 0.5, 80); },
+  click(){ if(!AC) return; tone(880, AC.currentTime, 0.06, 'triangle', 0.18); },
+  undo(){ if(!AC) return; tone(560, AC.currentTime, 0.12, 'triangle', 0.22, 330); },
+  hint(){ if(!AC) return; const t=AC.currentTime; tone(784, t, 0.15, 'sine', 0.25); tone(1175, t+0.1, 0.25, 'sine', 0.22); },
+  win(){ if(!AC) return; const t=AC.currentTime; [523,659,784,1047,1319].forEach((f,i)=>tone(f, t+i*0.09, 0.35, 'triangle', 0.25)); tone(1568, t+0.5, 0.8, 'sine', 0.2); },
+  escape(){ if(!AC) return; const t=AC.currentTime; tone(300, t, 0.6, 'sine', 0.3, 900); noise(t, 0.4, 2000, 0.1); },
+};
+
+/* ==================== 遊戲狀態 ==================== */
+const $ = id => document.getElementById(id);
+let curD = 0, curL = 0, pieces = [], moves = 0, history = [], startTime = 0, elapsed = 0, timerOn = false, paused = false, won = false, usedHint = false;
+let selected = -1, hintCache = new Map(), hintShown = null, timerInt = null, selTab = 0, cell = 80, hintBusy = false;
+const GAP = 4;
+const lvId = (d, l) => DIFFS[d].key + '-' + l;
+
+function parseLevel(rows){
+  const g = rows.join(''), map = {}, order = [];
+  for (let i=0;i<20;i++){ const ch = g[i]; if (ch==='.') continue; const r=i>>2, c=i&3;
+    if (!map[ch]) { map[ch] = {r, c, r2:r, c2:c}; order.push(ch); } else { map[ch].r2 = Math.max(map[ch].r2, r); map[ch].c2 = Math.max(map[ch].c2, c); } }
+  const ps = order.map(ch => { const m = map[ch]; const h = m.r2-m.r+1, w = m.c2-m.c+1;
+    return { r:m.r, c:m.c, w, h, type: w===2&&h===2 ? 'boss' : w===2 ? 'genh' : h===2 ? 'genv' : 'sol' }; });
+  // 分配角色
+  const used = new Set(['wuji']); let hi = 0, vi = 0;
+  for (const p of ps) {
+    if (p.type==='boss') p.ch='wuji';
+    else if (p.type==='genh') { p.ch = POOL_H[hi++ % POOL_H.length]; used.add(p.ch); }
+    else if (p.type==='genv') { p.ch = POOL_V[vi++ % POOL_V.length]; used.add(p.ch); }
+  }
+  let si = 0; const free = POOL_S.filter(c => !used.has(c)); const sPool = free.length ? free : POOL_S;
+  for (const p of ps) if (p.type==='sol') { p.ch = sPool[si++ % sPool.length]; }
+  return ps;
+}
+function occupancy(ps, skip){ const o = new Uint8Array(20); for (let k=0;k<ps.length;k++){ if (k===skip) continue; const p = ps[k]; for(let i=0;i<p.h;i++) for(let j=0;j<p.w;j++) o[(p.r+i)*4+p.c+j]=1; } return o; }
+function fits(o, p, r, c){ if (r<0||c<0||r+p.h>5||c+p.w>4) return false; for(let i=0;i<p.h;i++) for(let j=0;j<p.w;j++) if (o[(r+i)*4+c+j]) return false; return true; }
+const TYPE_CH = { boss:'C', genh:'H', genv:'V', sol:'S' };
+function stateKey(ps){ const g = new Array(20).fill('.'); for (const p of ps){ const t = TYPE_CH[p.type]; for(let i=0;i<p.h;i++) for(let j=0;j<p.w;j++) g[(p.r+i)*4+p.c+j]=t; } return g.join(''); }
+
+/* ---------- 畫面切換 ---------- */
+function show(id){ if (id !== 'game' && tut) { tut = null; tutClearFocus(); $('coach').classList.remove('on'); } document.querySelectorAll('.screen').forEach(s => s.classList.toggle('on', s.id===id)); setScene(id === 'game' ? 'play' : 'menu'); }
+function overlay(id, on){ $(id).classList.toggle('on', on); }
+function toast(msg, ms=1800){ const t = $('toast'); t.textContent = msg; t.classList.add('on'); clearTimeout(toast._t); toast._t = setTimeout(()=>t.classList.remove('on'), ms); }
+function fmt(ms){ const s = Math.floor(ms/1000); return Math.floor(s/60)+':'+String(s%60).padStart(2,'0'); }
+function starsFor(m, min, hint){ let s = m <= Math.round(min*CONFIG.star3Ratio) ? 3 : m <= Math.round(min*CONFIG.star2Ratio) ? 2 : 1; if (hint) s = Math.min(s, CONFIG.hintMaxStars); return s; }
+function unlocked(d, l){ return CONFIG.unlockAll || l===0 || !!progress[lvId(d, l-1)]; }
+
+function buildSelect(){
+  const tabs = $('tabs'); tabs.innerHTML = '';
+  DIFFS.forEach((D, d) => {
+    const done = D.levels.filter((_, l) => progress[lvId(d,l)]).length;
+    const b = document.createElement('button'); b.className = 'tab' + (d===selTab ? ' on' : '');
+    b.innerHTML = `${D.name}<small>${done}/${D.levels.length}</small>`;
+    b.onclick = () => { selTab = d; SFX.click(); buildSelect(); };
+    tabs.appendChild(b);
+  });
+  const grid = $('lvgrid'); grid.innerHTML = '';
+  DIFFS[selTab].levels.forEach((L, l) => {
+    const d = document.createElement('div'), p = progress[lvId(selTab,l)], lock = !unlocked(selTab, l);
+    d.className = 'lv' + (lock ? ' lock' : '') + (p ? ' done' : '');
+    d.innerHTML = `<div class="no">${lock?'🔒':l+1}</div><div class="nm">${L.name || '&nbsp;'}</div><div class="st">${p ? '★'.repeat(p.stars)+'☆'.repeat(3-p.stars) : ''}</div><div class="bs">最少 ${L.min} 步${p ? '<br>最佳 '+p.moves+' 步' : ''}</div>`;
+    d.onclick = () => { if (lock) { SFX.bump(); toast('先通過上一關才能玩'); return; } SFX.click(); startLevel(selTab, l); };
+    grid.appendChild(d);
+  });
+}
+
+/* ---------- 關卡 ---------- */
+// ---------- 教學模式（第一次進入關卡時啟動，可跳過） ----------
+const TUT_BOARD = ['IGBB','.AAE','.AAE','..CD','HFCD']; // 最少 4 步的小盤面
+const TUT_STEPS = [
+  { txt:'歡迎來到<b>逃出客廳</b>！客廳太擠了，要把最大的<b>烏雞</b>移到下方中間的<b>出口</b>才算過關。', focus:()=>[pieces.find(p=>p.type==='boss').el, $('exit')], next:true },
+  { txt:'<b>按住棋子往空格拖</b>就能移動，一次拖曳可以走好幾格。試著把<b>發光的棋子</b>拖到<b>虛線框</b>！', wait:'move', enter:()=>hint(true) },
+  { txt:'走錯也沒關係！按<b>「↶ 復原」</b>可以退回上一步，次數不限。', wait:'undo', focus:()=>[document.querySelector('[data-act=undo]')] },
+  { txt:'不知道怎麼走時，按<b>「💡 下一步」</b>，電腦會告訴你該動哪顆棋子、移到哪裡。', wait:'hint', focus:()=>[document.querySelector('[data-act=hint]')] },
+  { txt:'照著提示，把<b>發光的棋子</b>拖到<b>虛線框</b>。', wait:'move' },
+  { txt:'很好！右上角 <b>❚❚</b> 可以暫停、調整音樂音效。現在自己把烏雞救出去吧！卡關就按「下一步」。', focus:()=>[document.querySelector('#hud [data-act=pause]')], next:true, nextText:'開始' },
+];
+let tut = null; // { step, target:[d,l] }
+function startTutorial(d, l){
+  tut = { step:-1, target:[d, l] };
+  loadBoard({ name:'教學', min:4, g:TUT_BOARD }, '教學關卡<small>跟著提示操作</small>', null);
+  $('coach').classList.add('on'); layout(); renderPieces(true);
+  tutGo(0);
+}
+function tutClearFocus(){ document.querySelectorAll('.tut-focus').forEach(e => e.classList.remove('tut-focus')); }
+function tutGo(i){
+  if (!tut) return;
+  tut.step = i; const S = TUT_STEPS[i];
+  tutClearFocus();
+  if (!S) { $('coach').classList.remove('on'); layout(); renderPieces(false); return; } // 自由練習，過關後結束
+  $('coachNo').textContent = `教學 ${i+1} / ${TUT_STEPS.length}`;
+  $('coachTxt').innerHTML = S.txt;
+  $('coachNext').style.display = S.next ? '' : 'none';
+  $('coachNext').textContent = S.nextText || '下一步';
+  if (S.enter) S.enter();
+  if (S.focus) S.focus().forEach(e => e && e.classList.add('tut-focus'));
+}
+function tutEvent(ev){ if (tut && TUT_STEPS[tut.step] && TUT_STEPS[tut.step].wait === ev) setTimeout(() => tutGo(tut.step+1), 250); }
+function endTutorial(completed){
+  if (!tut) return;
+  const [d, l] = tut.target; tut = null; tutClearFocus();
+  $('coach').classList.remove('on'); store.set('tutDone', true);
+  toast(completed ? '教學完成！開始正式關卡' : '已跳過教學（說明裡可以重看）', 2200);
+  startLevel(d, l);
+}
+$('coachNext').onclick = () => { initAudio(); SFX.click(); tutGo(tut.step+1); };
+$('coachSkip').onclick = () => { initAudio(); SFX.click(); endTutorial(false); };
+
+function loadBoard(L, title, best){
+  pieces = parseLevel(L.g); moves = 0; history = []; elapsed = 0; timerOn = false; won = false; usedHint = false; selected = -1; paused = false; keyChain = -1;
+  hintCache = new Map(); clearHint();
+  ['pause','win','settings','help'].forEach(o => overlay(o, false));
+  $('game').classList.remove('paused');
+  $('lvTitle').innerHTML = title;
+  $('sBest').textContent = best ? best.moves : '-';
+  show('game'); layout(); renderPieces(true); updateHud();
+}
+function startLevel(d, l){
+  if (!tut && !store.get('tutDone', false)) return startTutorial(d, l);
+  curD = d; curL = l; const L = DIFFS[d].levels[l];
+  pieces = parseLevel(L.g); moves = 0; history = []; elapsed = 0; timerOn = false; won = false; usedHint = false; selected = -1; paused = false; keyChain = -1;
+  hintCache = new Map(); clearHint();
+  ['pause','win','settings','help'].forEach(o => overlay(o, false));
+  $('game').classList.remove('paused');
+  $('lvTitle').innerHTML = `${DIFFS[d].name} 第 ${l+1} 關${L.name ? '・'+L.name : ''}<small>最少 ${L.min} 步</small>`;
+  const p = progress[lvId(d,l)]; $('sBest').textContent = p ? p.moves : '-';
+  show('game'); layout(); renderPieces(true); updateHud();
+  store.set('last', [d, l]);
+}
+function layout(){
+  const byW = (Math.min(window.innerWidth, 560) - 32 - 24) / 4;
+  const byH = (window.innerHeight - 60 - 50 - 42 - 24 - (tut && $('coach').classList.contains('on') ? 96 : 0)) / 5;
+  cell = Math.max(46, Math.floor(Math.min(byW, byH, 112)));
+  document.documentElement.style.setProperty('--cell', cell+'px');
+}
+function renderPieces(rebuild){
+  const board = $('board');
+  if (rebuild){ board.querySelectorAll('.pc').forEach(e => e.remove());
+    pieces.forEach((p, k) => {
+      const e = document.createElement('div');
+      e.className = 'pc ' + p.type;
+      const fs = p.type==='boss' ? cell*0.24 : cell*0.18, name = CHARS[p.ch].n;
+      e.innerHTML = `<img src="assets/images/${p.ch}.png" alt="" draggable="false">` + (p.type!=='sol' ? `<div class="nm" style="font-size:${fs}px">${name}</div>` : '');
+      e.title = name;
+      e.dataset.k = k; p.el = e; board.appendChild(e);
+      e.addEventListener('pointerdown', onDown);
+    });
+  }
+  pieces.forEach(p => place(p));
+}
+function place(p, extraY=0){
+  const e = p.el; e.style.left = (p.c*cell + GAP/2)+'px'; e.style.top = (p.r*cell + GAP/2 + extraY)+'px';
+  e.style.width = (p.w*cell - GAP)+'px'; e.style.height = (p.h*cell - GAP)+'px';
+}
+function updateHud(){ $('sMoves').textContent = moves; $('sTime').textContent = fmt(elapsed); $('timeBox').style.display = settings.timer ? '' : 'none'; }
+function startTimer(){ if (timerOn || won) return; timerOn = true; startTime = performance.now() - elapsed; clearInterval(timerInt); timerInt = setInterval(tick, 250); }
+function tick(){ if (!timerOn || paused || won) return; elapsed = performance.now() - startTime; updateHud(); }
+function pauseGame(){ if (won || paused || !$('game').classList.contains('on')) return; paused = true; if (timerOn) elapsed = performance.now() - startTime; $('game').classList.add('paused'); overlay('pause', true); }
+function resumeGame(){ paused = false; if (timerOn) startTime = performance.now() - elapsed; $('game').classList.remove('paused'); ['pause','settings','help'].forEach(o => overlay(o, false)); }
+
+/* ---------- 移動 ---------- */
+function tryStep(k, dr, dc){
+  const p = pieces[k], o = occupancy(pieces, k);
+  if (!fits(o, p, p.r+dr, p.c+dc)) return false;
+  p.r += dr; p.c += dc; place(p); return true;
+}
+function commitMove(k, fromR, fromC){
+  const p = pieces[k];
+  if (p.r===fromR && p.c===fromC) return;
+  history.push({k, r:fromR, c:fromC});
+  moves++; startTimer(); SFX.slide(); clearHint(); updateHud(); checkWin(); if (!won) tutEvent('move');
+}
+function bump(k, dr, dc){ const e = pieces[k].el; e.style.setProperty('--bx', dc*5+'px'); e.style.setProperty('--by', dr*5+'px'); e.classList.remove('bump'); void e.offsetWidth; e.classList.add('bump'); SFX.bump(); }
+
+let drag = null, keyChain = -1;
+function onDown(ev){
+  if (paused || won || drag) return;
+  initAudio();
+  const el = ev.currentTarget, k = +el.dataset.k, p = pieces[k];
+  el.setPointerCapture(ev.pointerId);
+  drag = { k, el, x:ev.clientX, y:ev.clientY, fromR:p.r, fromC:p.c, sx:ev.clientX, sy:ev.clientY };
+  p.el.classList.add('drag'); selected = k; keyChain = -1;
+  el.addEventListener('pointermove', onMove); el.addEventListener('pointerup', onUp); el.addEventListener('pointercancel', onUp);
+}
+function onMove(ev){
+  if (!drag) return;
+  const th = cell * CONFIG.dragThreshold;
+  for (let guard = 0; guard < 6; guard++) {
+    const dx = ev.clientX - drag.x, dy = ev.clientY - drag.y;
+    const opts = Math.abs(dx) >= Math.abs(dy) ? [[0,Math.sign(dx),Math.abs(dx)],[Math.sign(dy),0,Math.abs(dy)]] : [[Math.sign(dy),0,Math.abs(dy)],[0,Math.sign(dx),Math.abs(dx)]];
+    let stepped = false;
+    for (const [dr,dc,mag] of opts){ if (mag < th) continue;
+      if (tryStep(drag.k, dr, dc)) { drag.x += dc*cell; drag.y += dr*cell; stepped = true; break; } }
+    if (!stepped) break;
+  }
+}
+function onUp(ev){
+  const el = ev.currentTarget;
+  el.removeEventListener('pointermove', onMove); el.removeEventListener('pointerup', onUp); el.removeEventListener('pointercancel', onUp);
+  if (!drag) return;
+  const d = drag; drag = null; const p = pieces[d.k]; p.el.classList.remove('drag');
+  if (won) return;
+  if (p.r===d.fromR && p.c===d.fromC) {
+    const dx = ev.clientX-d.sx, dy = ev.clientY-d.sy;
+    if (Math.hypot(dx, dy) < 10) autoMove(d.k);
+    else Math.abs(dx)>Math.abs(dy) ? bump(d.k,0,Math.sign(dx)) : bump(d.k,Math.sign(dy),0);
+    return;
+  }
+  commitMove(d.k, d.fromR, d.fromC);
+}
+// 點一下：只有一個方向能走就自動走（同方向能走兩格就走兩格）
+function autoMove(k){
+  const p = pieces[k], o = occupancy(pieces, k);
+  const dirs = [[1,0],[-1,0],[0,1],[0,-1]].filter(([dr,dc]) => fits(o, p, p.r+dr, p.c+dc));
+  if (dirs.length !== 1) { if (!dirs.length) bump(k,0,0); return; }
+  const fr = p.r, fc = p.c, [dr,dc] = dirs[0];
+  tryStep(k, dr, dc); tryStep(k, dr, dc);
+  commitMove(k, fr, fc);
+}
+function keyMove(dr, dc){
+  if (selected < 0 || paused || won) return;
+  const p = pieces[selected], fr = p.r, fc = p.c;
+  if (!tryStep(selected, dr, dc)) { bump(selected, dr, dc); return; }
+  if (keyChain === selected && history.length && history[history.length-1].k === selected) {
+    // 連續用方向鍵移動同一顆棋子算同一步；走回原位就取消這一步
+    const last = history[history.length-1];
+    if (p.r===last.r && p.c===last.c) { history.pop(); moves--; updateHud(); }
+    SFX.slide(); clearHint(); checkWin();
+  } else commitMove(selected, fr, fc);
+  keyChain = selected;
+}
+function undo(){
+  if (won || paused || drag) return;
+  const h = history.pop(); if (!h) { toast('已經回到開局了'); return; }
+  const p = pieces[h.k]; p.r = h.r; p.c = h.c; place(p); moves = Math.max(0, moves-1); keyChain = -1;
+  SFX.undo(); clearHint(); updateHud(); tutEvent('undo');
+}
+function checkWin(){
+  const boss = pieces.find(p => p.type==='boss');
+  if (boss.r===3 && boss.c===1) {
+    won = true; if (timerOn) elapsed = performance.now() - startTime; timerOn = false; updateHud(); clearHint();
+    setTimeout(() => { SFX.escape(); boss.el.style.transition = 'top .8s ease-in, opacity .8s'; place(boss, cell*2.2); boss.el.style.opacity = '0'; }, CONFIG.slideMs + 80);
+    setTimeout(showWin, CONFIG.winDelayMs);
+  }
+}
+function nextLevel(){ const D = DIFFS[curD]; if (curL < D.levels.length-1) return [curD, curL+1]; if (curD < DIFFS.length-1) return [curD+1, 0]; return null; }
+function showWin(){
+  if (tut) { SFX.win(); endTutorial(true); return; }
+  const L = DIFFS[curD].levels[curL], id = lvId(curD, curL), s = starsFor(moves, L.min, usedHint), old = progress[id];
+  let msg = !old ? '首次通關！' : moves < old.moves ? '刷新最佳步數！' : '';
+  if (moves <= L.min) msg = '完美！達成最少步數！';
+  progress[id] = { stars: Math.max(s, old?old.stars:0), moves: old ? Math.min(old.moves, moves) : moves, time: old ? Math.min(old.time, elapsed) : elapsed };
+  store.set('progress2', progress);
+  const nx = nextLevel();
+  $('wStars').innerHTML = '★'.repeat(s) + '<span class="off">' + '★'.repeat(3-s) + '</span>';
+  $('wBest').textContent = msg + (!nx ? ' 全部 45 關都完成了！' : (curL === DIFFS[curD].levels.length-1 ? ` ${DIFFS[curD].name}難度全破！` : ''));
+  $('wMoves').textContent = moves; $('wMin').textContent = L.min; $('wTime').textContent = fmt(elapsed);
+  $('wNext').style.display = nx ? '' : 'none';
+  $('wNext').textContent = nx && nx[0] !== curD ? `挑戰${DIFFS[nx[0]].name}` : '下一關';
+  overlay('win', true); SFX.win();
+}
+
+/* ---------- 下一步建議（電腦即時算最短解） ---------- */
+function clearHint(){ if (hintShown != null && pieces[hintShown]) pieces[hintShown].el.classList.remove('hint'); hintShown = null; $('ghost').style.display = 'none'; }
+function solveFrom(start){
+  const isGoal = s => { for (const p of s) if (p.type==='boss') return p.r===3 && p.c===1; };
+  if (isGoal(start)) return [];
+  const startKey = stateKey(start), parent = new Map([[startKey, null]]);
+  let frontier = [start], goalKey = null;
+  const D4 = [[1,0],[-1,0],[0,1],[0,-1]];
+  outer: while (frontier.length) {
+    const nf = [];
+    for (const s of frontier) {
+      const sk = stateKey(s);
+      for (let k=0;k<s.length;k++){
+        const p = s[k], o = occupancy(s, k), vis = [p.r*4+p.c], q = [[p.r,p.c]];
+        for (let qi = 0; qi < q.length; qi++){ const [r,c] = q[qi];
+          for (const [dr,dc] of D4) { const nr=r+dr, nc=c+dc;
+            if (vis.includes(nr*4+nc) || !fits(o,p,nr,nc)) continue; vis.push(nr*4+nc); q.push([nr,nc]);
+            const ns = s.slice(); ns[k] = {r:nr,c:nc,w:p.w,h:p.h,type:p.type}; const nk = stateKey(ns);
+            if (parent.has(nk)) continue;
+            parent.set(nk, {pk:sk, k, r:nr, c:nc});
+            if (isGoal(ns)) { goalKey = nk; break outer; }
+            nf.push(ns);
+          } }
+      }
+    }
+    frontier = nf;
+  }
+  if (!goalKey) return null;
+  const path = []; let key = goalKey;
+  while (parent.get(key)) { const e = parent.get(key); path.push({key:e.pk, k:e.k, r:e.r, c:e.c}); key = e.pk; }
+  return path.reverse();
+}
+function hint(quiet){
+  if (won || paused || hintBusy || drag) return;
+  initAudio();
+  const key = stateKey(pieces);
+  const showMove = (mv, left) => {
+    clearHint(); usedHint = true;
+    // 依形狀與位置找出要動的棋子（快取的索引可能因同形狀棋子互換而不同）
+    const src = mv.from; const k = pieces.findIndex(p => p.r===src.r && p.c===src.c && p.w===src.w && p.h===src.h);
+    if (k < 0) return;
+    hintShown = k; pieces[k].el.classList.add('hint');
+    if (settings.ghost) { const g = $('ghost'), p = pieces[k];
+      g.style.left = (mv.c*cell+GAP/2)+'px'; g.style.top = (mv.r*cell+GAP/2)+'px'; g.style.width = (p.w*cell-GAP)+'px'; g.style.height = (p.h*cell-GAP)+'px'; g.style.display = 'block'; }
+    const nm = CHARS[pieces[k].ch].n;
+    if (!quiet) toast(`下一步：移動「${nm}」・最少還要 ${left} 步`, 2600); SFX.hint(); tutEvent('hint');
+  };
+  if (hintCache.has(key)) { const c = hintCache.get(key); showMove(c.mv, c.left); return; }
+  hintBusy = true; if (!quiet) toast('思考中…', 5000);
+  setTimeout(() => {
+    const plain = pieces.map(p => ({r:p.r,c:p.c,w:p.w,h:p.h,type:p.type}));
+    const path = solveFrom(plain);
+    hintBusy = false;
+    if (!path || !path.length) { toast('這個盤面無解，請復原或重來'); return; }
+    // 沿路徑重播，記下每一步「移動前的棋子位置」，之後照著走就不必重算
+    let s = plain;
+    path.forEach((m, i) => { const p = s[m.k]; hintCache.set(m.key, { mv:{ from:{r:p.r,c:p.c,w:p.w,h:p.h}, r:m.r, c:m.c }, left: path.length - i });
+      s = s.slice(); s[m.k] = {...p, r:m.r, c:m.c}; });
+    const c = hintCache.get(key); showMove(c.mv, c.left);
+  }, 40);
+}
+
+/* ---------- 設定介面 ---------- */
+function syncSettingsUI(){
+  $('setMusicOn').checked = settings.musicOn; $('setSfxOn').checked = settings.sfxOn;
+  $('setMusicVol').value = settings.musicVol; $('setSfxVol').value = settings.sfxVol;
+  $('vMusic').textContent = settings.musicVol; $('vSfx').textContent = settings.sfxVol;
+  $('setTimer').checked = settings.timer; $('setGhost').checked = settings.ghost;
+}
+function saveSettings(){ store.set('settings', settings); applyVolumes(); updateMusic(); updateHud(); syncSettingsUI(); }
+$('setMusicOn').onchange = e => { settings.musicOn = e.target.checked; saveSettings(); };
+$('setSfxOn').onchange = e => { settings.sfxOn = e.target.checked; saveSettings(); SFX.click(); };
+$('setMusicVol').oninput = e => { settings.musicVol = +e.target.value; saveSettings(); };
+$('setSfxVol').oninput = e => { settings.sfxVol = +e.target.value; saveSettings(); };
+$('setSfxVol').onchange = () => SFX.slide();
+$('setTimer').onchange = e => { settings.timer = e.target.checked; saveSettings(); };
+$('setGhost').onchange = e => { settings.ghost = e.target.checked; saveSettings(); };
+
+// 說明裡的角色介紹
+$('cast').innerHTML = [['wuji','烏雞・2×2 主角'],['laoda','老大・橫 2×1'],['lala','略略・直 1×2'],['bean','小綠豆・1×1']]
+  .map(([c,t]) => `<div><img src="assets/images/${c}.png" alt="">${t}</div>`).join('');
+
+/* ---------- 按鈕 ---------- */
+const ACTIONS = {
+  continue(){ // 從第一個還沒過的關卡開始
+    for (let d=0; d<DIFFS.length; d++) for (let l=0; l<DIFFS[d].levels.length; l++) if (!progress[lvId(d,l)]) return startLevel(d, l);
+    const last = store.get('last', [0,0]); startLevel(last[0], last[1]);
+  },
+  select(){ overlay('pause', false); overlay('win', false); paused = false; selTab = curD; buildSelect(); show('select'); },
+  menu(){ overlay('pause', false); overlay('win', false); paused = false; show('menu'); },
+  help(){ overlay('help', true); },
+  closeHelp(){ overlay('help', false); },
+  settings(){ syncSettingsUI(); overlay('settings', true); },
+  closeSettings(){ overlay('settings', false); },
+  pause(){ pauseGame(); },
+  resume(){ resumeGame(); },
+  undo(){ undo(); },
+  hint(){ hint(); },
+  restart(){ if (tut) startTutorial(tut.target[0], tut.target[1]); else startLevel(curD, curL); },
+  next(){ const nx = nextLevel(); if (nx) startLevel(nx[0], nx[1]); },
+  replayTutorial(){ overlay('help', false); store.set('tutDone', false); tut = null; const t = $('game').classList.contains('on') ? [curD, curL] : [0, 0]; startLevel(t[0], t[1]); },
+  resetProgress(){ if (confirm('確定要清除所有通關紀錄嗎？')) { progress = {}; store.set('progress2', progress); buildSelect(); toast('已清除通關紀錄'); } },
+};
+document.addEventListener('click', e => {
+  const b = e.target.closest('[data-act]'); if (!b) return;
+  initAudio(); SFX.click(); ACTIONS[b.dataset.act]();
+});
+document.addEventListener('keydown', e => {
+  if (e.target.tagName === 'SELECT') return;
+  if (e.key === 'Escape') {
+    if ($('settings').classList.contains('on')) { overlay('settings', false); return; }
+    if ($('help').classList.contains('on')) { overlay('help', false); return; }
+    if ($('game').classList.contains('on') && !won) paused ? resumeGame() : pauseGame();
+    return;
+  }
+  if (!$('game').classList.contains('on') || $('win').classList.contains('on')) return;
+  const k = e.key.toLowerCase();
+  if (k==='z' || k==='backspace') { e.preventDefault(); undo(); }
+  else if (k==='h') hint();
+  else if (k==='r' && !paused) ACTIONS.restart();
+  else if (k==='p') paused ? resumeGame() : pauseGame();
+  else if (e.key==='ArrowUp') { e.preventDefault(); keyMove(-1,0); }
+  else if (e.key==='ArrowDown') { e.preventDefault(); keyMove(1,0); }
+  else if (e.key==='ArrowLeft') { e.preventDefault(); keyMove(0,-1); }
+  else if (e.key==='ArrowRight') { e.preventDefault(); keyMove(0,1); }
+});
+document.addEventListener('pointerdown', () => initAudio(), true);
+window.addEventListener('resize', () => { if ($('game').classList.contains('on')) { layout(); clearHint(); renderPieces(true); } });
+document.addEventListener('visibilitychange', () => { if (document.hidden) { pauseGame(); Object.values(SONGS).forEach(a => a.pause()); } else updateMusic(); });
+syncSettingsUI();
+</script>
+</body>
+</html>
+
+</body></html>
