@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>遙控相機</title>
+<script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+<style>
+  :root { color-scheme: dark; }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; height: 100%; background: #000; color: #fff;
+    font-family: -apple-system, "PingFang TC", "Noto Sans TC", sans-serif; overflow: hidden; }
+  section { position: fixed; inset: 0; }
+  [hidden] { display: none !important; }
+  button { font: inherit; color: #fff; background: #2a2a2a; border: 0; border-radius: 12px;
+    padding: 12px 18px; }
+  button:active { opacity: .7; }
+
+  /* 首頁 */
+  #home { display: flex; flex-direction: column; justify-content: center; align-items: center;
+    gap: 18px; padding: 24px; }
+  #home h1 { font-size: 26px; margin: 0 0 8px; }
+  #home button { width: 100%; max-width: 320px; padding: 20px; font-size: 19px; }
+  #home .note { color: #999; font-size: 13px; max-width: 320px; line-height: 1.6; }
+
+  video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; background: #000; }
+  .mirror { transform: scaleX(-1); }
+
+  .topbar { position: absolute; left: 0; right: 0; top: 0;
+    padding: calc(env(safe-area-inset-top) + 10px) 16px 10px;
+    background: linear-gradient(#000c, #0000); font-size: 15px; z-index: 2; }
+  .topbar b { font-size: 28px; letter-spacing: 4px; font-variant-numeric: tabular-nums; }
+  .status { color: #ccc; font-size: 14px; margin-top: 4px; }
+
+  .thumbs { position: absolute; left: 0; right: 0; display: flex; gap: 6px; overflow-x: auto;
+    padding: 6px 12px; z-index: 2; }
+  .thumbs img { height: 56px; border-radius: 6px; border: 1px solid #fff5; flex: none; }
+
+  #countdown, #remoteCountdown { position: absolute; inset: 0; display: flex; align-items: center;
+    justify-content: center; font-size: 140px; font-weight: 700; text-shadow: 0 0 20px #000;
+    pointer-events: none; z-index: 3; }
+  #flash { position: absolute; inset: 0; background: #fff; opacity: 0; pointer-events: none;
+    transition: opacity .25s; z-index: 4; }
+
+  #cam .thumbs { bottom: calc(env(safe-area-inset-bottom) + 8px); }
+  #res { position: absolute; right: 12px; top: calc(env(safe-area-inset-top) + 14px);
+    font-size: 12px; color: #aaa; z-index: 2; }
+
+  /* 遙控端 */
+  #joinBox { position: absolute; inset: 0; display: flex; flex-direction: column;
+    justify-content: center; align-items: center; gap: 14px; padding: 24px; z-index: 5; background: #000; }
+  #codeInput { font-size: 34px; letter-spacing: 8px; text-align: center; width: 240px;
+    padding: 12px; border-radius: 12px; border: 1px solid #555; background: #111; color: #fff; }
+  #joinBox button { width: 240px; font-size: 18px; padding: 16px; background: #0a84ff; }
+  #joinStatus { color: #ccc; font-size: 14px; min-height: 1.4em; text-align: center; max-width: 320px; line-height: 1.6; }
+
+  .controls { position: absolute; left: 0; right: 0; bottom: 0; z-index: 2;
+    padding: 10px 24px calc(env(safe-area-inset-bottom) + 18px);
+    display: flex; align-items: center; justify-content: space-between;
+    background: linear-gradient(#0000, #000c); }
+  #shutter { width: 78px; height: 78px; border-radius: 50%; padding: 0; background: #fff;
+    border: 5px solid #fff; box-shadow: inset 0 0 0 3px #000; }
+  #shutter:disabled { opacity: .4; }
+  .controls .side { width: 76px; font-size: 15px; padding: 12px 0; background: #0008; }
+  #remote .thumbs { bottom: calc(env(safe-area-inset-bottom) + 112px); }
+  #remoteStatus { position: absolute; top: calc(env(safe-area-inset-top) + 10px); left: 0; right: 0;
+    text-align: center; font-size: 14px; color: #ddd; z-index: 2; text-shadow: 0 0 6px #000; }
+
+  /* 照片檢視 */
+  #viewer { position: fixed; inset: 0; background: #000; z-index: 10; display: flex;
+    flex-direction: column; align-items: center; justify-content: center; gap: 12px;
+    padding: calc(env(safe-area-inset-top) + 10px) 12px calc(env(safe-area-inset-bottom) + 14px); }
+  #viewerImg { max-width: 100%; max-height: 72vh; object-fit: contain; -webkit-touch-callout: default; }
+  #viewer p { color: #aaa; font-size: 13px; margin: 0; text-align: center; }
+  #viewer .row { display: flex; gap: 12px; }
+</style>
+</head>
+<body>
+
+<section id="home">
+  <h1>遙控相機</h1>
+  <button id="asCam">📷 這支是相機（A）</button>
+  <button id="asRemote">🎮 這支是遙控器（B）</button>
+  <p class="note">A 手機架好、選「相機」，畫面上會出現 6 位數配對碼；B 手機選「遙控器」並輸入配對碼即可。影像在兩支手機間點對點傳輸並加密。</p>
+</section>
+
+<section id="cam" hidden>
+  <video id="camVideo" playsinline muted autoplay></video>
+  <div class="topbar">
+    配對碼 <b id="code">······</b>
+    <div class="status" id="camStatus">準備中…</div>
+  </div>
+  <div id="res"></div>
+  <div id="countdown" hidden></div>
+  <div id="flash"></div>
+  <div class="thumbs" id="camThumbs"></div>
+</section>
+
+<section id="remote" hidden>
+  <video id="remoteVideo" playsinline muted autoplay></video>
+  <div id="remoteStatus"></div>
+  <div id="remoteCountdown" hidden></div>
+  <div class="thumbs" id="remoteThumbs"></div>
+  <div class="controls">
+    <button class="side" id="timerBtn">計時 關</button>
+    <button id="shutter" aria-label="拍照" disabled></button>
+    <button class="side" id="flipBtn">切換鏡頭</button>
+  </div>
+  <div id="joinBox">
+    <div>輸入 A 手機上的配對碼</div>
+    <input id="codeInput" inputmode="numeric" pattern="[0-9]*" maxlength="6" autocomplete="off">
+    <button id="joinBtn">連線</button>
+    <div id="joinStatus"></div>
+  </div>
+</section>
+
+<div id="viewer" hidden>
+  <img id="viewerImg" alt="照片">
+  <p>長按照片 →「加入照片」即可存到相簿</p>
+  <div class="row">
+    <button id="shareBtn">分享／儲存</button>
+    <button id="closeViewer">關閉</button>
+  </div>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+const PREFIX = 'rcam-v1-';
+let peer = null, conn = null, call = null, stream = null;
+let facing = 'environment';
+
+function show(id) { for (const s of ['home', 'cam', 'remote']) $(s).hidden = (s !== id); }
+function send(msg) { if (conn && conn.open) conn.send(msg); }
+
+$('asCam').onclick = startCamera;
+$('asRemote').onclick = () => { show('remote'); $('codeInput').focus(); };
+
+/* ================= 照片清單（兩端共用） ================= */
+let viewing = null;
+function addPhoto(blob, containerId) {
+  const url = URL.createObjectURL(blob);
+  const img = document.createElement('img');
+  img.src = url;
+  img.onclick = () => openViewer(blob, url);
+  $(containerId).prepend(img);
+}
+function openViewer(blob, url) {
+  viewing = blob;
+  $('viewerImg').src = url;
+  $('viewer').hidden = false;
+}
+$('closeViewer').onclick = () => { $('viewer').hidden = true; viewing = null; };
+$('shareBtn').onclick = async () => {
+  if (!viewing) return;
+  const file = new File([viewing], 'photo-' + Date.now() + '.jpg', { type: 'image/jpeg' });
+  try {
+    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+      await navigator.share({ files: [file] });
+    } else {
+      $('viewer').querySelector('p').textContent = '這個瀏覽器不支援分享，請長按照片儲存';
+    }
+  } catch (e) { /* 使用者取消 */ }
+};
+
+/* ================= A：相機端 ================= */
+function setCamStatus(t) { $('camStatus').textContent = t; }
+
+function getStream(mode) {
+  return navigator.mediaDevices.getUserMedia({
+    audio: false,
+    video: { facingMode: { ideal: mode }, width: { ideal: 4032 }, height: { ideal: 3024 } }
+  });
+}
+
+function attachLocal() {
+  const v = $('camVideo');
+  v.srcObject = stream;
+  v.classList.toggle('mirror', facing === 'user');
+  v.play().catch(() => {});
+  const s = stream.getVideoTracks()[0].getSettings();
+  $('res').textContent = (s.width || '?') + '×' + (s.height || '?');
+}
+
+async function startCamera() {
+  show('cam');
+  try {
+    stream = await getStream(facing);
+  } catch (e) {
+    setCamStatus('無法開啟相機：' + e.message + '（需要 https 網址並允許相機權限）');
+    return;
+  }
+  attachLocal();
+  keepAwake();
+  openPeer();
+}
+
+function newCode() { return String(Math.floor(100000 + Math.random() * 900000)); }
+
+function openPeer() {
+  const code = newCode();
+  peer = new Peer(PREFIX + code);
+  peer.on('open', () => { $('code').textContent = code; setCamStatus('等待遙控器連線…'); });
+  peer.on('error', err => {
+    if (err.type === 'unavailable-id') { peer.destroy(); openPeer(); }
+    else setCamStatus('錯誤：' + err.type);
+  });
+  peer.on('disconnected', () => { if (!peer.destroyed) peer.reconnect(); });
+  peer.on('connection', c => {
+    // 只允許一個遙控器
+    if (conn) { try { conn.close(); } catch (e) {} }
+    if (call) { try { call.close(); } catch (e) {} }
+    conn = c;
+    c.on('open', () => {
+      setCamStatus('遙控器已連線');
+      call = peer.call(c.peer, stream);
+      send({ type: 'facing', facing });
+    });
+    c.on('data', onCommand);
+    c.on('close', () => {
+      if (conn === c) { conn = null; setCamStatus('遙控器已離線，等待重新連線…'); }
+    });
+  });
+}
+
+let busy = false;
+async function onCommand(msg) {
+  if (!msg || !msg.type) return;
+  if (msg.type === 'shoot') {
+    if (busy) return;
+    busy = true;
+    try { await countdown(msg.timer || 0); await shoot(); }
+    finally { busy = false; send({ type: 'ready' }); }
+  } else if (msg.type === 'flip') {
+    if (busy) return;
+    busy = true;
+    try { await switchCamera(facing === 'environment' ? 'user' : 'environment'); }
+    finally { busy = false; }
+  }
+}
+
+function countdown(sec) {
+  return new Promise(resolve => {
+    if (!sec) return resolve();
+    const el = $('countdown');
+    let n = sec;
+    el.textContent = n; el.hidden = false; send({ type: 'count', n });
+    const t = setInterval(() => {
+      n--;
+      if (n <= 0) { clearInterval(t); el.hidden = true; send({ type: 'count', n: 0 }); resolve(); }
+      else { el.textContent = n; send({ type: 'count', n }); }
+    }, 1000);
+  });
+}
+
+function flash() {
+  const f = $('flash');
+  f.style.transition = 'none'; f.style.opacity = '1';
+  requestAnimationFrame(() => { f.style.transition = 'opacity .35s'; f.style.opacity = '0'; });
+}
+
+async function shoot() {
+  const v = $('camVideo');
+  const w = v.videoWidth, h = v.videoHeight;
+  if (!w || !h) return;
+  const cv = document.createElement('canvas');
+  cv.width = w; cv.height = h;
+  cv.getContext('2d').drawImage(v, 0, 0, w, h);
+  const blob = await new Promise(r => cv.toBlob(r, 'image/jpeg', 0.92));
+  flash();
+  addPhoto(blob, 'camThumbs');
+  send({ type: 'photo', data: await blob.arrayBuffer(), w, h });
+}
+
+async function switchCamera(mode) {
+  // iPhone 一次只能開一顆鏡頭，先停再開
+  if (stream) stream.getTracks().forEach(t => t.stop());
+  try { stream = await getStream(mode); facing = mode; }
+  catch (e) { stream = await getStream(facing); }
+  attachLocal();
+  if (call && call.peerConnection) {
+    const sender = call.peerConnection.getSenders().find(s => s.track && s.track.kind === 'video')
+      || call.peerConnection.getSenders()[0];
+    if (sender) await sender.replaceTrack(stream.getVideoTracks()[0]);
+  }
+  send({ type: 'facing', facing });
+}
+
+let wakeLock = null;
+async function keepAwake() {
+  try { if (navigator.wakeLock) wakeLock = await navigator.wakeLock.request('screen'); } catch (e) {}
+}
+document.addEventListener('visibilitychange', async () => {
+  if (document.visibilityState !== 'visible' || $('cam').hidden || !stream) return;
+  keepAwake();
+  // 切到背景後 iOS 會關掉相機，回來時重開
+  const track = stream.getVideoTracks()[0];
+  if (!track || track.readyState === 'ended') {
+    try { await switchCamera(facing); } catch (e) { setCamStatus('相機重啟失敗，請重新整理頁面'); }
+  }
+});
+
+/* ================= B：遙控端 ================= */
+let timer = 0, connectTimeout = null;
+function setJoinStatus(t) { $('joinStatus').textContent = t; }
+function setRemoteStatus(t) { $('remoteStatus').textContent = t; }
+
+$('codeInput').addEventListener('keydown', e => { if (e.key === 'Enter') join(); });
+$('joinBtn').onclick = join;
+
+function join() {
+  const code = $('codeInput').value.trim();
+  if (!/^\d{6}$/.test(code)) { setJoinStatus('請輸入 6 位數配對碼'); return; }
+  $('remoteVideo').play().catch(() => {});
+  setJoinStatus('連線中…');
+  if (peer) peer.destroy();
+  peer = new Peer();
+
+  clearTimeout(connectTimeout);
+  connectTimeout = setTimeout(() => {
+    setJoinStatus('一直連不上。建議讓兩支手機連同一個 Wi-Fi，或讓 B 連 A 的個人熱點，再試一次。');
+  }, 20000);
+
+  peer.on('open', () => {
+    conn = peer.connect(PREFIX + code, { reliable: true });
+    conn.on('open', () => setJoinStatus('已連線，等待畫面…'));
+    conn.on('data', onRemoteData);
+    conn.on('close', () => {
+      $('joinBox').hidden = false;
+      $('shutter').disabled = true;
+      setJoinStatus('連線中斷，請重新連線');
+    });
+  });
+  peer.on('call', c => {
+    call = c;
+    c.answer();
+    c.on('stream', s => {
+      clearTimeout(connectTimeout);
+      const v = $('remoteVideo');
+      v.srcObject = s;
+      v.play().catch(() => {});
+      $('joinBox').hidden = true;
+      $('shutter').disabled = false;
+      setRemoteStatus('');
+    });
+  });
+  peer.on('error', err => {
+    clearTimeout(connectTimeout);
+    setJoinStatus(err.type === 'peer-unavailable'
+      ? '找不到這個配對碼，請確認 A 手機上的數字'
+      : '錯誤：' + err.type);
+  });
+}
+
+function onRemoteData(msg) {
+  if (!msg || !msg.type) return;
+  if (msg.type === 'photo') {
+    const blob = new Blob([msg.data], { type: 'image/jpeg' });
+    addPhoto(blob, 'remoteThumbs');
+    setRemoteStatus('已拍下 ' + msg.w + '×' + msg.h);
+    setTimeout(() => setRemoteStatus(''), 2000);
+  } else if (msg.type === 'count') {
+    const el = $('remoteCountdown');
+    if (msg.n > 0) { el.textContent = msg.n; el.hidden = false; } else el.hidden = true;
+  } else if (msg.type === 'ready') {
+    $('shutter').disabled = false;
+  } else if (msg.type === 'facing') {
+    // 前鏡頭時鏡像顯示，比較好取景
+    $('remoteVideo').classList.toggle('mirror', msg.facing === 'user');
+  }
+}
+
+$('shutter').onclick = () => {
+  $('shutter').disabled = true;
+  send({ type: 'shoot', timer });
+  setTimeout(() => { $('shutter').disabled = false; }, (timer + 4) * 1000); // 保險：避免卡住
+};
+$('timerBtn').onclick = () => {
+  timer = timer === 0 ? 3 : timer === 3 ? 10 : 0;
+  $('timerBtn').textContent = timer ? '計時 ' + timer + '秒' : '計時 關';
+};
+$('flipBtn').onclick = () => send({ type: 'flip' });
+</script>
+</body>
+</html>
