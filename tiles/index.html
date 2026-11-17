@@ -1,0 +1,416 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="theme-color" content="#24362f">
+<title>花磚老厝</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@600;900&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#24362f; --bg2:#1b2a24; --panel:#f5ecd9; --panel2:#ebdfc4; --ink:#3b2a1e; --ink2:#7a6450;
+  --wood:#8a5a3b; --red:#b23a3a; --gold:#d9a441; --green:#2e8a6a; --line:#c9b48e;
+  --cell:32px; --mini:12px;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent;touch-action:manipulation}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font-family:"Noto Sans TC","PingFang TC","Microsoft JhengHei",system-ui,sans-serif;overscroll-behavior:none}
+body{background:var(--bg) radial-gradient(circle at 50% -20%,#3a5248 0,transparent 60%);-webkit-user-select:none;user-select:none}
+button{font:inherit;cursor:pointer}
+.screen{display:none;min-height:100%;}
+.screen.on{display:block}
+.serif{font-family:"Noto Serif TC",serif}
+
+/* 封面 */
+#cover{padding:24px 16px 32px;text-align:center;color:var(--panel)}
+.cover-tiles{display:grid;grid-template-columns:repeat(5,52px);gap:4px;justify-content:center;margin:18px auto 10px;transform:rotate(-3deg)}
+.cover-tiles svg{width:52px;height:52px;display:block;border-radius:6px;box-shadow:0 2px 0 rgba(0,0,0,.35)}
+h1.title{font-family:"Noto Serif TC",serif;font-weight:900;font-size:52px;letter-spacing:8px;margin:14px 0 4px;color:#f8eed6;text-shadow:0 3px 0 #8a5a3b,0 6px 12px rgba(0,0,0,.4)}
+.menu{display:flex;flex-direction:column;gap:10px;max-width:320px;margin:22px auto 0}
+.btn{border:0;border-radius:12px;padding:13px 16px;font-size:18px;font-weight:700;background:var(--panel);color:var(--ink);box-shadow:0 4px 0 #b9a47c}
+.btn:active{transform:translateY(2px);box-shadow:0 2px 0 #b9a47c}
+.btn.primary{background:var(--red);color:#fff;box-shadow:0 4px 0 #7a2424}
+.btn.gold{background:var(--gold);color:#3b2a1e;box-shadow:0 4px 0 #9b7124}
+.btn.ghost{background:transparent;color:var(--panel);box-shadow:none;border:2px solid #6c8379}
+.btn.small{font-size:15px;padding:8px 12px;border-radius:10px}
+.btn:disabled{opacity:.45}
+.row{display:flex;gap:8px;align-items:center}
+input.txt{font:inherit;font-size:18px;padding:10px 12px;border-radius:10px;border:2px solid var(--line);background:#fffaf0;color:var(--ink);width:100%}
+.namebox{max-width:320px;margin:0 auto;text-align:left;color:var(--panel)}
+.namebox label{font-size:14px;opacity:.85}
+
+/* 面板 */
+.panel{background:var(--panel);border-radius:16px;padding:16px;margin:12px 16px;box-shadow:0 6px 0 rgba(0,0,0,.25)}
+.panel h2{margin:0 0 10px;font-family:"Noto Serif TC",serif;font-size:22px}
+.muted{color:var(--ink2);font-size:14px}
+#lobby .code{font-family:"Noto Serif TC",serif;font-size:44px;font-weight:900;letter-spacing:10px;color:var(--red);text-align:center}
+#qr{display:flex;justify-content:center;margin:8px 0}
+#qr img,#qr svg{width:180px;height:180px;image-rendering:pixelated;background:#fff;padding:8px;border-radius:10px}
+.plist{list-style:none;padding:0;margin:8px 0}
+.plist li{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:10px;background:var(--panel2);margin-bottom:6px;font-weight:700}
+.dot{width:10px;height:10px;border-radius:50%;background:#4caf50;flex:none}
+.dot.off{background:#bbb}
+.seg{display:flex;gap:6px}
+.seg button{flex:1;border:2px solid var(--line);background:#fffaf0;border-radius:10px;padding:8px;font-weight:700;color:var(--ink)}
+.seg button.on{background:var(--red);border-color:var(--red);color:#fff}
+
+/* 遊戲畫面 */
+#game{max-width:560px;margin:0 auto;padding:0 0 calc(70px + env(safe-area-inset-bottom))}
+.topbar{position:sticky;top:0;z-index:20;display:flex;align-items:center;gap:8px;padding:calc(6px + env(safe-area-inset-top)) 10px 6px;background:var(--bg2);color:var(--panel);box-shadow:0 2px 8px rgba(0,0,0,.3)}
+.topbar .round{font-size:13px;opacity:.8;white-space:nowrap}
+.topbar .turn{flex:1;font-weight:700;font-size:15px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.topbar .turn.me{color:var(--gold)}
+.iconbtn{border:0;background:#344a42;color:var(--panel);width:38px;height:38px;border-radius:10px;font-size:18px;flex:none}
+.scores{display:flex;gap:6px;padding:6px 10px 0;overflow-x:auto}
+.chip{flex:none;display:flex;align-items:center;gap:6px;background:#344a42;color:var(--panel);border-radius:20px;padding:4px 10px;font-size:13px;font-weight:700;border:2px solid transparent}
+.chip.turn{border-color:var(--gold);background:#4a4a2c}
+.chip .sc{font-size:16px;color:var(--gold)}
+.chip .off{width:8px;height:8px;border-radius:50%;background:#e66}
+
+.opps{display:flex;gap:8px;padding:8px 10px 0;overflow-x:auto}
+.opp{flex:1 0 auto;background:#e9dec5;border-radius:12px;padding:6px 8px;border:3px solid transparent;min-width:0}
+.opp.turn{border-color:var(--gold)}
+.opp .nm{font-size:12px;font-weight:700;display:flex;justify-content:space-between;gap:6px;margin-bottom:3px}
+
+.public{margin:8px 10px 0;padding:10px 6px;border-radius:16px;background:#3a2f26 repeating-linear-gradient(90deg,#3f3329 0 22px,#382d24 22px 44px);box-shadow:inset 0 2px 8px rgba(0,0,0,.5)}
+.factories{display:flex;flex-wrap:wrap;justify-content:center;gap:6px}
+.factory{position:relative;border-radius:50%;background:radial-gradient(circle at 40% 35%,#d9c19a,#a8865e);box-shadow:0 3px 0 #5c4330, inset 0 0 0 3px #c4a77e;display:grid;grid-template-columns:1fr 1fr;place-content:center;gap:3px}
+.factory .fno{position:absolute;top:-2px;left:50%;transform:translateX(-50%);font-size:10px;color:#5c4330;font-weight:700;background:#ead8b6;border-radius:6px;padding:0 4px}
+.factory.empty{opacity:.35}
+.center{margin-top:16px;min-height:52px;border-radius:14px;border:2px dashed #8a7258;padding:6px;display:flex;flex-wrap:wrap;gap:4px;align-items:center;justify-content:center;position:relative}
+.center .lbl{position:absolute;top:-10px;left:12px;font-size:11px;background:#3a2f26;color:#d9c19a;padding:0 6px;border-radius:6px}
+.center .grp{display:flex;gap:2px;padding:2px;border-radius:8px}
+.t{display:block;border-radius:15%;position:relative;flex:none}
+.t svg,.t img{width:100%;height:100%;display:block;border-radius:15%}
+.public .t{width:var(--ft,26px);height:var(--ft,26px);box-shadow:0 2px 0 rgba(0,0,0,.35)}
+.center .t{--ft:26px}
+.pick{cursor:pointer}
+.public.dim .t:not(.sel){opacity:.45}
+.t.sel{outline:3px solid #fff;outline-offset:1px;transform:translateY(-3px);box-shadow:0 0 12px #fff8}
+.mytturn .pick:active{transform:scale(.92)}
+
+.mine{margin:10px 10px 0;background:var(--panel);border-radius:16px;padding:8px 8px 10px;box-shadow:0 6px 0 rgba(0,0,0,.25)}
+.mine .hdr{display:flex;justify-content:space-between;align-items:center;font-weight:700;padding:0 4px 6px}
+.mine .hdr .sc{font-size:22px;color:var(--red);font-family:"Noto Serif TC",serif}
+
+/* 個人版面 */
+.board{--c:var(--cell);display:grid;grid-template-columns:auto auto;gap:calc(var(--c)*.25);justify-content:center}
+.lines{display:flex;flex-direction:column;gap:calc(var(--c)*.12)}
+.line{display:flex;justify-content:flex-end;gap:calc(var(--c)*.08);border-radius:8px;padding:1px}
+.slot,.cell,.fslot{width:var(--c);height:var(--c);border-radius:15%;position:relative;flex:none}
+.slot{background:#e2d4b5;box-shadow:inset 0 1px 3px rgba(0,0,0,.25)}
+.wall{display:grid;grid-template-columns:repeat(5,var(--c));gap:calc(var(--c)*.08);padding:calc(var(--c)*.1);background:#d9c9a6;border-radius:10px;align-content:start}
+.wall{grid-auto-rows:var(--c);row-gap:calc(var(--c)*.12)}
+.cell .ghost{position:absolute;inset:0;opacity:.25;filter:grayscale(.5)}
+.cell .t{position:absolute;inset:0;width:100%;height:100%}
+.slot .t{width:100%;height:100%}
+.floor{grid-column:1 / -1;display:flex;gap:calc(var(--c)*.08);justify-content:center;align-items:flex-end;border-radius:8px;padding:2px}
+.fslot{background:#e9c9c0;box-shadow:inset 0 1px 3px rgba(0,0,0,.25)}
+.fslot .pen{position:absolute;bottom:-1px;left:0;right:0;text-align:center;font-size:calc(var(--c)*.32);color:#9b3b30;font-weight:700;line-height:1}
+.fslot .t{position:absolute;inset:0;width:100%;height:100%}
+.floor .flbl{font-size:calc(var(--c)*.34);color:#9b3b30;font-weight:700;margin-right:4px;align-self:center;writing-mode:horizontal-tb}
+.board.mini .floor .flbl{display:none}
+.board.mini .fslot .pen{display:none}
+.line.valid,.floor.valid{background:rgba(217,164,65,.35);box-shadow:0 0 0 2px var(--gold);cursor:pointer;animation:glow 1.1s ease-in-out infinite}
+.line.valid .slot,.floor.valid .fslot{cursor:pointer}
+@keyframes glow{50%{box-shadow:0 0 0 3px #f3c868,0 0 14px #f3c868}}
+.cell.new .t{animation:pop 1s ease 2}
+@keyframes pop{30%{transform:scale(1.25);box-shadow:0 0 14px #fff}}
+
+.hint{position:fixed;left:0;right:0;bottom:0;z-index:25;padding:10px 16px calc(10px + env(safe-area-inset-bottom));background:var(--bg2);color:var(--panel);text-align:center;font-weight:700;font-size:15px;box-shadow:0 -2px 8px rgba(0,0,0,.3);display:flex;gap:8px;align-items:center;justify-content:center;min-height:56px}
+.hint.me{background:#5a3a1a;color:#ffe9b8}
+
+/* 浮層 */
+.overlay{position:fixed;inset:0;z-index:50;background:rgba(10,18,15,.72);display:none;align-items:center;justify-content:center;padding:16px}
+.overlay.on{display:flex}
+.modal{background:var(--panel);border-radius:18px;padding:18px;width:100%;max-width:420px;max-height:calc(100vh - 32px);overflow:auto;box-shadow:0 10px 30px rgba(0,0,0,.5)}
+.modal h2{margin:0 0 12px;font-family:"Noto Serif TC",serif;text-align:center}
+.modal .menu{margin-top:8px;max-width:none}
+.modal .btn{box-shadow:0 3px 0 #b9a47c}
+.set-row{margin:14px 0}
+.set-row label{display:flex;justify-content:space-between;font-weight:700;margin-bottom:6px}
+input[type=range]{width:100%;accent-color:var(--red)}
+.help h3{font-family:"Noto Serif TC",serif;margin:16px 0 6px;color:var(--wood)}
+.help p,.help li{line-height:1.6;font-size:15px}
+.help ul{padding-left:20px;margin:4px 0}
+.help .tl{display:inline-flex;gap:3px;vertical-align:middle}
+.help .tl svg{width:22px;height:22px;border-radius:4px}
+.log{font-size:14px;line-height:1.5}
+.log div{padding:4px 0;border-bottom:1px solid var(--line)}
+.sumrow{background:var(--panel2);border-radius:12px;padding:10px;margin-bottom:8px}
+.sumrow .nm{display:flex;justify-content:space-between;font-weight:700}
+.sumrow .det{font-size:14px;color:var(--ink2);margin-top:4px;display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.sumrow .det .t{width:20px;height:20px}
+.sumrow.win{background:#f3d98f}
+.bigboard{display:flex;justify-content:center;margin:8px 0}
+
+.toasts{position:fixed;top:calc(52px + env(safe-area-inset-top));left:0;right:0;z-index:40;display:flex;flex-direction:column;align-items:center;gap:6px;pointer-events:none;padding:0 12px}
+.toast{background:rgba(30,22,16,.92);color:#fff3da;padding:8px 14px;border-radius:12px;font-size:14px;font-weight:700;box-shadow:0 4px 12px rgba(0,0,0,.4);display:flex;align-items:center;gap:6px;animation:tin .25s ease;max-width:100%}
+.toast .t{width:20px;height:20px}
+@keyframes tin{from{transform:translateY(-10px);opacity:0}}
+.flyer{position:fixed;z-index:45;pointer-events:none;transition-property:left,top,width,height;transition-timing-function:cubic-bezier(.4,.1,.3,1)}
+.banner{position:fixed;left:50%;top:40%;transform:translate(-50%,-50%) scale(.8);z-index:46;background:var(--red);color:#fff;font-family:"Noto Serif TC",serif;font-size:28px;font-weight:900;padding:14px 26px;border-radius:16px;box-shadow:0 8px 24px rgba(0,0,0,.5);opacity:0;pointer-events:none;transition:all .25s}
+.banner.on{opacity:1;transform:translate(-50%,-50%) scale(1)}
+.netstat{background:#7a2424;color:#fff;text-align:center;font-size:13px;padding:4px;display:none}
+.netstat.on{display:block}
+</style>
+</head>
+<body>
+
+<!-- 手繪花磚圖樣（設定可切換；預設用 assets/images 的老照片花磚） -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+<defs>
+  <symbol id="t0" viewBox="0 0 100 100">
+    <rect width="100" height="100" fill="#f4ecd8"/>
+    <g fill="#2a4f9c"><circle cx="0" cy="0" r="22"/><circle cx="100" cy="0" r="22"/><circle cx="0" cy="100" r="22"/><circle cx="100" cy="100" r="22"/></g>
+    <g fill="#f4ecd8"><circle cx="0" cy="0" r="11"/><circle cx="100" cy="0" r="11"/><circle cx="0" cy="100" r="11"/><circle cx="100" cy="100" r="11"/></g>
+    <g fill="#2a4f9c"><circle cx="50" cy="30" r="17"/><circle cx="70" cy="50" r="17"/><circle cx="50" cy="70" r="17"/><circle cx="30" cy="50" r="17"/></g>
+    <g fill="#f4ecd8"><circle cx="50" cy="28" r="6"/><circle cx="72" cy="50" r="6"/><circle cx="50" cy="72" r="6"/><circle cx="28" cy="50" r="6"/></g>
+    <circle cx="50" cy="50" r="9" fill="#e9b93c"/><circle cx="50" cy="50" r="3.5" fill="#c8434e"/>
+    <rect x="2" y="2" width="96" height="96" fill="none" stroke="#1b3a78" stroke-width="4"/>
+  </symbol>
+  <symbol id="t1" viewBox="0 0 100 100">
+    <rect width="100" height="100" fill="#e9b93c"/>
+    <polygon points="0,0 26,0 0,26" fill="#2a8a72"/><polygon points="100,0 74,0 100,26" fill="#2a8a72"/>
+    <polygon points="0,100 26,100 0,74" fill="#2a8a72"/><polygon points="100,100 74,100 100,74" fill="#2a8a72"/>
+    <polygon points="50,10 90,50 50,90 10,50" fill="#f8ecc4"/>
+    <polygon points="50,20 57,43 80,50 57,57 50,80 43,57 20,50 43,43" fill="#2a4f9c"/>
+    <circle cx="50" cy="50" r="7" fill="#d9607a"/>
+    <rect x="2" y="2" width="96" height="96" fill="none" stroke="#a87a12" stroke-width="4"/>
+  </symbol>
+  <symbol id="t2" viewBox="0 0 100 100">
+    <rect width="100" height="100" fill="#f4ecd8"/>
+    <rect x="5" y="5" width="90" height="90" fill="none" stroke="#d9607a" stroke-width="5"/>
+    <g fill="#3f8a4f">
+      <ellipse cx="22" cy="22" rx="7" ry="15" transform="rotate(-45 22 22)"/><ellipse cx="78" cy="22" rx="7" ry="15" transform="rotate(45 78 22)"/>
+      <ellipse cx="22" cy="78" rx="7" ry="15" transform="rotate(45 22 78)"/><ellipse cx="78" cy="78" rx="7" ry="15" transform="rotate(-45 78 78)"/>
+    </g>
+    <g fill="#d9607a"><circle cx="50" cy="34" r="14"/><circle cx="65" cy="45" r="14"/><circle cx="59" cy="63" r="14"/><circle cx="41" cy="63" r="14"/><circle cx="35" cy="45" r="14"/></g>
+    <g fill="#f0a3b0"><circle cx="50" cy="40" r="7"/><circle cx="59" cy="47" r="7"/><circle cx="55" cy="58" r="7"/><circle cx="45" cy="58" r="7"/><circle cx="41" cy="47" r="7"/></g>
+    <circle cx="50" cy="50" r="6" fill="#b8323f"/>
+  </symbol>
+  <symbol id="t3" viewBox="0 0 100 100">
+    <rect width="100" height="100" fill="#f4ecd8"/>
+    <g fill="#1d5a44">
+      <polygon points="0,0 100,0 50,38"/><polygon points="100,0 100,100 62,50"/>
+      <polygon points="100,100 0,100 50,62"/><polygon points="0,100 0,0 38,50"/>
+    </g>
+    <g fill="#f4ecd8"><polygon points="50,6 58,16 50,26 42,16"/><polygon points="94,50 84,58 74,50 84,42"/><polygon points="50,94 42,84 50,74 58,84"/><polygon points="6,50 16,42 26,50 16,58"/></g>
+    <polygon points="50,38 62,50 50,62 38,50" fill="#d9607a"/>
+    <circle cx="50" cy="50" r="4" fill="#e9b93c"/>
+    <rect x="2" y="2" width="96" height="96" fill="none" stroke="#123d2e" stroke-width="4"/>
+  </symbol>
+  <symbol id="t4" viewBox="0 0 100 100">
+    <rect width="100" height="100" fill="#72c3b1"/>
+    <polygon points="32,8 68,8 92,32 92,68 68,92 32,92 8,68 8,32" fill="#f4ecd8"/>
+    <polygon points="34,14 66,14 86,34 86,66 66,86 34,86 14,66 14,34" fill="none" stroke="#3f9a86" stroke-width="3"/>
+    <g fill="#d9607a"><circle cx="50" cy="38" r="9"/><circle cx="62" cy="50" r="9"/><circle cx="50" cy="62" r="9"/><circle cx="38" cy="50" r="9"/></g>
+    <circle cx="50" cy="50" r="6" fill="#e9b93c"/>
+    <g fill="#3f9a86"><ellipse cx="30" cy="30" rx="4" ry="9" transform="rotate(-45 30 30)"/><ellipse cx="70" cy="30" rx="4" ry="9" transform="rotate(45 70 30)"/><ellipse cx="30" cy="70" rx="4" ry="9" transform="rotate(45 30 70)"/><ellipse cx="70" cy="70" rx="4" ry="9" transform="rotate(-45 70 70)"/></g>
+    <rect x="2" y="2" width="96" height="96" fill="none" stroke="#3f9a86" stroke-width="4"/>
+  </symbol>
+  <symbol id="tm" viewBox="0 0 100 100">
+    <circle cx="50" cy="50" r="47" fill="#b8864b" stroke="#6e4a23" stroke-width="5"/>
+    <circle cx="50" cy="50" r="36" fill="none" stroke="#e6c48a" stroke-width="3"/>
+    <text x="50" y="66" text-anchor="middle" font-size="46" font-weight="900" fill="#fff3da" font-family="Noto Serif TC,serif">先</text>
+  </symbol>
+</defs>
+</svg>
+
+<!-- 封面 -->
+<section id="cover" class="screen on">
+  <div class="cover-tiles" id="coverTiles"></div>
+  <h1 class="title">花磚老厝</h1>
+  <div id="inappWarn" class="muted" style="display:none;color:#ffd98a;max-width:340px;margin:8px auto 0;font-size:14px;line-height:1.5"></div>
+  <div class="namebox" style="margin-top:20px">
+    <label for="myName">你的名字</label>
+    <input id="myName" class="txt" maxlength="8" placeholder="輸入名字">
+  </div>
+  <div class="menu">
+    <button class="btn primary" id="bHost">開房間（手機連線）</button>
+    <button class="btn gold" id="bJoin">加入房間</button>
+    <button class="btn" id="bResume" style="display:none">恢復上次的房間</button>
+    <button class="btn" id="bLocal">同一支手機輪流玩</button>
+    <div class="row">
+      <button class="btn ghost" style="flex:1" id="bHelp">說明</button>
+      <button class="btn ghost" style="flex:1" id="bSet">設定</button>
+    </div>
+  </div>
+</section>
+
+<!-- 大廳 -->
+<section id="lobby" class="screen">
+  <div class="panel" id="lobbyHost">
+    <h2>房間已開好</h2>
+    <div class="muted" style="text-align:center">請朋友用手機相機掃描，或在封面按「加入房間」輸入代碼</div>
+    <div class="code" id="roomCode">----</div>
+    <div id="qr"></div>
+    <div class="row" style="justify-content:center"><button class="btn small" id="bCopy">複製邀請連結</button></div>
+  </div>
+  <div class="panel" id="lobbyGuest" style="display:none">
+    <h2>已加入房間 <span id="guestCode" style="color:var(--red)"></span></h2>
+    <div class="muted">等房主開始遊戲…</div>
+  </div>
+  <div class="panel">
+    <h2>玩家 <span class="muted" id="pcount"></span></h2>
+    <ul class="plist" id="plist"></ul>
+    <div class="muted" id="lobbyMsg">2～4 人可以開始</div>
+  </div>
+  <div class="menu" style="padding:0 16px 24px">
+    <button class="btn primary" id="bStart" disabled>開始遊戲</button>
+    <button class="btn ghost" id="bLeaveLobby">離開</button>
+  </div>
+</section>
+
+<!-- 同機設定 -->
+<section id="localSetup" class="screen">
+  <div class="panel">
+    <h2>同一支手機輪流玩</h2>
+    <div class="muted">大家輪流拿同一支手機，畫面下方永遠顯示「輪到的人」的版面。</div>
+    <div class="set-row"><label>人數</label>
+      <div class="seg" id="lsCount"><button data-n="2" class="on">2 人</button><button data-n="3">3 人</button><button data-n="4">4 人</button></div>
+    </div>
+    <div id="lsNames"></div>
+  </div>
+  <div class="menu" style="padding:0 16px 24px">
+    <button class="btn primary" id="bLocalStart">開始</button>
+    <button class="btn ghost" id="bLocalBack">返回</button>
+  </div>
+</section>
+
+<!-- 遊戲 -->
+<section id="game" class="screen">
+  <div class="topbar">
+    <div class="round" id="roundLbl">第 1 回合</div>
+    <div class="turn" id="turnLbl"></div>
+    <button class="iconbtn" id="bPause" aria-label="暫停">❚❚</button>
+  </div>
+  <div class="netstat" id="netstat">連線中斷，正在重新連線…</div>
+  <div class="opps" id="opps"></div>
+  <div class="public" id="public">
+    <div class="factories" id="factories"></div>
+    <div class="center pick-area" id="center"><span class="lbl">中央</span></div>
+  </div>
+  <div class="mine" id="mine"></div>
+  <div class="hint" id="hint"></div>
+</section>
+
+<div class="toasts" id="toasts"></div>
+<div class="banner" id="banner"></div>
+
+<!-- 暫停 -->
+<div class="overlay" id="ovPause"><div class="modal">
+  <h2>暫停</h2>
+  <div class="muted" id="pauseNote" style="text-align:center;margin-bottom:8px"></div>
+  <div class="menu">
+    <button class="btn primary" data-close>繼續</button>
+    <button class="btn" id="pSet">設定</button>
+    <button class="btn" id="pHelp">說明</button>
+    <button class="btn" id="pLog">紀錄</button>
+    <button class="btn ghost" style="color:var(--red);border-color:var(--red)" id="pQuit">離開遊戲</button>
+  </div>
+</div></div>
+
+<!-- 設定 -->
+<div class="overlay" id="ovSet"><div class="modal">
+  <h2>設定</h2>
+  <div class="set-row"><label>音樂 <span id="vMusicV"></span></label><input type="range" id="vMusic" min="0" max="100"></div>
+  <div class="set-row"><label>音效 <span id="vSfxV"></span></label><input type="range" id="vSfx" min="0" max="100"></div>
+  <div class="set-row"><label>花磚外觀</label>
+    <div class="seg" id="sStyle"><button data-v="photo">老照片花磚</button><button data-v="draw">手繪圖樣</button></div>
+  </div>
+  <div class="set-row"><label>標示可以放的排</label>
+    <div class="seg" id="sHints"><button data-v="1">開</button><button data-v="0">關</button></div>
+  </div>
+  <div class="set-row"><label>輪到我時震動</label>
+    <div class="seg" id="sVib"><button data-v="1">開</button><button data-v="0">關</button></div>
+  </div>
+  <div class="menu"><button class="btn primary" data-close>完成</button></div>
+</div></div>
+
+<!-- 說明 -->
+<div class="overlay" id="ovHelp"><div class="modal help">
+  <h2>說明</h2>
+  <p>你是老厝的修繕師傅，要從窯裡挑花磚，把自己家的牆面拼得又滿又漂亮。分數最高的人獲勝。</p>
+  <h3>一、拿磚</h3>
+  <ul>
+    <li>輪到你時，從<b>某一座窯</b>拿走<b>同一種顏色的全部花磚</b>，同窯剩下的花磚推到<b>中央</b>。</li>
+    <li>也可以改從<b>中央</b>拿走某一色的全部花磚。這一回合第一個從中央拿的人，會拿到 <span class="tl"><svg><use href="#tm"/></svg></span> 先手牌：下回合由他先，但先手牌要佔破磚列一格（扣分）。</li>
+  </ul>
+  <h3>二、放到備料列</h3>
+  <ul>
+    <li>左邊有 5 排備料列，第 1 排放 1 塊、第 5 排放 5 塊。拿到的磚要<b>全部放在同一排</b>。</li>
+    <li>一排只能放一種顏色；牆上那一橫排已經有這個顏色，就不能再放。</li>
+    <li>放不下的會掉到下面的<b>破磚列</b>扣分。也可以故意全部丟進破磚列。</li>
+  </ul>
+  <h3>三、貼上牆面（每回合結束自動進行）</h3>
+  <ul>
+    <li>所有窯和中央都拿光，回合結束。<b>放滿的備料列</b>會拿 1 塊貼到右邊牆上同一橫排、相同顏色的位置，其他的收走。沒放滿的留到下回合。</li>
+    <li>計分：新貼的磚單獨一塊得 1 分；跟橫向相連的磚每塊 +1，跟直向相連的也照算。橫直都有連時，兩邊分開算再相加。</li>
+    <li>破磚列從左到右扣 1、1、2、2、2、3、3 分（分數不會低於 0）。</li>
+  </ul>
+  <h3>四、終局</h3>
+  <ul>
+    <li>有人牆上<b>拼滿一整橫排</b>，那一回合結束後遊戲結束。</li>
+    <li>加分：每條完整橫排 +2、每條完整直排 +7、每種顏色集滿 5 塊 +10。</li>
+    <li>同分時，完整橫排比較多的人勝。</li>
+  </ul>
+  <h3>五款花磚</h3>
+  <p id="helpTiles"></p>
+  <h3>手機操作</h3>
+  <ul>
+    <li>點窯或中央的花磚 → 同色會一起亮起來 → 點下面你要放的那一排（發光的排才能放）。點同一塊磚可以取消。</li>
+    <li>上面的小牆面是對手的，點一下可以放大看。每個人的動作會跳通知、花磚會飛過去。</li>
+    <li>連線時房主的手機負責整局遊戲，房主不要關掉網頁。別人斷線再打開連結會自動回到座位；房主不小心關掉的話，封面按「恢復上次的房間」。</li>
+  </ul>
+  <div class="menu"><button class="btn primary" data-close>知道了</button></div>
+</div></div>
+
+<!-- 紀錄 -->
+<div class="overlay" id="ovLog"><div class="modal">
+  <h2>紀錄</h2>
+  <div class="log" id="logList"></div>
+  <div class="menu"><button class="btn primary" data-close>關閉</button></div>
+</div></div>
+
+<!-- 看別人的牆 -->
+<div class="overlay" id="ovBoard"><div class="modal">
+  <h2 id="bvName"></h2>
+  <div class="bigboard" id="bvBoard"></div>
+  <div class="menu"><button class="btn primary" data-close>關閉</button></div>
+</div></div>
+
+<!-- 回合結算 -->
+<div class="overlay" id="ovSum"><div class="modal">
+  <h2 id="sumTitle">回合結算</h2>
+  <div id="sumList"></div>
+  <div class="menu"><button class="btn primary" data-close>繼續</button></div>
+</div></div>
+
+<!-- 終局 -->
+<div class="overlay" id="ovEnd"><div class="modal">
+  <h2 id="endTitle">遊戲結束</h2>
+  <div id="endList"></div>
+  <div class="menu">
+    <button class="btn primary" id="bAgain">再玩一局</button>
+    <button class="btn" id="eView">看看牆面</button>
+    <button class="btn ghost" style="color:var(--ink);border-color:var(--line)" id="bHome">回封面</button>
+  </div>
+</div></div>
+
+<!-- 加入房間 -->
+<div class="overlay" id="ovJoin"><div class="modal">
+  <h2>加入房間</h2>
+  <div class="muted" style="margin-bottom:8px">輸入房主畫面上的 4 個字母代碼</div>
+  <input id="joinCode" class="txt" maxlength="6" style="text-transform:uppercase;letter-spacing:8px;text-align:center;font-size:28px" autocomplete="off">
+  <div class="menu"><button class="btn primary" id="bJoinGo">加入</button><button class="btn ghost" style="color:var(--ink);border-color:var(--line)" data-close>取消</button></div>
+</div></div>
+
+<audio id="bgm" src="assets/audio/play.mp3" loop preload="none"></audio>
+<script src="config.js"></script>
+<script src="engine.js"></script>
+<script src="lib/peerjs.min.js"></script>
+<script src="lib/qrcode.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
