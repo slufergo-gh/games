@@ -1,0 +1,1792 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>藍腹鷴特勤隊</title>
+<style>
+  :root { --ink:#f2efe4; --dim:#a7a397; --red:#ff4a3a; --amber:#ffc531; --green:#6fe36a; --blue:#58b4ff; --panel:rgba(10,12,18,.92); }
+  html,body { margin:0; height:100%; background:#07080b; color:var(--ink); overflow:hidden;
+    font-family:"Noto Sans TC","Microsoft JhengHei","PingFang TC",sans-serif; user-select:none; -webkit-user-select:none; }
+  #box { position:fixed; inset:0; overflow:hidden; cursor:none; }
+  #gl { position:absolute; inset:0; width:100%; height:100%; display:block; image-rendering:pixelated; image-rendering:crisp-edges; }
+  #fx { position:absolute; inset:0; pointer-events:none; }
+  #hurt { position:absolute; inset:0; pointer-events:none; opacity:0; background:radial-gradient(ellipse at center, rgba(255,0,0,0) 40%, rgba(255,20,10,.75) 100%); }
+  #flash { position:absolute; inset:0; pointer-events:none; opacity:0; background:#fff; }
+  #fade { position:absolute; inset:0; pointer-events:none; opacity:0; background:#000; }
+  #hud { position:absolute; inset:0; pointer-events:none; display:none; font-weight:900; text-shadow:0 2px 0 #000, 0 0 6px #000; }
+  #score { position:absolute; left:16px; top:12px; font-size:26px; letter-spacing:2px; font-family:Consolas,monospace; }
+  #score small { display:block; font-size:12px; color:var(--dim); letter-spacing:1px; font-family:inherit; }
+  #combo { position:absolute; left:16px; top:58px; font-size:18px; color:var(--amber); }
+  #areaName { position:absolute; right:16px; top:14px; font-size:14px; color:var(--dim); text-align:right; }
+  #hp { position:absolute; left:16px; bottom:16px; display:flex; gap:6px; align-items:center; }
+  #hp .lbl { font-size:13px; color:var(--dim); margin-right:4px; }
+  .hpi { width:22px; height:26px; background:linear-gradient(#5ab0ff,#2060c0); border:2px solid #000; clip-path:polygon(50% 0,100% 18%,100% 60%,50% 100%,0 60%,0 18%); }
+  .hpi.off { background:#2a2d36; }
+  #ammo { position:absolute; right:16px; bottom:16px; display:flex; gap:5px; align-items:flex-end; }
+  .bul { width:11px; height:34px; border:2px solid #000; border-radius:6px 6px 2px 2px; background:linear-gradient(#ffe08a,#c89020 70%,#a06818 70%); }
+  .bul.off { background:#2a2d36; }
+  .mg { display:flex; align-items:center; gap:8px; font-size:15px; color:var(--amber); }
+  .mg div { width:140px; height:14px; background:#2a2d36; border:2px solid #000; }
+  .mg i { display:block; height:100%; background:linear-gradient(#ffe08a,#c89020); }
+  .mg b { font-family:Consolas,monospace; font-size:22px; min-width:42px; text-align:right; }
+  #reload { position:absolute; right:16px; bottom:62px; font-size:24px; color:var(--red); display:none; }
+  #bossbar { position:absolute; top:16px; left:50%; transform:translateX(-50%); width:min(560px,58vw); display:none; text-align:center; font-size:14px; color:#ffb4a8; }
+  #bossbar div { height:12px; background:#2a1210; border:2px solid #000; margin-top:3px; }
+  #bossfill { display:block; height:100%; width:100%; background:linear-gradient(#ff6a50,#a8281a); transition:width .15s; }
+  #center { position:absolute; left:0; right:0; top:34%; text-align:center; pointer-events:none; }
+  #center .big { font-size:min(64px,9vw); font-weight:900; letter-spacing:4px; }
+  #center .sub { font-size:min(22px,4.5vw); color:var(--amber); margin-top:6px; }
+  /* 手機模式 */
+  #mob { display:none; }
+  body.mobile .pcOnly { display:none; }
+  body.mobile #mob { display:block; }
+  #mob button { position:absolute; pointer-events:auto; background:rgba(10,14,20,.6); border:2px solid rgba(255,255,255,.5); color:#fff; font-weight:900; border-radius:50%; font-family:inherit; touch-action:none; -webkit-tap-highlight-color:transparent; }
+  #mReload { right:14px; bottom:64px; width:76px; height:76px; font-size:16px; }
+  #mPause { right:14px; top:54px; width:48px; height:48px; font-size:15px; }
+  body.mobile #reload { right:100px; bottom:84px; }
+  body.mobile #box { touch-action:none; }
+  body.mobile #score { font-size:20px; }
+  body.mobile #tut { top:6px; width:min(400px,52%); padding:5px 10px; }
+  body.mobile #tut .tt { font-size:11px; }
+  body.mobile #tut .tx { font-size:13px; margin:2px 0 4px; }
+  body.mobile #tut .tx small { font-size:11px; }
+  body.mobile #tut button { font-size:12px; padding:3px 10px; }
+  body.mobile #center .big { font-size:min(40px,7vw); }
+  body.mobile .card { padding:12px 18px; max-height:94vh; }
+  body.mobile h1 { font-size:30px; }
+  body.mobile h1 + .en { margin:2px 0 8px; }
+  body.mobile .card button { padding-top:6px; padding-bottom:6px; }
+  body.mobile #say { bottom:52px; font-size:15px; max-width:min(560px,60%); }
+  #rot { display:none; position:fixed; inset:0; z-index:50; background:#07080b; color:#fff; align-items:center; justify-content:center; text-align:center; font-size:20px; line-height:1.6; padding:24px; }
+  @media (orientation: portrait) { body.mobile #rot { display:flex; } }
+  #tut { position:absolute; left:50%; top:64px; transform:translateX(-50%); width:min(560px,90%); background:rgba(10,14,20,.82); border:2px solid #ffc531; border-radius:8px; padding:10px 14px; display:none; text-align:center; z-index:5; font-weight:700; text-shadow:0 1px 0 #000; }
+  #tut .tt { color:#ffc531; font-size:14px; letter-spacing:2px; }
+  #tut .tx { font-size:18px; margin:4px 0 8px; line-height:1.4; }
+  #tut button { font-size:13px; padding:4px 12px; }
+  #say { position:absolute; left:50%; bottom:58px; transform:translateX(-50%); max-width:min(680px,80%); background:rgba(0,0,0,.66); border-left:4px solid var(--amber); padding:6px 12px; font-size:17px; line-height:1.45; display:none; text-align:left; text-shadow:none; }
+  #say b { color:var(--amber); font-size:13px; letter-spacing:1px; display:block; }
+  #hint { position:absolute; left:50%; bottom:130px; transform:translateX(-50%); font-size:17px; background:rgba(0,0,0,.6); padding:8px 16px; border-radius:6px; display:none; white-space:nowrap; max-width:92vw; overflow:hidden; text-overflow:ellipsis; }
+  .screen { position:absolute; inset:0; display:none; align-items:center; justify-content:center; background:rgba(4,6,10,.78); cursor:default; z-index:5; }
+  .screen.on { display:flex; }
+  .card { background:var(--panel); border:2px solid #2c3242; border-radius:10px; padding:22px 26px; max-width:min(680px,92vw); max-height:88vh; overflow:auto; box-shadow:0 10px 40px #000; }
+  h1 { margin:0; font-size:min(48px,9vw); letter-spacing:3px; text-shadow:0 4px 0 #8a1a10; }
+  h1 + .en { color:var(--amber); letter-spacing:6px; font-size:13px; margin:4px 0 18px; }
+  h2 { margin:0 0 12px; font-size:24px; }
+  .btns { display:flex; flex-direction:column; gap:10px; margin-top:12px; }
+  .row { display:flex; gap:10px; flex-wrap:wrap; }
+  button { font:inherit; font-weight:800; font-size:17px; color:var(--ink); background:#1d2330; border:2px solid #3a4358; border-radius:8px; padding:10px 18px; cursor:pointer; }
+  button:hover { background:#2a3346; border-color:var(--amber); }
+  button.sel { border-color:var(--amber); color:var(--amber); }
+  .muted { color:var(--dim); font-size:13px; }
+  table.res { border-collapse:collapse; width:100%; margin:8px 0 14px; font-size:16px; }
+  table.res td { padding:5px 8px; border-bottom:1px solid #2a3040; }
+  table.res td:last-child { text-align:right; font-family:Consolas,monospace; font-weight:800; }
+  .rank { font-size:72px; font-weight:900; color:var(--amber); text-align:center; line-height:1; text-shadow:0 4px 0 #6a3a00; }
+  ul.help { padding-left:20px; line-height:1.8; margin:6px 0 10px; }
+  .areas { display:grid; grid-template-columns:repeat(auto-fill,minmax(180px,1fr)); gap:10px; margin:6px 0 12px; }
+  .areas button { text-align:left; font-size:15px; }
+  .stages { display:flex; flex-direction:column; gap:10px; margin-bottom:14px; }
+  .stage { border:2px solid #2c3242; border-radius:8px; padding:12px 14px; }
+  .stage.on { border-color:var(--amber); }
+  .stage.off { opacity:.5; }
+  .stage .sn { font-size:12px; letter-spacing:3px; color:var(--amber); }
+  .stage .st { font-size:22px; font-weight:900; }
+  .stage .sd { color:var(--dim); font-size:14px; margin:2px 0 8px; }
+  .brief { margin:6px 0 10px; padding:10px 12px; background:rgba(0,0,0,.35); border-left:3px solid #8a1c14; }
+  .brief .bh { font-size:11px; letter-spacing:2px; color:#c84a3a; margin-bottom:6px; font-family:Consolas,"Courier New",monospace; }
+  .brief p { margin:0 0 4px; font-size:15px; line-height:1.6; color:#d8d4c8; }
+  .brief p:last-of-type { color:#fff; font-weight:700; }
+  .brief .rd { background:#d8d4c8; color:transparent; border-radius:1px; user-select:none; }
+  .brief .best { font-size:12px; color:var(--dim); margin-top:6px; }
+  .help { display:flex; flex-direction:column; gap:12px; margin-bottom:10px; }
+  .hrow { display:grid; grid-template-columns:minmax(0,300px) minmax(0,1fr); gap:14px; align-items:center; background:#141924; border-radius:8px; padding:8px; }
+  .hrow img { width:100%; border-radius:6px; display:block; image-rendering:pixelated; }
+  .hrow h3 { margin:0 0 4px; font-size:17px; color:var(--amber); }
+  .hrow ul { margin:0; padding-left:18px; line-height:1.7; font-size:14px; }
+  b.g { color:var(--green); } b.y { color:var(--amber); } b.r { color:var(--red); }
+  @media (max-width:560px) { .hrow { grid-template-columns:1fr; } }
+  .setgrid { display:grid; grid-template-columns:auto 1fr; gap:12px 16px; align-items:center; margin-bottom:10px; }
+  .setgrid label { font-weight:800; }
+  .setgrid input[type=range] { width:180px; accent-color:var(--amber); }
+  .setgrid .row span { min-width:36px; font-family:Consolas,monospace; }
+  #hp .inf { font-size:26px; color:var(--blue); margin-left:2px; }
+  .areas button small { display:block; color:var(--dim); font-weight:600; font-size:12px; }
+</style>
+</head>
+<body>
+<div id="box">
+  <canvas id="gl"></canvas>
+  <div id="hurt"></div>
+  <div id="flash"></div>
+  <div id="fade"></div>
+  <canvas id="fx"></canvas>
+  <div id="hud">
+    <div id="score">000000<small>SCORE</small></div>
+    <div id="combo"></div>
+    <div id="areaName"></div>
+    <div id="bossbar"><span id="bossName">BOSS</span><div><span id="bossfill"></span></div></div>
+    <div id="hp"></div>
+    <div id="reload">RELOAD！</div>
+    <div id="ammo"></div>
+    <div id="hint"></div>
+    <div id="mob"><button id="mReload">換彈</button><button id="mPause">❚❚</button></div>
+    <div id="say"><b id="sayName"></b><span id="sayTx"></span></div>
+  </div>
+  <div id="center"></div>
+  <div id="rot"><div>📱↻<br>請把手機轉成<b>橫向</b>來玩<br><small style="color:#a7a397">（設定裡可以切換回電腦模式）</small></div></div>
+  <div id="tut"><div class="tt">教學 <span id="tutN"></span></div><div class="tx" id="tutTx"></div><button id="tutSkip">跳過教學<span class="pcOnly">（Enter）</span></button></div>
+
+  <div id="sTitle" class="screen on"><div class="card" style="text-align:center;min-width:min(360px,86vw)">
+    <h1>藍腹鷴特勤隊</h1><div class="en">PHEASANT STRIKE UNIT</div>
+    <div class="btns">
+      <button id="bStart">破關模式</button>
+      <button id="bStage">選擇關卡</button>
+      <button id="bHelp">操作說明</button>
+      <button id="bSet">設定</button>
+    </div>
+    <p class="muted" id="best"></p>
+    <p class="muted" id="setInfo"></p>
+  </div></div>
+
+  <div id="sStage" class="screen"><div class="card" style="min-width:min(560px,90vw)">
+    <h2>選擇關卡</h2>
+    <div class="stages" id="stageList"></div>
+    <button class="back">返回</button>
+  </div></div>
+
+  <div id="sHelp" class="screen"><div class="card" style="max-width:min(820px,94vw)">
+    <h2>操作說明</h2>
+    <div class="help">
+      <div class="hrow"><img src="assets/help/hud.jpg" alt="遊戲畫面"><div>
+        <h3>畫面看法</h3>
+        <ul><li><b>左上</b>：分數與連擊倍率。</li><li><b>左下</b>：血量，被打中扣一格。</li><li><b>右下</b>：子彈，6 發（簡單模式 10 發）。</li><li><b>白色準心</b>跟著滑鼠移動。</li></ul></div></div>
+      <div class="hrow"><img src="assets/help/ring.jpg" alt="敵人倒數圈"><div>
+        <h3>射擊與倒數圈</h3>
+        <ul><li><b>移動滑鼠</b>瞄準，<b>左鍵</b>射擊。</li><li>敵人身上的圈圈從<b class="g">綠</b>→<b class="y">黃</b>→<b class="r">紅</b>縮小，縮到最小就會開槍。</li><li>越快打倒分數越高，打頭有加分。</li></ul></div></div>
+      <div class="hrow"><img src="assets/help/reload.jpg" alt="換彈"><div>
+        <h3>換彈</h3>
+        <ul><li><b>右鍵</b>或 <b>R</b> 換彈。</li><li>子彈打光時右下角會出現紅色 RELOAD，準心也會變紅。</li></ul></div></div>
+      <div class="hrow"><img src="assets/help/hostage.jpg" alt="民眾"><div>
+        <h3>不要打民眾</h3>
+        <ul><li><b>舉著雙手</b>的人是民眾或店員。</li><li>誤擊會扣一格血、扣 500 分，連擊也會歸零。</li></ul></div></div>
+      <div class="hrow"><img src="assets/help/armored.jpg" alt="重裝兵"><div>
+        <h3>重裝兵</h3>
+        <ul><li>穿<b>綠色背心、戴頭盔</b>的敵人要打 3 槍（打頭算 2 槍）。</li></ul></div></div>
+      <div class="hrow"><img src="assets/help/mannequin.jpg" alt="喬裝假人"><div>
+        <h3>喬裝假人</h3>
+        <ul><li>服飾店有壞人裝成假人。<b>眼睛發紅</b>的就是他，舉槍前打倒有額外加分。</li><li>打到真的假人不扣血，但連擊會歸零。</li></ul></div></div>
+      <div class="hrow"><img src="assets/help/item.jpg" alt="道具"><div>
+        <h3>道具</h3>
+        <ul><li>超市的商品打得爛，有時會掉出<b>急救包</b>（補一格血）或<b>金星</b>（+1000 分）。</li><li>道具要<b>射中</b>才拿得到，5 秒後消失。</li></ul></div></div>
+      <div class="hrow"><img src="assets/help/boss.jpg" alt="Boss"><div>
+        <h3>Boss 與手榴彈</h3>
+        <ul><li>雷克斯會丟<b>巨大手榴彈</b>，打中手榴彈 4 次就會把它<b>打回去</b>炸他，這是主要的傷害來源；沒打回去會扣 2 格血。</li><li>直接打他也會扣血，但很少。第二階段一次丟<b>兩顆</b>，還會不定期叫手下出來。</li></ul></div></div>
+      <div class="hrow"><img src="assets/help/gren.jpg" alt="手榴彈傭兵"><div>
+        <h3>第三關：重裝傭兵、手榴彈傭兵</h3>
+        <ul><li><b>黑頭盔、紅色護目鏡</b>的重裝傭兵要打 5 槍（打頭算 2 槍）。</li><li><b>棕色背心</b>的手榴彈傭兵倒數結束會舉手丟手榴彈，沒打掉<b class="r">扣 2 格血</b>。趁他舉手時打倒，或在空中打掉手榴彈。</li><li>第二關健身房的壯漢要打 2 槍。</li></ul></div></div>
+      <div class="hrow"><img src="assets/help/dog.jpg" alt="機器狗"><div>
+        <h3>第三關：機器狗</h3>
+        <ul><li>會<b>打破玻璃</b>衝過來，跑到面前就自爆（扣 1 格血）。</li><li>要打 2 槍，圈圈縮完代表牠跑到你面前了。</li></ul></div></div>
+      <div class="hrow"><img src="assets/help/drone.jpg" alt="無人機"><div>
+        <h3>第三關：無人機</h3>
+        <ul><li>體積小、會飄，瞄準一點。一槍就會掉下來。</li></ul></div></div>
+      <div class="hrow"><img src="assets/help/dancer.jpg" alt="舞王"><div>
+        <h3>第二關 Boss：舞王</h3>
+        <ul><li>跳舞移動時<b>打不到</b>，途中<b>停下來的瞬間</b>打中他，他就會被打回中央。</li><li>讓他走到另一邊，他會丟杯子或酒瓶過來，可以在空中打掉。</li><li>他全程會不定期<b>一次丟 1～3 個盤子</b>（跳起來時一定會丟），可以在空中打掉。</li><li>第二階段：秀完舞會跳到空中轉圈，要<b>把他打下來</b>，不然會再連丟盤子。倒地時打不到他。</li></ul></div></div>
+      <div class="hrow"><img src="assets/help/robot.jpg" alt="巨大機器人"><div>
+        <h3>第三關 Boss：巨大機器人</h3>
+        <ul><li>① 兩隻手臂輪流旋轉，一次發射 3 顆飛彈。先打掉飛彈，再打<b>正在旋轉的那隻手臂</b>；沒在轉的手臂和身體都打不動。</li><li>② 腳會放出無人機排陣形，快打<b>金色</b>那台（不用全清），成功 4 次腳就爆炸。</li><li>③ 只剩頭時，打<b>發光的石柱</b>讓它倒下壓住機器人，雷射集氣完會扣 2 格血。</li></ul></div></div>
+    </div>
+    <p class="muted"><b>手機模式</b>（設定 → 操作模式）：點螢幕開槍、按住不放是機關槍連射；按右下「換彈」或兩指同時點螢幕換彈；右上 ❚❚ 暫停。請橫向拿手機。</p>
+    <p class="muted">第一關開頭有教學，按「跳過教學」或 Enter 可跳過，設定裡也能關掉。暫停：P 或 Esc。音樂開關：M。設定裡可以開「無限血量」和「無限機槍」（開啟時不記錄最高分）。</p>
+    <button class="back">返回</button>
+  </div></div>
+
+  <div id="sSet" class="screen"><div class="card" style="min-width:min(420px,88vw)">
+    <h2>設定</h2>
+    <div class="setgrid">
+      <label>難度</label><div class="row" id="diffRow"></div>
+      <label>無限血量</label><div class="row" id="infRow"></div>
+      <label>無限機槍</label><div class="row" id="mgRow"></div>
+      <label>第一關教學</label><div class="row" id="tutRow"></div>
+      <label>主角台詞</label><div class="row" id="voRow"></div>
+      <label>操作模式</label><div class="row" id="devRow"></div>
+      <label for="vMusic">音樂音量</label><div class="row"><input type="range" id="vMusic" min="0" max="100" step="5"><span id="tMusic"></span></div>
+      <label for="vSfx">音效音量</label><div class="row"><input type="range" id="vSfx" min="0" max="100" step="5"><span id="tSfx"></span></div>
+    </div>
+    <p class="muted" id="diffDesc"></p>
+    <button id="bSetBack">返回</button>
+  </div></div>
+
+  <div id="sPause" class="screen"><div class="card" style="text-align:center">
+    <h2>暫停</h2>
+    <div class="btns">
+      <button id="bResume">繼續</button>
+      <button id="bPauseSet">設定</button>
+      <button id="bRetryArea">從這一區重來</button>
+      <button id="bQuit">回到主選單</button>
+    </div>
+  </div></div>
+
+  <div id="sOver" class="screen"><div class="card" style="text-align:center">
+    <h2 style="color:var(--red)">任務失敗</h2>
+    <p class="muted">接關會從這一區的開頭重新開始，分數保留，但結算會打折。</p>
+    <div class="btns">
+      <button id="bCont">接關</button>
+      <button id="bQuit2">回到主選單</button>
+    </div>
+  </div></div>
+
+  <div id="sResult" class="screen"><div class="card" style="min-width:min(420px,88vw)">
+    <h2 id="resTitle">任務完成</h2>
+    <div class="rank" id="resRank">A</div>
+    <table class="res" id="resTable"></table>
+    <div class="btns"><button id="bNext" style="display:none">下一關</button><button id="bAgain">再玩這一關</button><button id="bQuit3">回到主選單</button></div>
+  </div></div>
+</div>
+
+<script src="assets/lib/three.min.js"></script>
+<script src="config.js"></script>
+<script src="assets/audio/gun_sfx.js"></script>
+<script src="voice.js"></script>
+<script>
+'use strict';
+const C = window.CONFIG;
+const $ = id => document.getElementById(id);
+const V3 = (x, y, z) => new THREE.Vector3(x, y, z);
+const rand = (a, b) => a + Math.random() * (b - a);
+const pick = a => a[Math.floor(Math.random() * a.length)];
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+const lerp = (a, b, t) => a + (b - a) * t;
+const easeIO = t => t < .5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
+const easeOut = t => 1 - (1 - t) * (1 - t);
+const easeIn = t => t * t;
+
+// ================= 渲染器 =================
+const box = $('box'), cvs = $('gl'), fx = $('fx'), g2 = fx.getContext('2d');
+const renderer = new THREE.WebGLRenderer({ canvas: cvs, antialias: false });
+renderer.setPixelRatio(1);
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(C.game.fov, 1, 0.05, 400);
+let VW = 1, VH = 1;
+function resize() {
+  VW = box.clientWidth; VH = box.clientHeight;
+  const s = C.game.renderScale;
+  renderer.setSize(Math.max(2, Math.round(VW * s)), Math.max(2, Math.round(VH * s)), false);
+  fx.width = VW; fx.height = VH;
+  camera.aspect = VW / VH; camera.updateProjectionMatrix();
+}
+window.addEventListener('resize', resize);
+
+const hemi = new THREE.HemisphereLight(0xffffff, 0x555555, 0.8); scene.add(hemi);
+const sun = new THREE.DirectionalLight(0xffffff, 0.6); sun.position.set(30, 60, 25); scene.add(sun);
+const amb = new THREE.AmbientLight(0xffffff, 0.25); scene.add(amb);
+scene.fog = new THREE.Fog(0x9ec8e8, 30, 140);
+scene.background = new THREE.Color(0x9ec8e8);
+
+// ================= 音效（全部用程式合成） =================
+const SET = Object.assign({ diff: 'normal', inf: false, infmg: false, tut: true, voice: true, music: 60, sfx: 80 }, (() => { try { return JSON.parse(localStorage.getItem('su_settings') || '{}'); } catch (e) { return {}; } })());
+if (!C.difficulty[SET.diff]) SET.diff = 'normal';
+function saveSet() { try { localStorage.setItem('su_settings', JSON.stringify(SET)); } catch (e) { } }
+let AC = null, master, sfxG, musG, noiseBuf, musicOn = true;
+function applyVol() { if (!AC) return; musSync(); sfxG.gain.value = SET.sfx / 100; musG.gain.value = musicOn ? SET.music / 100 * 0.45 : 0; }
+function audioInit() {
+  if (AC) { if (AC.state === 'suspended') AC.resume(); return; }
+  try { AC = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { return; }
+  master = AC.createGain(); master.gain.value = 0.7; master.connect(AC.destination);
+  sfxG = AC.createGain(); sfxG.connect(master);
+  musG = AC.createGain(); musG.connect(master); applyVol();
+  noiseBuf = AC.createBuffer(1, AC.sampleRate, AC.sampleRate);
+  const d = noiseBuf.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+  // 載入槍聲音檔（打包成 base64，離線開檔也能用）
+  if (window.GUN_SFX) for (const k in GUN_SFX) {
+    const bin = atob(GUN_SFX[k]), buf = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) buf[i] = bin.charCodeAt(i);
+    AC.decodeAudioData(buf.buffer, b => { SAMPLES[k] = b; }, () => { });
+  }
+}
+const SAMPLES = {};
+function playSample(k, vol) { const b = SAMPLES[k]; if (!AC || !b) return false; const s = AC.createBufferSource(); s.buffer = b; const g = AC.createGain(); g.gain.value = vol; s.connect(g); g.connect(sfxG); s.start(); return true; }
+function nz(dur, type, f, vol, out, t0, q) {
+  if (!AC) return; const t = t0 || AC.currentTime;
+  const s = AC.createBufferSource(); s.buffer = noiseBuf; s.loop = true;
+  const fl = AC.createBiquadFilter(); fl.type = type; fl.frequency.value = f; if (q) fl.Q.value = q;
+  const g = AC.createGain(); g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(0.001, t + dur);
+  s.connect(fl); fl.connect(g); g.connect(out || sfxG); s.start(t); s.stop(t + dur + 0.02);
+  return fl;
+}
+function tn(type, f0, f1, dur, vol, out, t0) {
+  if (!AC) return; const t = t0 || AC.currentTime;
+  const o = AC.createOscillator(); o.type = type; o.frequency.setValueAtTime(f0, t); o.frequency.exponentialRampToValueAtTime(Math.max(20, f1), t + dur);
+  const g = AC.createGain(); g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(0.001, t + dur);
+  o.connect(g); g.connect(out || sfxG); o.start(t); o.stop(t + dur + 0.02);
+}
+const SFX = {
+  shot() { if (playSample('shot', 0.9)) return; nz(0.16, 'lowpass', 2600, 0.9); tn('sine', 150, 40, 0.14, 0.8); },
+  mg() { if (playSample('mg', 0.8)) return; nz(0.07, 'lowpass', 3200, 0.7); tn('square', 120, 50, 0.06, 0.3); },
+  enemyShot() { nz(0.12, 'bandpass', 1600, 0.6, null, null, 0.8); tn('square', 300, 80, 0.08, 0.15); },
+  empty() { tn('square', 1200, 900, 0.03, 0.2); },
+  reload() { if (playSample('reload', 0.9)) return; tn('square', 700, 500, 0.04, 0.2); const t = AC && AC.currentTime + 0.18; tn('square', 1100, 800, 0.05, 0.25, null, t); nz(0.05, 'highpass', 3000, 0.3, null, t); },
+  hit() { tn('square', 520, 260, 0.07, 0.18); nz(0.05, 'highpass', 2500, 0.25); },
+  armor() { tn('triangle', 1800, 1200, 0.08, 0.25); },
+  kill() { tn('square', 660, 990, 0.09, 0.15); },
+  hurt() { tn('sawtooth', 200, 60, 0.3, 0.4); nz(0.25, 'lowpass', 900, 0.6); },
+  oops() { tn('square', 400, 180, 0.35, 0.3); },
+  prop() { nz(0.1, 'bandpass', 1800, 0.35, null, null, 2); },
+  metal() { tn('triangle', 2400, 1500, 0.06, 0.15); nz(0.04, 'highpass', 4000, 0.2); },
+  item() { [880, 1108, 1318, 1760].forEach((f, i) => tn('square', f, f, 0.08, 0.15, null, AC && AC.currentTime + i * 0.06)); },
+  boom() { nz(0.9, 'lowpass', 700, 1.0); tn('sine', 90, 30, 0.6, 0.9); },
+  screech() { const f = nz(0.9, 'bandpass', 2200, 0.35, null, null, 8); if (f) f.frequency.linearRampToValueAtTime(1500, AC.currentTime + 0.9); tn('sawtooth', 120, 60, 0.8, 0.12); },
+  reveal() { tn('sine', 300, 900, 0.4, 0.2); },
+  glass() { nz(0.5, 'highpass', 5000, 0.7); [2600, 3300, 4100].forEach((f, i) => tn('triangle', f, f * 0.7, 0.25, 0.12, null, AC && AC.currentTime + i * 0.04)); },
+  splash() { nz(0.6, 'lowpass', 1400, 0.7); nz(0.4, 'highpass', 3000, 0.25); },
+  chips() { for (let i = 0; i < 6; i++) tn('triangle', 2200 + Math.random() * 1500, 1800, 0.05, 0.12, null, AC && AC.currentTime + i * 0.03); },
+  bark() { tn('square', 900, 300, 0.12, 0.2); tn('square', 700, 200, 0.12, 0.2, null, AC && AC.currentTime + 0.15); },
+  buzz() { tn('sawtooth', 180, 220, 0.4, 0.08); },
+  charge() { tn('sawtooth', 120, 900, 1.2, 0.15); },
+  laser() { tn('sawtooth', 1400, 80, 0.8, 0.35); nz(0.8, 'bandpass', 900, 0.5); },
+  rocket() { nz(0.5, 'bandpass', 900, 0.4, null, null, 1); },
+  crash() { nz(1.4, 'lowpass', 400, 1.0); tn('sine', 60, 25, 1.2, 0.9); },
+  go() { tn('square', 523, 523, 0.1, 0.15); tn('square', 784, 784, 0.18, 0.15, null, AC && AC.currentTime + 0.1); },
+};
+function sfx(n) { if (AC && SFX[n]) SFX[n](); }
+
+// 簡單的背景音樂：鼓 + 低音
+const MUSIC = {
+  0: { bpm: 128, root: 45, bass: [0, 0, 12, 0, 3, 0, 7, 5] },
+  1: { bpm: 132, root: 40, bass: [0, 0, 0, 3, 0, 0, 5, 3] },
+  2: { bpm: 136, root: 43, bass: [0, 7, 0, 10, 0, 7, 12, 10] },
+  3: { bpm: 136, root: 45, bass: [0, 3, 7, 3, 0, 3, 8, 7] },
+  4: { bpm: 140, root: 42, bass: [0, 0, 6, 0, 5, 0, 3, 1] },
+  5: { bpm: 140, root: 41, bass: [0, 0, 12, 0, 10, 0, 7, 8] },
+  boss: { bpm: 156, root: 40, bass: [0, 0, 1, 0, 0, 0, 6, 5] },
+};
+let mus = null, musStep = 0, musNext = 0;
+// 背景音樂：可以是程式合成的節奏，也可以是音樂檔（{ file: 'assets/audio/xxx.mp3' }，同一首在換區時會接著播不重來）
+const musEl = new Audio(); musEl.loop = true; let musFile = null;
+const BOSS_BGM = { file: 'assets/audio/boss_bgm.mp3' }; // 三隻魔王共用的音樂
+function setMusic(key) {
+  const k = (key && typeof key === 'object') ? key : (MUSIC[key] || null);
+  if (k && k.file) { mus = null; if (musFile !== k.file) { musFile = k.file; musEl.src = k.file; musEl.currentTime = 0; } }
+  else { mus = k; musFile = null; musEl.pause(); }
+  musStep = 0; if (AC) musNext = AC.currentTime + 0.1; musSync();
+}
+function musSync() {
+  musEl.volume = Math.min(1, SET.music / 100 * 0.8);
+  const want = musFile && musicOn && !paused && SET.music > 0;
+  if (want && musEl.paused) musEl.play().catch(() => { }); else if (!want && !musEl.paused) musEl.pause();
+}
+function musicTick() {
+  musSync();
+  if (!AC || !mus || !musicOn || paused) return;
+  const sp = 60 / mus.bpm / 4;
+  while (musNext < AC.currentTime + 0.15) {
+    const t = musNext, s = musStep % 16;
+    if (s % 4 === 0 || s === 10) tn('sine', 120, 40, 0.18, 0.9, musG, t);
+    if (s === 4 || s === 12) nz(0.12, 'bandpass', 1800, 0.5, musG, t, 0.7);
+    if (s % 2 === 1) nz(0.04, 'highpass', 7000, 0.18, musG, t);
+    if (s % 2 === 0) { const n = mus.root + mus.bass[(s / 2) | 0]; const f = 440 * Math.pow(2, (n - 69) / 12); tn('sawtooth', f, f * 0.98, sp * 1.8, 0.22, musG, t); }
+    musNext += sp; musStep++;
+  }
+}
+
+// ================= 靜態場景建構器（合併成少量網格，省效能） =================
+const blockers = []; // 會擋子彈的靜態網格
+function Builder(basic) { this.p = []; this.n = []; this.c = []; this.basic = basic; }
+const _m4 = new THREE.Matrix4(), _q = new THREE.Quaternion(), _e = new THREE.Euler(), _s1 = V3(1, 1, 1), _v = V3(0, 0, 0);
+Builder.prototype.add = function (geo, x, y, z, color, ry, rx, rz, jitter) {
+  const g = geo.index ? geo.toNonIndexed() : geo;
+  _e.set(rx || 0, ry || 0, rz || 0); _q.setFromEuler(_e); _v.set(x, y, z);
+  _m4.compose(_v, _q, _s1); g.applyMatrix4(_m4);
+  const p = g.attributes.position.array, n = g.attributes.normal.array, col = new THREE.Color(color);
+  const J = jitter === undefined ? 0.1 : jitter;
+  for (let i = 0; i < p.length; i += 18) {
+    const j = this.basic ? 1 : 1 - Math.random() * J;
+    for (let k = i; k < Math.min(i + 18, p.length); k += 3) {
+      this.p.push(p[k], p[k + 1], p[k + 2]); this.n.push(n[k], n[k + 1], n[k + 2]); this.c.push(col.r * j, col.g * j, col.b * j);
+    }
+  }
+};
+Builder.prototype.quad = function (x0, x1, z0, z1, y, color) { // 朝上的地板方塊
+  const col = new THREE.Color(color);
+  const P = [x0, y, z1, x1, y, z1, x1, y, z0, x0, y, z1, x1, y, z0, x0, y, z0];
+  for (let k = 0; k < 18; k += 3) { this.p.push(P[k], P[k + 1], P[k + 2]); this.n.push(0, 1, 0); this.c.push(col.r, col.g, col.b); }
+};
+Builder.prototype.build = function () {
+  if (!this.p.length) return null;
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.Float32BufferAttribute(this.p, 3));
+  g.setAttribute('normal', new THREE.Float32BufferAttribute(this.n, 3));
+  g.setAttribute('color', new THREE.Float32BufferAttribute(this.c, 3));
+  g.computeBoundingSphere();
+  const m = this.basic ? new THREE.MeshBasicMaterial({ vertexColors: true }) : new THREE.MeshLambertMaterial({ vertexColors: true });
+  const mesh = new THREE.Mesh(g, m); mesh.userData.static = true; scene.add(mesh); blockers.push(mesh);
+  return mesh;
+};
+let L, G; // 目前的 lit / glow 建構器
+function blk(x0, x1, y0, y1, z0, z1, color, B) {
+  const w = Math.abs(x1 - x0), h = Math.abs(y1 - y0), d = Math.abs(z1 - z0);
+  (B || L).add(new THREE.BoxGeometry(w, h, d), (x0 + x1) / 2, (y0 + y1) / 2, (z0 + z1) / 2, color);
+}
+function bx(w, h, d, x, y, z, color, ry, rx, B) { (B || L).add(new THREE.BoxGeometry(w, h, d), x, y, z, color, ry, rx); }
+function cyl(r, h, x, y, z, color, seg, B) { (B || L).add(new THREE.CylinderGeometry(r, r, h, seg || 8), x, y, z, color); }
+function tiles(x0, x1, z0, z1, y, size, cA, cB) {
+  let ix = 0;
+  for (let x = x0; x < x1 - 1e-6; x += size, ix++) {
+    let iz = 0;
+    for (let z = z0; z < z1 - 1e-6; z += size, iz++) L.quad(x, Math.min(x + size, x1), z, Math.min(z + size, z1), y, (ix + iz) % 2 ? cA : cB);
+  }
+}
+// 有開口的牆：沿 x 方向（z 固定）
+function wallX(x0, x1, y0, y1, z, t, color, holes) {
+  let cur = x0; (holes || []).slice().sort((a, b) => a[0] - b[0]).forEach(hh => {
+    if (hh[0] > cur) blk(cur, hh[0], y0, y1, z - t / 2, z + t / 2, color);
+    if (hh[2] !== undefined && hh[2] < y1) blk(hh[0], hh[1], hh[2], y1, z - t / 2, z + t / 2, color);
+    cur = hh[1];
+  });
+  if (cur < x1) blk(cur, x1, y0, y1, z - t / 2, z + t / 2, color);
+}
+
+// ================= 可打爛的商品（Instanced） =================
+const PROD_GEO = {
+  box: new THREE.BoxGeometry(0.26, 0.34, 0.2),
+  can: new THREE.CylinderGeometry(0.07, 0.07, 0.17, 7),
+  bottle: new THREE.CylinderGeometry(0.055, 0.07, 0.32, 6),
+  cone: new THREE.ConeGeometry(0.2, 0.55, 6),
+  cup: new THREE.CylinderGeometry(0.06, 0.045, 0.13, 6),
+  melon: new THREE.SphereGeometry(0.13, 6, 4),
+  chips: new THREE.CylinderGeometry(0.075, 0.075, 0.14, 8),   // 一疊籌碼
+  cards: new THREE.BoxGeometry(0.12, 0.05, 0.17),             // 一副撲克牌
+  glass: new THREE.CylinderGeometry(0.06, 0.035, 0.18, 6),    // 酒杯
+  book: new THREE.BoxGeometry(0.06, 0.3, 0.22),
+  flask: new THREE.CylinderGeometry(0.03, 0.09, 0.24, 6),     // 實驗燒瓶
+};
+// 打爛時會「飄散」成很多小片的商品
+const FLUTTER = {
+  chips: { n: 10, geo: new THREE.CylinderGeometry(0.04, 0.04, 0.01, 8), colors: [0xd02020, 0x2050d0, 0x20a040, 0x111111, 0xf0f0f0], sound: 'chips' },
+  cards: { n: 12, geo: new THREE.BoxGeometry(0.07, 0.003, 0.1), colors: [0xf8f8f0, 0xf8f8f0, 0xf0e0e0], sound: 'prop' },
+};
+const prodList = []; // {type,x,y,z,color,ry,area}
+const prodMesh = {}; // type -> InstancedMesh
+function prod(type, x, y, z, color, ry) { prodList.push({ type, x, y: y + (PROD_GEO[type].parameters.height || 0.26) / 2, z, color, ry: ry || 0, area: curArea, broken: false }); }
+const _dm = new THREE.Object3D();
+function buildProducts() {
+  const byType = {};
+  prodList.forEach(p => (byType[p.type] = byType[p.type] || []).push(p));
+  Object.keys(byType).forEach(t => {
+    const list = byType[t];
+    const im = new THREE.InstancedMesh(PROD_GEO[t], new THREE.MeshLambertMaterial({ color: 0xffffff }), list.length);
+    list.forEach((p, i) => { p.mesh = im; p.idx = i; setProd(p, true); im.setColorAt(i, new THREE.Color(p.color)); });
+    im.instanceMatrix.needsUpdate = true; im.instanceColor.needsUpdate = true;
+    im.userData.prods = list; prodMesh[t] = im; scene.add(im);
+  });
+}
+function setProd(p, on) {
+  _dm.position.set(p.x, p.y, p.z); _dm.rotation.set(0, p.ry, 0); _dm.scale.setScalar(on ? 1 : 0.0001); _dm.updateMatrix();
+  p.mesh.setMatrixAt(p.idx, _dm.matrix); p.mesh.instanceMatrix.needsUpdate = true;
+}
+
+// ================= 關卡（每一關在 stageN.js 裡註冊） =================
+const STAGES = [];
+function registerStage(st) { STAGES.push(st); }
+let ST = null, curStage = 0, AREAS = [], LEVEL = [];
+let curArea = 0;
+const MANN = {}; // 假人 id -> ent
+const mannList = [];
+const stageObjs = []; // 關卡裡會動的物件（門、玻璃…），換關時清掉
+function stageObj(o) { scene.add(o); stageObjs.push(o); return o; }
+// 可被打破的玻璃（機器狗衝出來時打破）
+const GLASS = {};
+const glassMat = new THREE.MeshBasicMaterial({ color: 0xa8d8f0, transparent: true, opacity: 0.28, depthWrite: false, side: THREE.DoubleSide });
+function glassPane(id, x0, x1, y0, y1, z0, z1) {
+  const w = Math.max(0.04, Math.abs(x1 - x0)), h = Math.abs(y1 - y0), d = Math.max(0.04, Math.abs(z1 - z0));
+  const m = stageObj(new THREE.Mesh(new THREE.BoxGeometry(w, h, d), glassMat));
+  m.position.set((x0 + x1) / 2, (y0 + y1) / 2, (z0 + z1) / 2);
+  GLASS[id] = { m, w, h, d, broken: false };
+  return m;
+}
+function breakGlass(id) {
+  const g = GLASS[id]; if (!g || g.broken) return; g.broken = true; g.m.visible = false; sfx('glass');
+  const mat = new THREE.MeshBasicMaterial({ color: 0xd0f0ff, transparent: true, opacity: 0.7, side: THREE.DoubleSide });
+  const toCam = V3(camera.position.x - g.m.position.x, 0, camera.position.z - g.m.position.z).normalize();
+  for (let i = 0; i < 16; i++) {
+    const sh = new THREE.Mesh(new THREE.PlaneGeometry(rand(0.1, 0.3), rand(0.1, 0.3)), mat);
+    sh.position.set(g.m.position.x + rand(-g.w / 2, g.w / 2), g.m.position.y + rand(-g.h / 2, g.h / 2), g.m.position.z + rand(-g.d / 2, g.d / 2)); scene.add(sh);
+    fxs.push({ kind: 'shard', mesh: sh, vel: V3(toCam.x * rand(1, 4) + rand(-1, 1), rand(0, 3), toCam.z * rand(1, 4) + rand(-1, 1)), spin: V3(rand(-10, 10), rand(-10, 10), 0), t: 0, floor: g.m.position.y - g.h / 2 + 0.02 });
+  }
+}
+function resetGlass() { for (const k in GLASS) { GLASS[k].broken = false; GLASS[k].m.visible = true; } }
+function splash(x, y, z, n) {
+  sfx('splash');
+  const mat = new THREE.MeshBasicMaterial({ color: 0xe0f4ff });
+  for (let i = 0; i < (n || 18); i++) {
+    const m = new THREE.Mesh(sparkGeo, mat); m.scale.setScalar(rand(1.5, 3)); m.position.set(x + rand(-0.4, 0.4), y, z + rand(-0.4, 0.4)); scene.add(m);
+    fxs.push({ kind: 'drop', mesh: m, vel: V3(rand(-1.5, 1.5), rand(2.5, 5.5), rand(-1.5, 1.5)), t: 0 });
+  }
+}
+const CAR_COLORS = [0xb03030, 0x2a5aa0, 0xd8d8d0, 0x303438, 0x7a7a80, 0x2f6a40, 0xc8a030, 0x5a2a6a];
+function loadStage(i) {
+  if (ST && curStage === i) return;
+  blockers.forEach(m => { scene.remove(m); m.geometry.dispose(); }); blockers.length = 0;
+  for (const k in prodMesh) { scene.remove(prodMesh[k]); delete prodMesh[k]; } prodList.length = 0;
+  mannList.forEach(m => scene.remove(m.h.root)); mannList.length = 0; for (const k in MANN) delete MANN[k];
+  ents = ents.filter(e => e.type !== 'mann');
+  stageObjs.forEach(o => scene.remove(o)); stageObjs.length = 0; for (const k in GLASS) delete GLASS[k];
+  ST = STAGES[i]; curStage = i; AREAS = ST.areas; LEVEL = ST.level;
+  ST.build(); buildProducts();
+}
+let boss = null;
+
+// ================= 角色模型 =================
+const BXG = (w, h, d) => new THREE.BoxGeometry(w, h, d);
+const HB_MAT = new THREE.MeshBasicMaterial({ visible: false });
+function flashTex() {
+  const c = document.createElement('canvas'); c.width = c.height = 32; const x = c.getContext('2d');
+  const g = x.createRadialGradient(16, 16, 0, 16, 16, 16); g.addColorStop(0, '#fff'); g.addColorStop(0.3, '#ffe060'); g.addColorStop(1, 'rgba(255,120,0,0)');
+  x.fillStyle = g; x.fillRect(0, 0, 32, 32); const t = new THREE.CanvasTexture(c); return t;
+}
+const FLASH_TEX = flashTex();
+function makeHuman(o) {
+  const root = new THREE.Group(); root.rotation.order = 'YXZ';
+  const body = new THREE.Group(); root.add(body);
+  const mats = [];
+  const M = c => { const m = new THREE.MeshLambertMaterial({ color: c }); mats.push(m); return m; };
+  const mesh = (g, m, x, y, z, parent) => { const ms = new THREE.Mesh(g, m); ms.position.set(x, y, z); (parent || body).add(ms); return ms; };
+  const pantsM = M(o.pants), shirtM = M(o.shirt), skinM = M(o.skin), headM = M(o.head || o.skin);
+  const legL = new THREE.Group(); legL.position.set(-0.13, 0.86, 0); body.add(legL);
+  const legR = new THREE.Group(); legR.position.set(0.13, 0.86, 0); body.add(legR);
+  mesh(BXG(0.22, 0.86, 0.26), pantsM, 0, -0.43, 0, legL); mesh(BXG(0.22, 0.86, 0.26), pantsM, 0, -0.43, 0, legR);
+  mesh(BXG(0.24, 0.1, 0.32), M(o.shoe || 0x1a1a1a), 0, -0.82, 0.04, legL); mesh(BXG(0.24, 0.1, 0.32), mats[mats.length - 1], 0, -0.82, 0.04, legR);
+  mesh(BXG(0.62, 0.74, 0.34), shirtM, 0, 1.22, 0);
+  if (o.vest) mesh(BXG(0.7, 0.56, 0.42), M(o.vest), 0, 1.26, 0);
+  if (o.apron) mesh(BXG(0.5, 0.9, 0.04), M(o.apron), 0, 1.0, 0.18);
+  const head = new THREE.Group(); head.position.set(0, 1.6, 0); body.add(head);
+  mesh(BXG(0.32, 0.34, 0.32), headM, 0, 0.17, 0, head);
+  let eyes = null;
+  if (o.face === 'mask') {
+    mesh(BXG(0.28, 0.08, 0.02), skinM, 0, 0.2, 0.165, head);
+    mesh(BXG(0.05, 0.04, 0.02), M(0x101010), -0.07, 0.2, 0.175, head); mesh(BXG(0.05, 0.04, 0.02), mats[mats.length - 1], 0.07, 0.2, 0.175, head);
+  } else if (o.face === 'face') {
+    mesh(BXG(0.05, 0.05, 0.02), M(0x101010), -0.07, 0.2, 0.165, head); mesh(BXG(0.05, 0.05, 0.02), mats[mats.length - 1], 0.07, 0.2, 0.165, head);
+    mesh(BXG(0.34, 0.1, 0.34), M(o.hair || 0x2a1d14), 0, 0.36, -0.01, head);
+    mesh(BXG(0.34, 0.2, 0.06), mats[mats.length - 1], 0, 0.24, -0.15, head);
+  } else if (o.face === 'mann') {
+    const em = new THREE.MeshBasicMaterial({ color: 0xff2010 }); mats.push(em);
+    eyes = new THREE.Group(); head.add(eyes); eyes.visible = false;
+    mesh(BXG(0.07, 0.04, 0.02), em, -0.07, 0.2, 0.17, eyes); mesh(BXG(0.07, 0.04, 0.02), em, 0.07, 0.2, 0.17, eyes);
+  }
+  else if (o.face === 'goggles') {
+    mesh(BXG(0.3, 0.1, 0.04), M(0x101820), 0, 0.2, 0.165, head);
+    mesh(BXG(0.09, 0.07, 0.02), M(0x60c0e0), -0.07, 0.2, 0.19, head); mesh(BXG(0.09, 0.07, 0.02), mats[mats.length - 1], 0.07, 0.2, 0.19, head);
+  } else if (o.face === 'visor') {
+    mesh(BXG(0.34, 0.12, 0.04), M(0xd04020), 0, 0.2, 0.17, head);
+  }
+  if (o.bow) mesh(BXG(0.16, 0.06, 0.04), M(o.bow), 0, 1.54, 0.19);
+  if (o.helmet) mesh(BXG(0.38, 0.16, 0.38), M(o.helmet), 0, 0.37, 0, head);
+  if (o.bandana) mesh(BXG(0.35, 0.08, 0.35), M(o.bandana), 0, 0.3, 0, head);
+  const armL = new THREE.Group(); armL.position.set(-0.4, 1.54, 0); body.add(armL);
+  const armR = new THREE.Group(); armR.position.set(0.4, 1.54, 0); body.add(armR);
+  const AW = o.bulk || 1;
+  for (const a of [armL, armR]) { mesh(BXG(0.17 * AW, 0.62, 0.2 * AW), o.bareArms ? skinM : shirtM, 0, -0.31, 0, a); mesh(BXG(0.15 * AW, 0.13, 0.15 * AW), skinM, 0, -0.68, 0, a); }
+  if (o.bulk) { armL.position.x -= 0.06 * (AW - 1) * 3; armR.position.x += 0.06 * (AW - 1) * 3; }
+  let gun = null, flash = null;
+  if (o.gun) {
+    gun = new THREE.Group(); armR.add(gun); gun.position.set(0, -0.72, 0.05);
+    mesh(BXG(0.08, 0.36, 0.12), M(0x202226), 0, -0.14, 0, gun); mesh(BXG(0.07, 0.1, 0.18), mats[mats.length - 1], 0, 0.02, -0.06, gun);
+    flash = new THREE.Sprite(new THREE.SpriteMaterial({ map: FLASH_TEX, blending: THREE.AdditiveBlending, depthWrite: false, transparent: true }));
+    flash.scale.setScalar(0.7); flash.position.set(0, -0.42, 0); flash.visible = false; gun.add(flash);
+  }
+  let grenade = null;
+  if (o.grenadeHand) { grenade = mesh(new THREE.IcosahedronGeometry(0.11, 0), M(0x3a5a2a), 0, -0.8, 0, armR); grenade.visible = false; }
+  const HS = o.hs || C.enemy.hitboxScale || 1;
+  const hbHead = mesh(BXG(0.42 * HS, 0.44 * HS, 0.44 * HS), HB_MAT, 0, 1.78, 0); hbHead.userData.part = 'head';
+  const hbBody = mesh(BXG(0.72 * HS, 1.56, 0.5 * HS), HB_MAT, 0, 0.78, 0); hbBody.userData.part = 'body';
+  if (o.scale) body.scale.setScalar(o.scale);
+  if (o.bulk) { body.scale.x *= o.bulk; body.scale.z *= o.bulk * 0.9; }
+  return { root, body, legL, legR, armL, armR, head, gun, flash, eyes, grenade, hb: [hbHead, hbBody], mats };
+}
+const THUG_SHIRTS = [0x3b4048, 0x4b3a2e, 0x2e4a3c, 0x5a3030, 0x3a3a5a, 0x50483a];
+const CIV_SHIRTS = [0xe6d25a, 0x5ab0e6, 0xe67aa0, 0x8ad06a, 0xf0f0f0, 0xf09040];
+const SKINS = [0xe0b08a, 0xc89070, 0xa87050, 0xf0c8a0];
+function thugLook(armored) {
+  return armored ? { shirt: 0x2d3328, pants: 0x262a22, skin: pick(SKINS), head: 0x18191c, face: 'mask', vest: 0x4f5a3a, helmet: 0x2f3529, gun: true }
+    : { shirt: pick(THUG_SHIRTS), pants: pick([0x22252b, 0x2a2a30, 0x3a3428]), skin: pick(SKINS), head: 0x18191c, face: 'mask', gun: true };
+}
+
+// 各關的特殊服裝（spec.look）
+const LOOKS = {
+  casino: () => ({ shirt: 0xf2f0ea, pants: 0x18181c, skin: pick(SKINS), head: 0x18191c, face: 'mask', vest: pick([0x9a1824, 0x1a1a22]), bow: 0xc01828, gun: true }),
+  sailor: () => ({ shirt: 0xf4f4f4, pants: 0x1c2a4a, skin: pick(SKINS), head: 0x18191c, face: 'mask', bandana: 0x1c2a4a, gun: true }),
+  beach: () => ({ shirt: pick([0xe05a3a, 0x3aa0c0, 0xe0c040, 0x60a050]), pants: 0x8a7a5a, skin: pick(SKINS), head: 0x18191c, face: 'mask', gun: true }),
+  muscle: () => ({ shirt: pick([0x2a2a2a, 0xb02020, 0x2a4a8a]), pants: pick([0x2a2a30, 0x3a3a50]), skin: pick(SKINS), head: 0x18191c, face: 'mask', bareArms: true, bulk: 1.3, gun: true }),
+  diver: () => ({ shirt: 0x15181c, pants: 0x15181c, skin: 0x15181c, head: 0x15181c, face: 'goggles', shoe: 0xe0c020, gun: true }),
+  disco: () => ({ shirt: pick([0xe040c0, 0x40e0e0, 0xf0d020]), pants: 0xf0f0f0, skin: pick(SKINS), head: 0x18191c, face: 'mask', gun: true }),
+  merc: () => ({ shirt: pick([0x4a5058, 0x55524a, 0x3e4650]), pants: 0x34383e, skin: pick(SKINS), head: 0x202226, face: 'goggles', vest: 0x2a2e34, gun: true }),
+  heavy: () => ({ shirt: 0x24272c, pants: 0x1c1e22, skin: pick(SKINS), head: 0x101114, face: 'visor', vest: 0x34383e, helmet: 0x1a1c20, bulk: 1.15, gun: true }),
+  gren: () => ({ shirt: 0x5a4a34, pants: 0x34383e, skin: pick(SKINS), head: 0x202226, face: 'goggles', vest: 0x7a5a2a, grenadeHand: true, gun: false }),
+  guard: () => ({ shirt: 0x2a3a5a, pants: 0x1a1a22, skin: pick(SKINS), head: 0x18191c, face: 'mask', helmet: 0x2a3a5a, gun: true }),
+  sci: () => ({ shirt: 0xf4f4f4, pants: 0x3a4050, skin: pick(SKINS), face: 'face', hair: pick([0x2a1d14, 0x777777, 0x111111]), apron: 0xf8f8f8 }),
+  tourist: () => ({ shirt: pick([0xf06a8a, 0x5ac0e6, 0xf0e070, 0x8ad06a]), pants: pick([0xd8c8a0, 0x3a5a8a]), skin: pick(SKINS), face: 'face', hair: pick([0x2a1d14, 0xa0703a, 0x111111]) }),
+};
+
+// ================= 遊戲狀態 =================
+let diffKey = SET.diff, paused = false, mode = 'title';
+let mgAmmo = 0;
+let hp, ammo, reloading = 0, nextFire = 0, invuln = 0, score = 0, combo = 0, maxCombo = 0;
+let stats, continues = 0, practiceArea = -1;
+let gameTime = 0, timeScale = 1, slowmo = 0;
+let ents = [], fxs = [], grenades = [], items = [], popups = [], holes = [];
+let itemsThisArea = 0;
+const camPos = V3(0, 1.6, 4), camQ = new THREE.Quaternion();
+let shakeT = 0, shakeA = 0, recoil = 0;
+const mouse = { x: 0, y: 0, nx: 0, ny: 0 };
+const ray = new THREE.Raycaster();
+const camDummy = new THREE.PerspectiveCamera();
+const aimCam = new THREE.PerspectiveCamera(C.game.fov, 1, 0.05, 400);
+function qLook(pos, look) { camDummy.position.copy(pos); camDummy.lookAt(look); return camDummy.quaternion.clone(); }
+function diff() { return C.difficulty[diffKey]; }
+function MAG() { return diff().magazine || C.player.magazine; } // 彈匣容量（簡單模式比較多）
+function eHP(base) { return base + (diff().enemyHpAdd || 0); } // 困難模式敵人多幾滴血
+function waitMul() { const sc = C['stage' + (curStage + 1)]; const m = (sc && sc.areaWaitMul) || C.areaWaitMul; return diff().fireWaitMul * (m[curArea] || 1); }
+function resetStats() { stats = { shots: 0, hits: 0, kills: 0, heads: 0, reactSum: 0, reactN: 0, hostages: 0, dmg: 0, reveals: 0, grenades: 0 }; }
+
+// ================= 敵人與實體 =================
+function faceCam(ent) { const r = ent.h.root; r.rotation.y = Math.atan2(camera.position.x - r.position.x, camera.position.z - r.position.z); }
+function setOpacity(ent, a) { ent.h.mats.forEach(m => { m.transparent = a < 1; m.opacity = a; }); }
+function regHB(ent) { ent.h.hb.forEach(m => m.userData.ent = ent); }
+function floorY(a) { return ST && ST.floorY ? ST.floorY(a) : 0; }
+
+function spawnHuman(spec, waveRef) {
+  if (spec.look && ['heavy', 'muscle', 'gren', 'diver'].includes(spec.look)) barkFirst(spec.look); else if (spec.armored) barkFirst('armored');
+  const k = spec.k;
+  const isHost = k === 'hostage' || k === 'staff';
+  const armored = !!spec.armored;
+  let look;
+  if (spec.look && LOOKS[spec.look] && k !== 'bonus') look = LOOKS[spec.look]();
+  else if (k === 'hostage') look = { shirt: pick(CIV_SHIRTS), pants: pick([0x3a5a8a, 0x6a5a40, 0x2a2a2a, 0x8a3a3a]), skin: pick(SKINS), face: 'face', hair: pick([0x2a1d14, 0x5a3a1e, 0x111111, 0xa0703a]) };
+  else if (k === 'staff') look = { shirt: 0xf4f4f0, pants: 0x2a2a2a, skin: pick(SKINS), face: 'face', hair: pick([0x2a1d14, 0x111111]), apron: spec.apron || 0xc03030 };
+  else if (k === 'bonus') look = { shirt: 0xe8b020, pants: 0x3a2a18, skin: pick(SKINS), head: 0x18191c, face: 'mask', gun: true, bandana: 0xffe060 };
+  else look = thugLook(armored);
+  look.scale = spec.scale || C.enemy.scale || 1;
+  if (isHost) look.hs = 0.9; // 民眾的判定框比外觀小一點，減少誤擊
+  const h = makeHuman(look);
+  const cfg = spec.look === 'heavy' ? C.enemy.heavy : spec.look === 'muscle' ? C.enemy.muscle : spec.look === 'gren' ? C.enemy.grenadier : armored ? C.enemy.armored : C.enemy.thug;
+  if (spec.look === 'gren') look.grenadeHand = true;
+  const y = spec.y !== undefined ? spec.y : floorY(curArea);
+  const to = V3(spec.at[0], y, spec.at[1]);
+  const from = spec.from ? V3(spec.from[0], y, spec.from[1]) : to.clone();
+  const drop = (spec.drop || 1.15) * (spec.scale || C.enemy.scale || 1);
+  if (spec.pop === 'up' || (spec.pop === 'side' && spec.crouch)) from.y = y - drop;
+  if (spec.fy !== undefined) from.y = spec.fy; // 從高處跳下來／翻滾進來
+  h.root.position.copy(from); scene.add(h.root);
+  const ent = { type: isHost ? 'hostage' : 'enemy', bonus: k === 'bonus', mg: !!spec.mg, h, spec, wave: waveRef, armored, cfg, hp: (k === 'bonus' || isHost) ? (spec.hp || cfg.hp) : eHP(spec.hp || cfg.hp), state: 'pop', t: 0,
+    from, to, popTime: spec.pop === 'run' ? from.distanceTo(to) / cfg.runSpeed : (spec.popTime || cfg.popTime),
+    shots: spec.shots || cfg.shots, wait: 0, aimT: 0, alive: true, gone: false, flashT: 0, hitFlash: 0, minion: !!spec.minion };
+  if (isHost) { h.armL.rotation.x = Math.PI - 0.15; h.armR.rotation.x = Math.PI - 0.15; h.armL.rotation.z = -0.2; h.armR.rotation.z = 0.2; }
+  else { h.armL.rotation.x = -0.3; h.armR.rotation.x = -0.4; }
+  if (spec.look === 'gren') ent.gren = true;
+  if (spec.splash) splash(to.x, spec.splash, to.z);
+  regHB(ent); faceCam(ent); ents.push(ent);
+  return ent;
+}
+// ---------- 機器狗：打破玻璃衝向玩家自爆 ----------
+function makeDog() {
+  const root = new THREE.Group(); root.rotation.order = 'YXZ'; const body = new THREE.Group(); root.add(body); const mats = [];
+  const M = c => { const m = new THREE.MeshLambertMaterial({ color: c }); mats.push(m); return m; };
+  const add = (g, m, x, y, z, p) => { const ms = new THREE.Mesh(g, m); ms.position.set(x, y, z); (p || body).add(ms); return ms; };
+  const wM = M(0xe8ecf0), dM = M(0x30343a);
+  add(BXG(0.5, 0.36, 1.0), wM, 0, 0.62, 0); add(BXG(0.4, 0.1, 0.7), dM, 0, 0.83, -0.05);
+  const head = new THREE.Group(); head.position.set(0, 0.8, 0.55); body.add(head);
+  add(BXG(0.34, 0.26, 0.34), wM, 0, 0, 0.1, head);
+  const eye = new THREE.MeshBasicMaterial({ color: 0xff2010 }); mats.push(eye); add(BXG(0.28, 0.06, 0.02), eye, 0, 0.03, 0.28, head);
+  const legs = [];
+  for (const [x, z] of [[-0.2, 0.36], [0.2, 0.36], [-0.2, -0.36], [0.2, -0.36]]) {
+    const l = new THREE.Group(); l.position.set(x, 0.5, z); body.add(l); add(BXG(0.1, 0.5, 0.12), dM, 0, -0.25, 0, l); legs.push(l);
+  }
+  const light = new THREE.MeshBasicMaterial({ color: 0xff3020 }); mats.push(light); const bulb = add(BXG(0.12, 0.08, 0.12), light, 0, 0.9, -0.3);
+  const hbHead = add(BXG(0.5, 0.42, 0.5), HB_MAT, 0, 0.8, 0.6); hbHead.userData.part = 'head';
+  const hbBody = add(BXG(0.75, 0.75, 1.3), HB_MAT, 0, 0.55, -0.05); hbBody.userData.part = 'body';
+  body.scale.setScalar(C.enemy.scale || 1);
+  return { root, body, head, legL: legs[0], legR: legs[1], armL: legs[2], armR: legs[3], legs, bulb, hb: [hbHead, hbBody], mats, flash: null };
+}
+function spawnDog(spec, waveRef) {
+  barkFirst('dog', 0.15);
+  const y = spec.y !== undefined ? spec.y : floorY(curArea);
+  const h = makeDog(); const from = V3(spec.from[0], y, spec.from[1]);
+  h.root.position.copy(from); scene.add(h.root);
+  const cfg = C.enemy.dog;
+  const ent = { type: 'enemy', kind: 'dog', h, spec, wave: waveRef, cfg, hp: eHP(cfg.hp), state: 'pop', t: 0, from, alive: true, gone: false, hitFlash: 0, ringY: 0.6 };
+  if (spec.glass) breakGlass(spec.glass);
+  sfx('bark'); regHB(ent); faceCam(ent); ents.push(ent);
+  return ent;
+}
+function updDog(e, dt) {
+  const h = e.h, r = h.root;
+  if (e.state === 'pop') { // 打破玻璃後先停一下
+    e.t += dt; faceCam(e); h.body.rotation.x = -Math.sin(Math.min(1, e.t / 0.45) * Math.PI) * 0.3;
+    if (e.t >= 0.45) {
+      const fwd = V3(0, 0, -1).applyQuaternion(camQ); const tgt = camPos.clone().addScaledVector(fwd, 1.6); tgt.y = e.from.y;
+      e.to = tgt; e.state = 'aim'; e.t = 0; e.aimStart = gameTime; e.wait = Math.max(0.8, e.from.distanceTo(tgt) / e.cfg.speed) * (diff().fireWaitMul > 1 ? 1.2 : diff().fireWaitMul < 1 ? 0.9 : 1); e.firstWait = e.wait;
+    }
+    return;
+  }
+  if (e.state === 'aim') {
+    e.t += dt; const k = Math.min(1, e.t / e.wait);
+    r.position.lerpVectors(e.from, e.to, k); faceCam(e);
+    const sw = Math.sin(e.t * 22) * 0.8; h.legs[0].rotation.x = sw; h.legs[3].rotation.x = sw; h.legs[1].rotation.x = -sw; h.legs[2].rotation.x = -sw;
+    h.bulb.visible = Math.floor(e.t * (6 + k * 14)) % 2 === 0;
+    if (k >= 1) { explode(r.position.clone().add(V3(0, 0.6, 0)), 3); playerHurt(e.cfg.damage); removeEnt(e, 'boom'); }
+    return;
+  }
+  if (e.state === 'dead') {
+    if (!e.boomed) { e.boomed = true; explode(r.position.clone().add(V3(0, 0.6, 0)), 1.6); }
+    if (corpseAnim(e, dt)) removeEnt(e, 'dead');
+  }
+}
+// ---------- 無人機：體積小、會飛、會射擊 ----------
+function makeDrone(color) {
+  const root = new THREE.Group(); const body = new THREE.Group(); root.add(body); const mats = [];
+  const M = c => { const m = new THREE.MeshLambertMaterial({ color: c }); mats.push(m); return m; };
+  const add = (g, m, x, y, z, p) => { const ms = new THREE.Mesh(g, m); ms.position.set(x, y, z); (p || body).add(ms); return ms; };
+  const bM = M(color || 0xb8c0c8), aM = M(0x50565e);
+  add(BXG(0.36, 0.14, 0.36), bM, 0, 0, 0);
+  add(BXG(0.9, 0.04, 0.06), aM, 0, 0.02, 0, null).rotation.y = Math.PI / 4; add(BXG(0.9, 0.04, 0.06), aM, 0, 0.02, 0).rotation.y = -Math.PI / 4;
+  const rotors = [];
+  for (const [x, z] of [[-0.32, -0.32], [0.32, -0.32], [-0.32, 0.32], [0.32, 0.32]]) { const r = add(BXG(0.3, 0.015, 0.05), M(0x909090), x, 0.07, z); rotors.push(r); }
+  const eye = new THREE.MeshBasicMaterial({ color: 0xff2a1a }); mats.push(eye); add(BXG(0.2, 0.1, 0.03), eye, 0, -0.02, 0.19); add(BXG(0.1, 0.05, 0.1), eye, 0, 0.1, 0);
+  add(BXG(0.06, 0.06, 0.2), aM, 0, -0.1, 0.12);
+  const flash = new THREE.Sprite(new THREE.SpriteMaterial({ map: FLASH_TEX, blending: THREE.AdditiveBlending, depthWrite: false, transparent: true }));
+  flash.scale.setScalar(0.5); flash.position.set(0, -0.1, 0.3); flash.visible = false; body.add(flash);
+  const hb = add(BXG(0.62, 0.34, 0.62), HB_MAT, 0, 0, 0); hb.userData.part = 'body';
+  const s = C.enemy.drone.size || 1; body.scale.setScalar(s);
+  return { root, body, rotors, flash, hb: [hb], mats, head: new THREE.Group(), armL: new THREE.Group(), armR: new THREE.Group(), legL: new THREE.Group(), legR: new THREE.Group() };
+}
+function spawnDrone(spec, waveRef) {
+  barkFirst('drone', 0.15);
+  const h = makeDrone(spec.color); const cfg = C.enemy.drone;
+  const to = V3(spec.at[0], spec.y, spec.at[1]); const fr = spec.from || spec.at; const from = V3(fr[0], spec.fy !== undefined ? spec.fy : spec.y, fr[1]);
+  h.root.position.copy(from); scene.add(h.root);
+  const ent = { type: 'enemy', kind: 'drone', h, spec, wave: waveRef, cfg, hp: eHP(cfg.hp), state: 'pop', t: 0, from, to, popTime: Math.max(0.4, from.distanceTo(to) / cfg.speed),
+    shots: spec.shots || cfg.shots, alive: true, gone: false, hitFlash: 0, flashT: 0, ringY: 0, ph: rand(0, 6) };
+  regHB(ent); ents.push(ent); sfx('buzz');
+  return ent;
+}
+function updDrone(e, dt) {
+  const h = e.h, r = h.root;
+  h.rotors.forEach((ro, i) => ro.rotation.y += dt * 40 * (i % 2 ? 1 : -1));
+  if (e.flashT > 0) { e.flashT -= dt; if (e.flashT <= 0) h.flash.visible = false; }
+  const face = () => { r.rotation.y = Math.atan2(camera.position.x - r.position.x, camera.position.z - r.position.z); };
+  switch (e.state) {
+    case 'pop': { e.t += dt; const k = Math.min(1, e.t / e.popTime); r.position.lerpVectors(e.from, e.to, easeOut(k)); face(); r.rotation.z = (1 - k) * 0.4;
+      if (k >= 1) { e.state = 'aim'; e.t = 0; e.aimStart = gameTime; e.wait = (e.spec.wait || e.cfg.fireWait) * waitMul() * crowdMul(e); e.firstWait = e.wait; } break; }
+    case 'aim': {
+      e.t += dt; face(); r.position.set(e.to.x + Math.sin(gameTime * 2 + e.ph) * 0.25, e.to.y + Math.sin(gameTime * 3.1 + e.ph) * 0.12, e.to.z);
+      if (e.t >= e.wait) { enemyFire(e); e.shots--; if (e.shots > 0) { e.t = 0; e.wait = e.cfg.refireWait * waitMul() * crowdMul(e); } else { e.state = 'retreat'; e.t = 0; } }
+      break;
+    }
+    case 'retreat': { e.t += dt; const k = Math.min(1, e.t / 0.8); r.position.lerpVectors(e.to, e.from, easeIn(k)); if (k >= 1) removeEnt(e, 'escaped'); break; }
+    case 'dead': {
+      e.t += dt; e.vy = (e.vy || 1.5) - 9 * dt; r.position.y += e.vy * dt; r.rotation.z += dt * 8; r.rotation.x += dt * 5;
+      if (Math.random() < 0.3) spark(r.position, 0xffa040);
+      if (e.t > 0.9) { explode(r.position.clone(), 1.4); removeEnt(e, 'dead'); }
+      break;
+    }
+  }
+}
+function spawnMannequin(id, x, z, bad) {
+  const look = { shirt: pick([0xe04060, 0x3060c0, 0xf0f0f0, 0x202020, 0xe0c040, 0x40a080, 0xa060c0]), pants: pick([0x303848, 0xd8d0c0, 0x5a4030, 0x202020]),
+    skin: 0xece6da, head: 0xece6da, face: 'mann', gun: bad, shoe: 0xece6da, scale: C.enemy.scale || 1 };
+  const h = makeHuman(look);
+  h.root.position.set(x, 0.15, z); scene.add(h.root);
+  h.armL.rotation.set(-0.15, 0, -0.18); h.armR.rotation.set(-0.15, 0, 0.18);
+  if (h.gun) h.gun.visible = false;
+  const ent = { type: 'mann', h, bad, id, area: 4, state: 'idle', t: 0, hp: 1, alive: true, gone: false, base: V3(x, 0.15, z), cfg: C.enemy.disguise, shots: C.enemy.disguise.shots, hitFlash: 0 };
+  h.root.rotation.y = rand(-0.4, 0.4) + Math.atan2(-14 - x, -249 - z) * 0.4;
+  regHB(ent); ents.push(ent); MANN[id] = ent; mannList.push(ent);
+  return ent;
+}
+function resetMannequins() {
+  mannList.forEach(m => {
+    if (!m.h.root.parent) scene.add(m.h.root);
+    m.state = 'idle'; m.alive = true; m.gone = false; m.t = 0; m.hp = 1; m.shots = m.cfg.shots; m.wave = null;
+    m.h.root.position.copy(m.base); m.h.root.rotation.x = 0; m.h.root.rotation.z = 0; setOpacity(m, 1);
+    m.h.armL.rotation.set(-0.15, 0, -0.18); m.h.armR.rotation.set(-0.15, 0, 0.18);
+    if (m.h.eyes) m.h.eyes.visible = false; if (m.h.gun) m.h.gun.visible = false;
+    if (!ents.includes(m)) ents.push(m);
+  });
+}
+
+// 車輛事件
+function makeCar(color) {
+  const g = new THREE.Group();
+  const m = new THREE.MeshLambertMaterial({ color }), dark = new THREE.MeshLambertMaterial({ color: 0x2a3440 }), tire = new THREE.MeshLambertMaterial({ color: 0x111111 });
+  const add = (geo, mm, x, y, z) => { const s = new THREE.Mesh(geo, mm); s.position.set(x, y, z); g.add(s); return s; };
+  const bodyM = add(BXG(1.9, 0.65, 4.2), m, 0, 0.62, 0);
+  add(BXG(1.7, 0.5, 2.2), dark, 0, 1.2, -0.2); add(BXG(1.6, 0.06, 2.1), m, 0, 1.47, -0.2);
+  for (const sx of [-0.85, 0.85]) for (const sz of [-1.35, 1.35]) add(BXG(0.3, 0.6, 0.6), tire, sx, 0.3, sz);
+  const hl = new THREE.MeshBasicMaterial({ color: 0xfff8c0 });
+  add(BXG(0.4, 0.15, 0.05), hl, -0.6, 0.7, 2.11); add(BXG(0.4, 0.15, 0.05), hl, 0.6, 0.7, 2.11);
+  const hit = add(BXG(1.9, 1.5, 4.2), HB_MAT, 0, 0.75, 0);
+  return { g, hit };
+}
+function spawnCar(spec, waveRef) {
+  barkFirst('car', 0.15);
+  const y = floorY(curArea);
+  const car = makeCar(spec.color || pick(CAR_COLORS));
+  car.g.position.set(spec.from[0], y, spec.from[1]); car.g.rotation.y = spec.ry || 0; scene.add(car.g);
+  const ent = { type: 'car', car, spec, wave: waveRef, state: 'drive', t: 0, from: V3(spec.from[0], y, spec.from[1]), to: V3(spec.to[0], y, spec.to[1]), dur: spec.dur || 1.6, alive: true, gone: false };
+  car.hit.userData.car = ent; ents.push(ent); sfx('screech');
+  return ent;
+}
+
+function updateEnt(e, dt) {
+  const h = e.h;
+  if (e.hitFlash > 0) { e.hitFlash -= dt; if (e.hitFlash <= 0) h.mats.forEach(m => m.emissive && m.emissive.setHex(0)); }
+  if (e.type === 'car') {
+    if (e.state === 'drive') {
+      e.t += dt; const k = Math.min(1, e.t / e.dur);
+      e.car.g.position.lerpVectors(e.from, e.to, easeOut(k));
+      if (k >= 1) {
+        e.state = 'parked';
+        (e.spec.riders || []).forEach(r => { const en = spawnHuman(Object.assign({ k: 'thug', pop: 'side' }, r), e.wave); if (e.wave) e.wave.ents.push(en); });
+        e.gone = true; // 車本身不擋波次
+      }
+    }
+    return;
+  }
+  if (e.type === 'mann') return updateMann(e, dt);
+  if (e.kind === 'dog') return updDog(e, dt);
+  if (e.kind === 'drone') return updDrone(e, dt);
+  if (e.custom) return e.custom(e, dt);
+  if (e.flashT > 0) { e.flashT -= dt; if (e.flashT <= 0 && h.flash) h.flash.visible = false; }
+  const r = h.root;
+  switch (e.state) {
+    case 'pop': {
+      e.t += dt; const k = Math.min(1, e.t / e.popTime);
+      r.position.lerpVectors(e.from, e.to, e.spec.pop === 'run' ? k : easeOut(k));
+      if (e.spec.roll) { r.position.y += Math.sin(k * Math.PI) * 0.8; h.body.rotation.x = -k * Math.PI * 2; if (k >= 1) h.body.rotation.x = 0; } // 翻滾進場
+      else if (e.spec.fy !== undefined && e.spec.fy > e.to.y) { r.position.y = lerp(e.from.y, e.to.y, k * k); if (k >= 1 && !e.landed) { e.landed = true; shakeT = 0.12; shakeA = 0.04; } } // 跳下來
+      if (e.spec.pop === 'run') { const sw = Math.sin(e.t * 14) * 0.7; h.legL.rotation.x = sw; h.legR.rotation.x = -sw; }
+      faceCam(e);
+      if (k >= 1) {
+        h.legL.rotation.x = h.legR.rotation.x = 0;
+        if (e.type === 'hostage') { e.state = 'stay'; e.t = 0; }
+        else { e.state = 'aim'; e.t = 0; e.aimStart = gameTime; e.wait = e.bonus ? C.enemy.bonus.stay : (e.spec.wait || e.cfg.fireWait) * waitMul() * crowdMul(e); e.firstWait = e.wait; e.fakeT = 0.9; }
+      }
+      break;
+    }
+    case 'aim': {
+      e.t += dt; faceCam(e);
+      const a = Math.min(1, e.t / 0.18);
+      h.armR.rotation.x = lerp(-0.4, -Math.PI / 2, a); h.armL.rotation.x = lerp(-0.3, -1.3, a); h.armL.rotation.z = lerp(0, 0.5, a);
+      if (e.bonus) { // 加分小兵：只作勢開槍，不會傷人
+        e.fakeT -= dt; if (e.fakeT <= 0) { e.fakeT = 1.1; if (h.flash) { h.flash.visible = true; e.flashT = 0.07; } }
+        if (e.t >= e.wait) { e.state = 'retreat'; e.t = 0; }
+        break;
+      }
+      if (e.t >= e.wait) {
+        if (e.gren) { e.state = 'throw'; e.t = 0; if (h.grenade) h.grenade.visible = true; sfx('reveal'); barkFirst('grenade', 0.25); break; }
+        enemyFire(e); e.shots--;
+        if (e.shots > 0) { e.t = 0.18; e.wait = e.cfg.refireWait * waitMul() * crowdMul(e) + 0.18; }
+        else { e.state = 'retreat'; e.t = 0; }
+      }
+      break;
+    }
+    case 'throw': { // 手榴彈傭兵：舉手丟手榴彈（這段時間打倒他就丟不出來）
+      e.t += dt; faceCam(e); const k = Math.min(1, e.t / e.cfg.windup);
+      h.armR.rotation.x = lerp(-Math.PI / 2, Math.PI * 0.85, easeOut(k));
+      if (k >= 1) {
+        if (h.grenade) h.grenade.visible = false;
+        throwGrenade(h.grenade ? h.grenade.getWorldPosition(V3(0, 0, 0)) : r.position.clone().add(V3(0, 2, 0)), 0, 1, { damage: e.cfg.damage, dur: e.cfg.flight });
+        e.shots--;
+        if (e.shots > 0) { e.state = 'aim'; e.t = 0.18; e.wait = e.cfg.refireWait * waitMul() * crowdMul(e) + 0.18; }
+        else { e.state = 'retreat'; e.t = 0; }
+      }
+      break;
+    }
+    case 'retreat': {
+      e.t += dt; const k = Math.min(1, e.t / Math.max(0.3, e.popTime));
+      r.position.lerpVectors(e.to, e.from, easeIn(k));
+      if (e.spec.pop === 'run' || e.spec.pop === undefined) setOpacity(e, 1 - k);
+      if (k >= 1) removeEnt(e, 'escaped');
+      break;
+    }
+    case 'stay': faceCam(e); h.armL.rotation.z = -0.2 + Math.sin(gameTime * 6) * 0.15; h.armR.rotation.z = 0.2 - Math.sin(gameTime * 6) * 0.15; break;
+    case 'leave': {
+      e.t += dt; const k = Math.min(1, e.t / 0.8);
+      r.position.lerpVectors(e.to, e.from, k); setOpacity(e, 1 - k);
+      if (k >= 1) removeEnt(e, 'left');
+      break;
+    }
+    case 'dead': { if (corpseAnim(e, dt)) removeEnt(e, 'dead'); break; }
+    case 'hurt': {
+      e.t += dt;
+      const k = Math.min(1, e.t / 0.45);
+      h.body.position.y = -easeOut(k) * 0.5; h.legL.rotation.x = h.legR.rotation.x = -easeOut(k) * 1.4;
+      if (e.t > 0.6) setOpacity(e, Math.max(0, 1 - (e.t - 0.6) / 0.5));
+      if (e.t > 1.1) removeEnt(e, e.state);
+      break;
+    }
+  }
+}
+function updateMann(e, dt) {
+  const h = e.h;
+  switch (e.state) {
+    case 'reveal': {
+      e.t += dt; h.root.rotation.z = Math.sin(e.t * 40) * 0.03 * (1 - e.t / e.cfg.revealTime);
+      if (e.t >= e.cfg.revealTime) {
+        e.state = 'aim'; e.t = 0; e.aimStart = gameTime; e.wait = e.cfg.fireWait * waitMul() * crowdMul(e); h.root.rotation.z = 0;
+        if (h.gun) h.gun.visible = true;
+        h.root.rotation.y = Math.atan2(camera.position.x - h.root.position.x, camera.position.z - h.root.position.z);
+      }
+      break;
+    }
+    case 'aim': {
+      e.t += dt; const a = Math.min(1, e.t / 0.18);
+      h.root.rotation.y = Math.atan2(camera.position.x - h.root.position.x, camera.position.z - h.root.position.z);
+      h.armR.rotation.x = lerp(-0.15, -Math.PI / 2, a); h.armR.rotation.z = 0; h.armL.rotation.x = lerp(-0.15, -1.3, a); h.armL.rotation.z = lerp(-0.18, 0.5, a);
+      if (h.flash && e.flashT > 0) { e.flashT -= dt; if (e.flashT <= 0) h.flash.visible = false; }
+      if (e.t >= e.wait) {
+        enemyFire(e); e.shots--;
+        if (e.shots > 0) { e.t = 0.18; e.wait = e.cfg.refireWait * waitMul() + 0.18; }
+        else { e.state = 'freeze'; } // 開完槍又裝回假人，不會消失但不算打倒
+      }
+      break;
+    }
+    case 'freeze': if (h.flash && e.flashT > 0) { e.flashT -= dt; if (e.flashT <= 0) h.flash.visible = false; } e.state = 'escaped'; if (e.wave) e.gone = true; break;
+    case 'escaped': {
+      // 舉著槍站著不動，之後再開火（直到被打倒或這區結束）
+      e.t += dt; if (e.t > 2.4) { e.state = 'aim'; e.t = 0.18; e.shots = 1; e.wait = e.cfg.refireWait * waitMul() + 0.18; e.gone = false; }
+      break;
+    }
+    case 'dead': { if (corpseAnim(e, dt)) { scene.remove(h.root); e.gone = true; e.state = 'removed'; } break; }
+    case 'topple': {
+      e.t += dt; const k = Math.min(1, e.t / 0.5);
+      h.root.rotation.x = -easeOut(k) * Math.PI / 2 * 0.95;
+      break;
+    }
+  }
+}
+// 倒下動畫：先站著踉蹌（這段時間可以追擊），再倒下、淡出。回傳 true 表示結束
+function corpseAnim(e, dt) {
+  const h = e.h, r = h.root, CT = C.enemy.corpseTime;
+  e.t += dt; e.jolt = Math.max(0, (e.jolt || 0) - dt * 3);
+  if (e.t < CT) {
+    r.rotation.x = -0.25 * Math.min(1, e.t / 0.25) - e.jolt + Math.sin(e.t * 22) * 0.02;
+    h.armL.rotation.x = lerp(h.armL.rotation.x, -2.4, 0.15); h.armR.rotation.x = lerp(h.armR.rotation.x, -2.6, 0.15);
+    h.head.rotation.x = -0.4;
+  } else {
+    const k = Math.min(1, (e.t - CT) / 0.4);
+    r.rotation.x = -0.25 - easeIn(k) * (Math.PI / 2 * 0.95 - 0.25);
+    if (e.t > CT + 0.4) setOpacity(e, Math.max(0, 1 - (e.t - CT - 0.4) / 0.4));
+  }
+  return e.t > CT + 0.8;
+}
+function crowdMul(self) {
+  const n = ents.filter(o => o !== self && o.alive && !o.bonus && (o.type === 'enemy' || (o.type === 'mann' && o.bad && (o.state === 'aim' || o.state === 'reveal'))) && (o.state === 'pop' || o.state === 'aim' || o.state === 'reveal')).length;
+  return 1 + C.enemy.crowdWait * Math.min(n, C.enemy.crowdMax);
+}
+function removeEnt(e, why) {
+  e.alive = false; e.gone = true; e.state = 'removed';
+  if (e.h) scene.remove(e.h.root);
+  const i = ents.indexOf(e); if (i >= 0) ents.splice(i, 1);
+}
+function enemyFire(e) {
+  if (e.h.flash) { e.h.flash.visible = true; e.flashT = 0.07; }
+  sfx('enemyShot');
+  playerHurt(1);
+}
+function playerHurt(n) {
+  if (invuln > 0 || mode !== 'play') return;
+  if (tut) { if (!tut.hurtHint) { tut.hurtHint = true; hint('被打到了！（教學中不扣血）', 2); } invuln = 0.6; sfx('hurt'); return; }
+  if (!SET.inf) hp -= n; invuln = C.player.hurtInvuln; combo = 0; stats.dmg += n;
+  if (hp === 1 && !SET.inf) bark('low', 1, true); else if (hp > 0) bark('hurt', 0.45, true);
+  shakeT = 0.35; shakeA = 0.12; sfx('hurt');
+  $('hurt').style.transition = 'none'; $('hurt').style.opacity = 1;
+  requestAnimationFrame(() => { $('hurt').style.transition = 'opacity .6s'; $('hurt').style.opacity = 0; });
+  updHud();
+  if (hp <= 0) gameOver();
+}
+
+// ================= 射擊 =================
+function rayTargets() {
+  const list = blockers.slice();
+  for (const k in prodMesh) list.push(prodMesh[k]);
+  ents.forEach(e => {
+    if (e.type === 'car') list.push(e.car.hit);
+    else if (e.state === 'removed' || e.state === 'topple' || e.state === 'leave') return;
+    else if (e.alive || (e.state === 'dead' && e.t < C.enemy.corpseTime + 0.25)) e.h.hb.forEach(m => list.push(m));
+  });
+  grenades.forEach(g => list.push(g.hit));
+  items.forEach(it => list.push(it.hit));
+  if (boss && boss.targets) boss.targets().forEach(m => list.push(m));
+  return list;
+}
+function scrPos(v) { const p = v.clone().project(camera); return { x: (p.x + 1) / 2 * VW, y: (1 - p.y) / 2 * VH, z: p.z }; }
+function popup(text, wpos, color, big) {
+  const s = wpos ? scrPos(wpos) : { x: VW / 2, y: VH * 0.4 };
+  popups.push({ text, x: s.x, y: s.y, t: 0, color: color || '#fff', big: !!big });
+}
+function shoot() {
+  if (mode !== 'play' || paused) return;
+  if (gameTime < nextFire) return;
+  if (SET.infmg) { nextFire = gameTime + C.mg.rate; stats.shots++; recoil = 0.5; sfx('mg'); }
+  else if (mgAmmo > 0) { mgAmmo--; nextFire = gameTime + C.mg.rate; stats.shots++; recoil = 0.5; sfx('mg'); if (mgAmmo === 0) { lastHud = ''; popup('機關槍用完了', null, '#ffc531'); } }
+  else {
+  if (reloading > 0) return;
+  if (ammo <= 0) { if (tryAmmoItem()) return; sfx('empty'); bark('empty', 0.5); showReload(true); return; }
+  ammo--; nextFire = gameTime + C.player.fireCooldown; stats.shots++; recoil = 1; sfx('shot');
+  if (ammo === 0) showReload(true);
+  }
+  updHud();
+  aimCam.position.copy(camPos); aimCam.quaternion.copy(camQ); aimCam.aspect = camera.aspect; aimCam.fov = camera.fov; aimCam.updateProjectionMatrix(); aimCam.updateMatrixWorld();
+  scene.updateMatrixWorld();
+  ray.setFromCamera({ x: mouse.nx, y: mouse.ny }, aimCam);
+  const hits = ray.intersectObjects(rayTargets(), false);
+  let hitSomething = false, dummy = null, deadHit = null;
+  for (const it of hits) {
+    const o = it.object, ud = o.userData;
+    if (ud.static) { if (!dummy && !deadHit) bulletHole(it); break; }
+    if (ud.car) { spark(it.point, 0xffe080); sfx('metal'); break; }
+    if (o.isInstancedMesh) {
+      const p = o.userData.prods[it.instanceId]; if (!p || p.broken) continue;
+      breakProd(p, it.point); hitSomething = true; break;
+    }
+    if (ud.grenade) { if (ud.grenade.dead) continue; ud.grenade.dead = true; explode(ud.grenade.mesh.position.clone(), 1.2); addScore(ud.grenade.score, ud.grenade.mesh.position, '擊落！'); stats.grenades++; hitSomething = true; break; }
+    if (ud.item) { collectItem(ud.item); hitSomething = true; break; }
+    if (ud.boss) { if (boss && boss.hit(ud, it.point, o) !== false) { hitSomething = true; break; } continue; }
+    if (ud.ent) {
+      const e = ud.ent;
+      if (e.state === 'dead' && e.type !== 'hostage') { if (!deadHit) deadHit = { e, it }; continue; } // 倒下的先記著，後面有活的敵人就打活的
+      if (!e.alive || e.state === 'hurt' || e.state === 'topple' || e.state === 'removed') continue;
+      if (e.type === 'mann' && !e.bad) { if (!dummy) dummy = { e, it }; continue; } // 真假人：子彈先穿過去看後面有沒有敵人
+      dummy = null; deadHit = null;
+      const head = ud.part === 'head';
+      hitEnt(e, head, it.point); hitSomething = e.type !== 'hostage' && !(e.type === 'mann' && !e.bad); break;
+    }
+  }
+  if (deadHit && !hitSomething) { overkill(deadHit.e, deadHit.it.point); hitSomething = true; dummy = null; }
+  if (dummy) hitEnt(dummy.e, false, dummy.it.point);
+  if (hitSomething) stats.hits++;
+  else { combo = 0; updHud(); }
+}
+function overkill(e, point) {
+  e.ok = (e.ok || 0) + 1;
+  if (e.ok > C.score.overkillMax) { spark(point, 0xfff0a0); return false; } // 超過次數：算命中、不加分，連擊不斷
+  sfx('hit'); spark(point, 0xfff0a0);
+  e.jolt = Math.min(0.5, (e.jolt || 0) + 0.18); if (e.t > C.enemy.corpseTime - 0.3) e.t = C.enemy.corpseTime - 0.3; // 每打一下多撐一點時間
+  addScore(C.score.overkill, point, '追擊', '#ffa0ff');
+  return true;
+}
+function addScore(base, wpos, label, color) {
+  combo++; maxCombo = Math.max(maxCombo, combo);
+  if (combo === 5 || combo === 10 || combo === 20 || combo === 30) bark('combo' + combo, 1, true);
+  const mul = Math.min(C.score.comboMax, 1 + C.score.comboStep * (combo - 1));
+  const pts = Math.round(base * mul); score += pts;
+  popup((label ? label + ' ' : '') + '+' + pts, wpos, color || '#ffe070');
+  updHud();
+}
+function hitEnt(e, head, point) {
+  const h = e.h;
+  if (e.type === 'hostage') {
+    e.state = 'hurt'; e.t = 0; stats.hostages++; combo = 0; score = Math.max(0, score - C.score.hostagePenalty);
+    sfx('oops'); popup('誤擊民眾！ -' + C.score.hostagePenalty, point, '#ff6050', true); bark('oops', 1, true);
+    const iv = invuln; invuln = 0; playerHurt(1); if (hp > 0) invuln = Math.max(iv, invuln);
+    updHud(); return;
+  }
+  if (e.type === 'mann' && !e.bad) {
+    e.state = 'topple'; e.t = 0; combo = 0; sfx('prop'); popup('只是假人', point, '#c0c0c0'); updHud(); return;
+  }
+  const dmg = head ? C.enemy.headMul : 1;
+  e.hp -= dmg;
+  if (e.hp > 0) {
+    sfx('armor'); spark(point, 0xfff0a0); e.hitFlash = 0.1; h.mats.forEach(m => m.emissive && m.emissive.setHex(0x664400));
+    h.root.position.add(V3(0, 0, 0)); combo++; updHud(); return;
+  }
+  // 打倒
+  const wasDisguised = e.type === 'mann' && (e.state === 'idle' || e.state === 'reveal');
+  const reactT = e.state === 'aim' ? gameTime - e.aimStart : 0;
+  const w = e.firstWait || e.wait || 1;
+  let pts = C.score.base + C.score.reactionBonus * clamp(1 - reactT / w, 0, 1) + (head ? C.score.headBonus : 0);
+  let label = head ? '爆頭' : '';
+  if (e.bonus) { pts += C.score.bonus; label = 'BONUS'; }
+  if (wasDisguised) { pts += C.score.revealBonus; label = '看穿！'; stats.reveals++; }
+  stats.kills++; if (head) stats.heads++;
+  if (e.state === 'aim') { stats.reactSum += reactT; stats.reactN++; }
+  e.state = 'dead'; e.t = 0; e.alive = false; if (h.flash) h.flash.visible = false; if (h.grenade) h.grenade.visible = false;
+  if (e.type === 'mann') { if (h.eyes) h.eyes.visible = false; }
+  sfx('kill');
+  addScore(pts, h.root.position.clone().add(V3(0, 2.1 * (C.enemy.scale || 1), 0)), label, head ? '#ff9a50' : null);
+  if (e.minion && boss) boss.minions = Math.max(0, boss.minions - 1);
+  if (e.bonus) bark('bonus', 0.35); else if (wasDisguised) bark('reveal', 0.6); else bark('kill', C.voice.killChance);
+  if (!e.bonus && e.type !== 'hostage' && Math.random() < C.items.ammoChance) spawnItem(h.root.position.clone().add(V3(0, 1.3, 0)), 'ammo', true);
+  if (e.mg) { mgAmmo += C.mg.ammo; ammo = MAG(); reloading = 0; showReload(false); sfx('item'); bigText('機關槍！', '', 1.2); sayReset(); bark('mg', 1, true); updHud(); lastHud = ''; updHud(); }
+}
+function showReload(on) { $('reload').style.display = on ? 'block' : 'none'; }
+let tutReloadShown = false;
+function doReload() {
+  if (mode !== 'play' || paused || reloading > 0 || ammo === MAG() || mgAmmo > 0 || SET.infmg) return;
+  reloading = C.player.reloadTime; sfx('reload'); bark('reload', 0.08);
+}
+
+// 商品、彈孔、火花、道具、手榴彈
+const debrisMat = {};
+function breakProd(p, point) {
+  p.broken = true; setProd(p, false);
+  const FL = FLUTTER[p.type];
+  if (FL) { // 籌碼、撲克牌飄散
+    sfx(FL.sound);
+    for (let i = 0; i < FL.n; i++) {
+      const m = new THREE.Mesh(FL.geo, new THREE.MeshLambertMaterial({ color: pick(FL.colors), side: THREE.DoubleSide }));
+      m.position.set(p.x, p.y, p.z); m.rotation.set(rand(0, 6), rand(0, 6), rand(0, 6)); scene.add(m);
+      fxs.push({ kind: 'flutter', mesh: m, vel: V3(rand(-1.6, 1.6), rand(2.5, 5), rand(-1.6, 1.6)), spin: V3(rand(-9, 9), rand(-9, 9), rand(-9, 9)), t: 0, ph: rand(0, 6), floor: floorY(p.area) });
+    }
+    score += C.score.prop; combo++; maxCombo = Math.max(maxCombo, combo); updHud();
+    if (Math.random() < C.items.chance && itemsThisArea < C.items.maxPerArea) spawnItem(V3(p.x, p.y + 0.3, p.z), Math.random() < C.items.medkitShare ? 'med' : 'star');
+    return;
+  }
+  sfx('prop');
+  const m = new THREE.Mesh(PROD_GEO[p.type], new THREE.MeshLambertMaterial({ color: p.color }));
+  m.position.set(p.x, p.y, p.z); scene.add(m);
+  const dir = V3(p.x, 0, p.z).sub(V3(camera.position.x, 0, camera.position.z)).normalize();
+  fxs.push({ kind: 'debris', mesh: m, vel: V3(dir.x * rand(2, 4) + rand(-1, 1), rand(2, 4.5), dir.z * rand(2, 4) + rand(-1, 1)), spin: V3(rand(-12, 12), rand(-12, 12), rand(-12, 12)), t: 0, floor: floorY(p.area) });
+  score += C.score.prop; combo++; maxCombo = Math.max(maxCombo, combo); updHud();
+  if (Math.random() < C.items.chance && itemsThisArea < C.items.maxPerArea) spawnItem(V3(p.x, p.y + 0.3, p.z), Math.random() < C.items.medkitShare ? 'med' : 'star');
+}
+const holeGeo = new THREE.PlaneGeometry(0.09, 0.09), holeMat = new THREE.MeshBasicMaterial({ color: 0x111111, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2 });
+function bulletHole(it) {
+  const n = it.face ? it.face.normal.clone() : V3(0, 0, 1);
+  const m = new THREE.Mesh(holeGeo, holeMat); m.position.copy(it.point).addScaledVector(n, 0.01);
+  m.lookAt(it.point.clone().add(n)); scene.add(m); holes.push(m);
+  if (holes.length > 60) scene.remove(holes.shift());
+  spark(it.point, 0xc0b8a0);
+}
+const sparkGeo = new THREE.BoxGeometry(0.05, 0.05, 0.05);
+function spark(p, color) {
+  const mat = new THREE.MeshBasicMaterial({ color });
+  for (let i = 0; i < 5; i++) {
+    const m = new THREE.Mesh(sparkGeo, mat); m.position.copy(p); scene.add(m);
+    fxs.push({ kind: 'spark', mesh: m, vel: V3(rand(-2, 2), rand(0, 3), rand(-2, 2)), t: 0 });
+  }
+}
+function spawnItem(pos, kind, free) {
+  if (!free) itemsThisArea++;
+  const g = new THREE.Group(); g.position.copy(pos); scene.add(g);
+  if (kind === 'med') {
+    const b = new THREE.Mesh(BXG(0.32, 0.24, 0.32), new THREE.MeshBasicMaterial({ color: 0xffffff })); g.add(b);
+    const rm = new THREE.MeshBasicMaterial({ color: 0xe02020 });
+    for (const [w, d] of [[0.26, 0.08], [0.08, 0.26]]) { const c = new THREE.Mesh(BXG(w, 0.26, d), rm); g.add(c); }
+  } else if (kind === 'ammo') { // 彈夾
+    g.add(new THREE.Mesh(BXG(0.16, 0.36, 0.1), new THREE.MeshBasicMaterial({ color: 0x30343a })));
+    for (let i = 0; i < 3; i++) { const bl = new THREE.Mesh(BXG(0.04, 0.07, 0.07), new THREE.MeshBasicMaterial({ color: 0xffc531 })); bl.position.set(-0.04 + i * 0.04, 0.21, 0); g.add(bl); }
+    const fr = new THREE.Mesh(BXG(0.2, 0.05, 0.12), new THREE.MeshBasicMaterial({ color: 0xffc531 })); fr.position.y = -0.16; g.add(fr);
+  } else if (kind === 'target') { // 教學用靶
+    const cols = [0xd02020, 0xffffff, 0xd02020, 0xffffff];
+    cols.forEach((c, i) => { const d = new THREE.Mesh(new THREE.CylinderGeometry(0.4 - i * 0.1, 0.4 - i * 0.1, 0.05 + i * 0.01, 12), new THREE.MeshBasicMaterial({ color: c })); d.rotation.x = Math.PI / 2; d.position.z = i * 0.006; g.add(d); });
+    const pole = new THREE.Mesh(BXG(0.06, 1.2, 0.06), new THREE.MeshLambertMaterial({ color: 0x555555 })); pole.position.y = -0.95; g.add(pole);
+  } else {
+    g.add(new THREE.Mesh(new THREE.OctahedronGeometry(0.22, 0), new THREE.MeshBasicMaterial({ color: 0xffd020 })));
+  }
+  const hit = new THREE.Mesh(new THREE.SphereGeometry(0.42, 6, 4), HB_MAT); g.add(hit);
+  const it = { g, hit, kind, t: 0, base: pos.y }; hit.userData.item = it; items.push(it);
+  if (kind === 'target') { it.noSpin = true; return it; }
+  popup(kind === 'med' ? '急救包！' : kind === 'ammo' ? '彈夾！' : '金星！', pos, '#80ff80');
+}
+function collectItem(it) {
+  if (it.kind === 'target') { it.dead = true; sfx('metal'); spark(it.g.position, 0xffffff); popup('命中！', it.g.position, '#ffc531'); if (tut) tut.hits++; return; }
+  it.dead = true; sfx('item');
+  if (it.kind !== 'star') bark(it.kind, 1, true);
+  if (it.kind === 'med') { hp = Math.min(C.player.maxHp, hp + 1); popup('血量 +1', it.g.position, '#80ff80'); updHud(); }
+  else if (it.kind === 'ammo') { ammo = MAG(); reloading = 0; showReload(false); popup('子彈補滿！', it.g.position, '#ffc531'); updHud(); }
+  else { addScore(C.score.star, it.g.position, '金星', '#ffe040'); }
+}
+// 子彈打光時，準心對著彈夾按下也能撿（不用先換彈）
+function tryAmmoItem() {
+  const list = items.filter(it => it.kind === 'ammo' && !it.dead).map(it => it.hit); if (!list.length) return false;
+  aimCam.position.copy(camPos); aimCam.quaternion.copy(camQ); aimCam.aspect = camera.aspect; aimCam.fov = camera.fov; aimCam.updateProjectionMatrix(); aimCam.updateMatrixWorld(); scene.updateMatrixWorld();
+  ray.setFromCamera({ x: mouse.nx, y: mouse.ny }, aimCam); const h = ray.intersectObjects(list, false)[0];
+  if (h) { collectItem(h.object.userData.item); return true; } return false;
+}
+const grenGeo = new THREE.IcosahedronGeometry(0.13, 0), grenMat = new THREE.MeshLambertMaterial({ color: 0x3a5a2a });
+const rocketGeo = new THREE.CylinderGeometry(0.09, 0.12, 0.6, 6); rocketGeo.rotateX(Math.PI / 2);
+const rocketMat = new THREE.MeshLambertMaterial({ color: 0xd8dcd0 });
+function throwGrenade(from, idx, n, opt) {
+  opt = opt || {};
+  const mesh = opt.mesh || new THREE.Mesh(opt.rocket ? rocketGeo : grenGeo, opt.rocket ? rocketMat : grenMat); mesh.position.copy(from); scene.add(mesh);
+  if (opt.rocket) { const fl = new THREE.Sprite(new THREE.SpriteMaterial({ map: FLASH_TEX, blending: THREE.AdditiveBlending, depthWrite: false, transparent: true, color: 0xff8030 })); fl.scale.setScalar(0.6); fl.position.set(0, 0, -0.4); mesh.add(fl); }
+  const hit = new THREE.Mesh(new THREE.SphereGeometry(opt.hitRadius || C.grenade.hitRadius, 6, 4), HB_MAT); mesh.add(hit);
+  const right = V3(1, 0, 0).applyQuaternion(camera.quaternion), up = V3(0, 1, 0), fwd = V3(0, 0, -1).applyQuaternion(camera.quaternion);
+  const spread = n > 1 ? (idx - (n - 1) / 2) * 0.9 : rand(-0.4, 0.4);
+  const to = camera.position.clone().addScaledVector(fwd, 0.9).addScaledVector(right, spread).addScaledVector(up, rand(-0.25, 0.1));
+  if (opt.spreadY) to.y += opt.spreadY;
+  const g = { mesh, hit, from: from.clone(), to, t: 0, dur: (opt.dur || C.grenade.flightTime) * rand(0.92, 1.08) + idx * (opt.gap !== undefined ? opt.gap : 0.12), damage: opt.damage || C.grenade.damage, arc: opt.arc !== undefined ? opt.arc : C.grenade.arc, rocket: !!opt.rocket, spinMesh: opt.spin !== false && !opt.rocket, score: opt.score || C.score.grenade };
+  hit.userData.grenade = g; grenades.push(g); if (opt.rocket) sfx('rocket');
+  return g;
+}
+function explode(pos, size) {
+  sfx('boom');
+  const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: FLASH_TEX, blending: THREE.AdditiveBlending, depthWrite: false, transparent: true, color: 0xffa040 }));
+  s.position.copy(pos); s.scale.setScalar(0.3); scene.add(s);
+  fxs.push({ kind: 'boom', mesh: s, t: 0, size: size || 2 });
+  for (let i = 0; i < 3; i++) spark(pos, 0xffa030);
+}
+
+// ================= 流程 =================
+let stepIdx = 0, step = null, stepT = 0, stepRealT = 0, cut = null, moveFrom = null, moveQFrom = null, moveQTo = null, ambushEnts = [], ambushPending = [];
+function areaFirstStep(a) { return LEVEL.findIndex(s => s.a === a); }
+function startStep(i) {
+  stepIdx = i; step = LEVEL[i]; stepT = 0; stepRealT = 0;
+  if (step.a !== curArea || i === checkpointStep) enterArea(step.a);
+  if (step.hint) hint(step.hint[0], step.hint[1]);
+  if (step.say) sayKey(step.say);
+  if (step.type === 'move') {
+    moveFrom = camPos.clone(); moveQFrom = camQ.clone();
+    const to = V3(...step.to); moveQTo = qLook(to, V3(...step.look));
+    const prev = LEVEL[i - 1], next = LEVEL[i + 1];
+    const pm = prev && prev.type === 'move' && i !== checkpointStep, nm = next && next.type === 'move';
+    step.ease = pm && nm ? (t => t) : pm ? easeOut : nm ? easeIn : easeIO;
+    ambushPending = (step.ambush || []).slice(); ambushEnts = [];
+  } else if (step.type === 'cut') {
+    cut = { wi: -1, gap: 0.35, wave: null };
+  } else if (step.type === 'warp') { // 快速切換場景
+    camPos.set(...step.to); camQ.copy(qLook(camPos, V3(...step.look)));
+    if (!step.seamless) { // seamless：兩邊畫面一模一樣（例如關著門的電梯），直接換位置不變黑
+      $('fade').style.transition = 'none'; $('fade').style.opacity = 1;
+      requestAnimationFrame(() => requestAnimationFrame(() => { $('fade').style.transition = 'opacity .45s'; $('fade').style.opacity = 0; }));
+    }
+    nextStep();
+  } else if (step.type === 'tut') {
+    if (!SET.tut || practiceArea >= 0 || tutSeen) { nextStep(); return; }
+    tutSeen = true; tutStart();
+  } else if (step.type === 'boss') {
+    boss = ST.spawnBoss();
+  } else if (step.type === 'end') {
+    finish();
+  }
+}
+let checkpointStep = 0;
+function enterArea(a) {
+  curArea = a; itemsThisArea = 0;
+  envFrom = currentEnv(); envTo = AREAS[a].env; envT = 0;
+  $('areaName').textContent = AREAS[a].en + '\n' + AREAS[a].name;
+  $('areaName').innerHTML = AREAS[a].en + '<br>' + AREAS[a].name;
+  bigText(AREAS[a].name, AREAS[a].en, 2.2);
+  const ak = 's' + ST.id + 'a' + a;
+  if (step && step.type === 'tut' && SET.tut && practiceArea < 0 && !tutSeen) tutAfter = ak; else sayKey(ak);
+  setMusic(ST.music && ST.music[a] ? ST.music[a] : a);
+}
+function startWave(wi) {
+  cut.wi = wi; const specs = step.waves[wi];
+  const cs = specs.find(s => s.cam);
+  cut.wave = { ents: [], pending: specs.filter(s => !s.cam).map(s => Object.assign({ t: 0 }, s)).sort((a, b) => a.t - b.t), t: 0, resolvedT: -1 };
+  if (cs) { const to = V3(...cs.cam); cut.wave.cm = { from: camPos.clone(), qf: camQ.clone(), to, qt: qLook(to, V3(...cs.look)), t: 0, dur: cs.dur || 0.9 }; }
+}
+function spawnSpec(s, wave) {
+  if (s.k === 'car') { const c = spawnCar(s, wave); wave && wave.ents.push(c); return c; }
+  if (s.k === 'dog') { const d = spawnDog(s, wave); wave && wave.ents.push(d); return d; }
+  if (s.k === 'drone') { const d = spawnDrone(s, wave); wave && wave.ents.push(d); return d; }
+  if (s.k === 'fx') { if (ST.fx) ST.fx(s); return null; }
+  if (s.k === 'say') { sayKey(s.id); return null; }
+  if (s.k === 'reveal') {
+    const m = MANN[s.id]; if (!m || !m.alive || m.state !== 'idle') return null;
+    m.state = 'reveal'; m.t = 0; m.wave = wave; m.gone = false; m.shots = m.cfg.shots; if (m.h.eyes) m.h.eyes.visible = true; sfx('reveal'); barkFirst('reveal', 0.3);
+    wave && wave.ents.push(m); return m;
+  }
+  const e = spawnHuman(s, wave); wave && wave.ents.push(e); return e;
+}
+function entResolved(e) {
+  if (e.type === 'mann') return !e.alive || e.state === 'escaped' || e.gone;
+  return e.gone || !e.alive;
+}
+function updateStep(dt) {
+  if (!step) return;
+  stepRealT += dt;
+  if (step.type === 'move') {
+    // 途中伏擊：有伏擊敵人時鏡頭放慢
+    while (ambushPending.length && stepRealT >= ambushPending[0].t) { const s = ambushPending.shift(); ambushEnts.push(spawnSpec(s, null)); }
+    const active = ambushEnts.some(e => e && e.type !== 'hostage' && !entResolved(e));
+    // 途中出現的民眾：敵人都解決後就離開（之前會一直站著讓鏡頭停住）
+    if (!active && !ambushPending.length) ambushEnts.forEach(e => { if (e && e.type === 'hostage' && e.state === 'stay') { e.stayT = (e.stayT || 0) + dt; if (e.stayT > C.enemy.hostageStay) { e.state = 'leave'; e.t = 0; e.to = e.h.root.position.clone(); } } });
+    stepT += dt * (active ? 0.18 : 1);
+    const k = Math.min(1, stepT / step.dur), ek = step.ease(k);
+    camPos.lerpVectors(moveFrom, V3(...step.to), ek);
+    camQ.copy(moveQFrom).slerp(moveQTo, easeIO(k));
+    if (k >= 1 && !active) nextStep();
+  } else if (step.type === 'cut') {
+    if (!cut.wave) { cut.gap -= dt; if (cut.gap <= 0) { if (cut.wi === -1) { sfx('go'); } startWave(cut.wi + 1); } return; }
+    const w = cut.wave;
+    if (w.cm) { const m = w.cm; m.t += dt; const k = Math.min(1, m.t / m.dur); camPos.lerpVectors(m.from, m.to, easeIO(k)); camQ.copy(m.qf).slerp(m.qt, easeIO(k)); if (k < 1) return; w.cm = null; }
+    w.t += dt;
+    while (w.pending.length && w.t >= w.pending[0].t) spawnSpec(w.pending.shift(), w);
+    if (w.pending.length) return;
+    const enemiesDone = w.ents.every(e => e.type === 'hostage' || entResolved(e));
+    if (enemiesDone) {
+      if (w.resolvedT < 0) w.resolvedT = w.t;
+      // 民眾離開
+      w.ents.forEach(e => { if (e.type === 'hostage' && e.state === 'stay' && w.t - w.resolvedT > C.enemy.hostageStay) { e.state = 'leave'; e.t = 0; e.to = e.h.root.position.clone(); } });
+      const hostDone = w.ents.every(e => e.type !== 'hostage' || entResolved(e) || e.state === 'leave');
+      if (hostDone && w.t - w.resolvedT > 0.3) {
+        // 舉槍不動的假人：視為逃脫
+        if (cut.wi + 1 < step.waves.length) { cut.wave = null; cut.gap = 0.5; cut.wi = cut.wi; }
+        else { cut.done = (cut.done || 0) + dt; if (cut.done > 0.5) { endCutCleanup(); nextStep(); } }
+      }
+    }
+  } else if (step.type === 'tut') {
+    if (tut) tutUpdate(dt);
+  } else if (step.type === 'boss') {
+    if (boss) { boss.update(dt); if (boss.done && (sayT <= 0 || !SET.voice)) { $('bossbar').style.display = 'none'; nextStep(); } }
+  }
+}
+function endCutCleanup() {
+  // 殘留的假人槍手在離開這一區時解除
+  mannList.forEach(m => { if (m.alive && m.state === 'escaped') { m.state = 'topple'; m.t = 0; m.alive = false; } });
+}
+function nextStep() { if (stepIdx + 1 < LEVEL.length) startStep(stepIdx + 1); }
+
+// ================= 第一關教學（可跳過） =================
+let tut = null, tutSeen = false;
+const TUT = C.tutorial;
+function tutSay(n, text) { $('tutN').textContent = n + ' / 4'; $('tutTx').innerHTML = text; $('tut').style.display = 'block'; }
+function tutStart() {
+  tut = { k: -1, t: 0, hits: 0, ents: [], items: [] };
+  tutPhase(0);
+}
+function tutPhase(k) {
+  tut.k = k; tut.t = 0;
+  if (k === 0) {
+    tutSay(1, SET.device === 'mobile' ? '<b>點螢幕</b>就會往那裡開槍。打掉前面 3 個靶！' : '移動滑鼠瞄準，<b>左鍵射擊</b>。打掉前面 3 個靶！');
+    tut.hits = 0;
+    TUT.targets.forEach(p => tut.items.push(spawnItem(V3(p[0], p[1], p[2]), 'target', true)));
+  } else if (k === 1) {
+    if (SET.infmg || mgAmmo > 0) { tutPhase(2); return; }
+    ammo = 0; reloading = 0; tutReloadShown = true; showReload(true); updHud();
+    tutSay(2, SET.device === 'mobile' ? '子彈打光時，按右下的<b>「換彈」</b>，或<b>兩指同時點</b>螢幕換彈。' : '子彈打光時，按<b>右鍵</b>或 <b>R</b> 換彈。（右下角是剩餘子彈）');
+  } else if (k === 2) {
+    tutSay(3, '敵人出現後，頭上的<b>圈圈</b>會縮小。變紅之前打倒他！<br><small>（教學中被打到不會扣血）</small>');
+    tut.ents.push(spawnHuman(TUT.enemy, null));
+  } else if (k === 3) {
+    tutSay(4, '<b>舉手的是民眾</b>，不要打他！打到會扣分。');
+    tut.ents.push(spawnHuman(TUT.hostage, null));
+  } else if (k === 4) {
+    $('tutN').textContent = ''; $('tutTx').innerHTML = '教學完成！任務開始。'; $('tutSkip').style.display = 'none';
+  }
+}
+function tutUpdate(dt) {
+  tut.t += dt;
+  if (tut.k === 0 && tut.hits >= TUT.targets.length && tut.t > 0.2) tutPhase(1);
+  else if (tut.k === 1 && ammo === MAG() && reloading <= 0) tutPhase(2);
+  else if (tut.k === 2 && tut.ents.every(e => entResolved(e)) && tut.t > 0.8) tutPhase(3);
+  else if (tut.k === 3) {
+    const h = tut.ents[tut.ents.length - 1];
+    if (h.state === 'stay' && tut.t > TUT.hostageTime) { h.state = 'leave'; h.t = 0; h.to = h.h.root.position.clone(); }
+    if ((h.state === 'leave' || entResolved(h)) && tut.t > TUT.hostageTime + 0.6) tutPhase(4);
+  } else if (tut.k === 4 && tut.t > 1.3) tutEnd();
+}
+function tutEnd() {
+  if (!tut) return;
+  tut.items.forEach(it => it.dead = true);
+  tut.ents.forEach(e => { if (e.h) scene.remove(e.h.root); });
+  ents = ents.filter(e => !tut.ents.includes(e));
+  tut = null; $('tut').style.display = 'none'; $('tutSkip').style.display = '';
+  // 教學不算分：重設分數、統計、血量、子彈
+  score = 0; combo = 0; maxCombo = 0; resetStats(); hp = diff().hp; ammo = MAG(); reloading = 0; invuln = 0; tutReloadShown = false;
+  showReload(false); lastHud = ''; updHud();
+  if (step && step.type === 'tut') nextStep();
+  if (tutAfter) { sayKey(tutAfter); tutAfter = null; }
+}
+function tutSkip() { if (tut && mode === 'play' && !paused) { sfx('item'); tutEnd(); } }
+$('tutSkip').onclick = e => { e.stopPropagation(); tutSkip(); };
+
+function clearDynamic() {
+  ents.slice().forEach(e => { if (e.type === 'mann') return; if (e.h) scene.remove(e.h.root); if (e.car) scene.remove(e.car.g); });
+  ents = ents.filter(e => e.type === 'mann');
+  fxs.forEach(f => scene.remove(f.mesh)); fxs = [];
+  grenades.forEach(g => scene.remove(g.mesh)); grenades = [];
+  items.forEach(i => scene.remove(i.g)); items = [];
+  holes.forEach(h => scene.remove(h)); holes = [];
+  popups = [];
+  if (boss) { if (boss.cleanup) boss.cleanup(); boss = null; }
+  $('bossbar').style.display = 'none';
+  prodList.forEach(p => { if (p.broken) { p.broken = false; setProd(p, true); } });
+  resetMannequins(); resetGlass();
+  if (ST && ST.reset) ST.reset();
+  if (tut) { tut = null; $('tut').style.display = 'none'; $('tutSkip').style.display = ''; }
+  sayReset(); barkGap = 0;
+}
+let campaign = false, campTotal = 0;
+function startGame(stage, area) {
+  audioInit(); mgAmmo = 0;
+  clearDynamic(); loadStage(stage || 0);
+  practiceArea = area === undefined ? -1 : area;
+  hp = diff().hp; ammo = MAG(); reloading = 0; invuln = 0; score = 0; combo = 0; maxCombo = 0; continues = 0;
+  resetStats(); tutReloadShown = false; tutSeen = false; barkSeen = {}; tutAfter = null;
+  beginFrom(practiceArea < 0 ? 0 : practiceArea);
+}
+function beginFrom(a) {
+  clearDynamic();
+  const i = areaFirstStep(a); checkpointStep = i;
+  const A = AREAS[a]; camPos.set(...A.start); camQ.copy(qLook(camPos, V3(...A.look)));
+  curArea = -1; envFrom = null; applyEnv(AREAS[a].env);
+  showScreen(null); $('hud').style.display = 'block'; mode = 'play'; paused = false; slowmo = 0; timeScale = 1;
+  showReload(false); updHud();
+  startStep(i);
+}
+function gameOver() {
+  mode = 'over'; sayReset(); setTimeout(() => { if (mode === 'over') showScreen('sOver'); }, 900);
+}
+function finish() {
+  mode = 'result'; sayReset();
+  const acc = stats.shots ? stats.hits / stats.shots : 0;
+  const noDmg = stats.dmg === 0 && continues === 0;
+  let final = score + (noDmg ? C.score.noDamageBonus : 0);
+  final = Math.round(final * Math.pow(C.score.continuePenalty, continues));
+  const R = C.score.rank; const rank = final >= R.S ? 'S' : final >= R.A ? 'A' : final >= R.B ? 'B' : 'C';
+  const avg = stats.reactN ? (stats.reactSum / stats.reactN).toFixed(2) + ' 秒' : '—';
+  const rows = [['分數', score], ['全程無傷獎勵', noDmg ? C.score.noDamageBonus : 0], ['接關次數', continues], ['最終分數', final],
+    ['打倒敵人', stats.kills], ['爆頭', stats.heads], ['看穿喬裝', stats.reveals], ['擊落手榴彈', stats.grenades],
+    ['命中率', (acc * 100).toFixed(1) + '%'], ['平均反應時間', avg], ['最大連擊', maxCombo], ['被擊中', stats.dmg], ['誤擊民眾', stats.hostages]];
+  $('resTable').innerHTML = rows.map(r => `<tr><td>${r[0]}</td><td>${r[1]}</td></tr>`).join('');
+  $('resRank').textContent = rank;
+  const noRec = SET.inf || SET.infmg;
+  const sname = `第${'一二三四五'[curStage]}關「${ST.name}」`;
+  $('resTitle').textContent = practiceArea >= 0 ? '練習結束（' + AREAS[practiceArea].name + ' 起）' : sname + ' 完成';
+  if (noRec) $('resTitle').textContent += '（無限血量／機槍開啟，不記錄最高分）';
+  if (practiceArea < 0 && !noRec) { try { const k = 'su_best_s' + ST.id, b = +localStorage.getItem(k) || 0; if (final > b) localStorage.setItem(k, final); } catch (e) { } }
+  const last = curStage >= STAGES.length - 1;
+  $('bNext').style.display = practiceArea < 0 && !last ? 'block' : 'none';
+  if (campaign && practiceArea < 0) {
+    campTotal += final;
+    $('resTable').innerHTML += `<tr><td>破關模式累計</td><td>${campTotal}</td></tr>`;
+    if (last) { campaign = false; $('resTitle').textContent = '全部關卡完成！'; if (!noRec) { try { const b = +localStorage.getItem('su_best') || 0; if (campTotal > b) localStorage.setItem('su_best', campTotal); } catch (e) { } } }
+  }
+  setTimeout(() => { showScreen('sResult'); $('hud').style.display = 'none'; }, 600);
+  setMusic(null);
+}
+
+// ================= 環境（霧、光線） =================
+let envFrom = null, envTo = null, envT = 1;
+function currentEnv() { return { bg: scene.background.getHex(), near: scene.fog.near, far: scene.fog.far, sky: hemi.color.getHex(), gnd: hemi.groundColor.getHex(), hi: hemi.intensity, sun: sun.intensity, amb: amb.intensity }; }
+function applyEnv(e) {
+  scene.background.setHex(e.bg); scene.fog.color.setHex(e.bg); scene.fog.near = e.near; scene.fog.far = e.far;
+  hemi.color.setHex(e.sky); hemi.groundColor.setHex(e.gnd); hemi.intensity = e.hi; sun.intensity = e.sun; amb.intensity = e.amb;
+}
+const _c1 = new THREE.Color(), _c2 = new THREE.Color();
+function lerpHex(a, b, t) { _c1.setHex(a); _c2.setHex(b); return _c1.lerp(_c2, t).getHex(); }
+function updEnv(dt) {
+  if (!envFrom || envT >= 1) return;
+  envT = Math.min(1, envT + dt / 1.5); const t = envT, a = envFrom, b = envTo;
+  applyEnv({ bg: lerpHex(a.bg, b.bg, t), near: lerp(a.near, b.near, t), far: lerp(a.far, b.far, t), sky: lerpHex(a.sky, b.sky, t), gnd: lerpHex(a.gnd, b.gnd, t), hi: lerp(a.hi, b.hi, t), sun: lerp(a.sun, b.sun, t), amb: lerp(a.amb, b.amb, t) });
+}
+
+// ================= HUD =================
+let lastHud = '';
+function updHud() {
+  $('score').innerHTML = String(score).padStart(6, '0') + '<small>SCORE</small>';
+  const mul = Math.min(C.score.comboMax, 1 + C.score.comboStep * Math.max(0, combo - 1));
+  $('combo').textContent = combo >= 2 ? `${combo} COMBO ×${mul.toFixed(1)}` : '';
+  const key = hp + '/' + ammo + '/' + reloading + '/' + mgAmmo + '/' + SET.infmg;
+  if (key !== lastHud) {
+    lastHud = key;
+    let s = '<span class="lbl">HP</span>'; const mx = Math.max(diff().hp, hp);
+    if (SET.inf) s += '<div class="hpi"></div><span class="inf">∞</span>';
+    else for (let i = 0; i < mx; i++) s += `<div class="hpi${i < hp ? '' : ' off'}"></div>`;
+    $('hp').innerHTML = s;
+    let a = ''; if (SET.infmg) a = `<div class="mg"><span>機關槍</span><div><i style="width:100%"></i></div><b>∞</b></div>`; else if (mgAmmo > 0) a = `<div class="mg"><span>機關槍</span><div><i style="width:${mgAmmo / C.mg.ammo * 100}%"></i></div><b>${mgAmmo}</b></div>`; else for (let i = 0; i < MAG(); i++) a += `<div class="bul${i < ammo ? '' : ' off'}"></div>`;
+    $('ammo').innerHTML = a;
+  }
+}
+let centerT = 0;
+function bigText(big, sub, dur) { $('center').innerHTML = `<div class="big">${big}</div>` + (sub ? `<div class="sub">${sub}</div>` : ''); $('center').style.opacity = 1; centerT = dur || 2; }
+let hintT = 0;
+// ================= 主角台詞（台詞在 voice.js） =================
+const VO = window.VOICE || { name: '', lines: {}, barks: {} };
+let sayQ = [], sayT = 0, sayPri = -1, barkGap = 0, barkLast = {}, barkSeen = {}, tutAfter = null;
+function sayShow(o) { $('sayName').textContent = VO.name; $('sayTx').textContent = o.text; $('say').style.display = 'block'; sayT = Math.max(C.voice.minTime, o.text.length * C.voice.secPerChar + 0.6); sayPri = o.pri; }
+function say(text, pri) {
+  if (!text || !SET.voice || mode !== 'play') return;
+  const list = Array.isArray(text) ? text : [text];
+  if (sayT > 0 && sayPri >= pri) { if (pri > 0) { list.forEach(t => sayQ.push({ text: t, pri })); sayQ = sayQ.slice(-4); } return; }
+  sayQ = list.slice(1).map(t => ({ text: t, pri })).concat(pri > 0 ? sayQ : []);
+  sayShow({ text: list[0], pri });
+}
+function sayKey(k, pri) { if (k && VO.lines[k]) say(VO.lines[k], pri === undefined ? 1 : pri); }
+// 隨機台詞：force 不受間隔限制（但有人在講話時不插嘴）
+function bark(kind, chance, force) {
+  const pool = VO.barks[kind]; if (!pool || !SET.voice || mode !== 'play') return;
+  if (chance !== undefined && Math.random() > chance) return;
+  if (sayT > 0 || sayQ.length || (!force && barkGap > 0)) return;
+  const arr = Array.isArray(pool) ? pool : [pool];
+  let t = arr[Math.floor(Math.random() * arr.length)];
+  if (arr.length > 1 && t === barkLast[kind]) t = arr[(arr.indexOf(t) + 1) % arr.length];
+  barkLast[kind] = t; barkGap = C.voice.barkGap; say(t, 0);
+}
+function barkFirst(kind, chance) { if (!barkSeen[kind]) { barkSeen[kind] = true; bark(kind, 1, true); } else if (chance) bark(kind, chance); }
+function sayTick(dt) {
+  barkGap -= dt;
+  if (sayT > 0) { sayT -= dt; if (sayT <= 0) { const n = sayQ.shift(); if (n) sayShow(n); else { $('say').style.display = 'none'; sayPri = -1; } } }
+}
+function sayReset() { sayQ = []; sayT = 0; sayPri = -1; $('say').style.display = 'none'; }
+function hint(text, dur) { $('hint').textContent = text; $('hint').style.display = 'block'; hintT = dur || 3; }
+function showScreen(id) { document.querySelectorAll('.screen').forEach(s => s.classList.toggle('on', s.id === id)); box.style.cursor = id ? 'default' : 'none'; }
+
+// ================= 2D 疊加層（準心、倒數圈、分數） =================
+const _wp = V3(0, 0, 0);
+function drawFx() {
+  g2.clearRect(0, 0, VW, VH);
+  if (mode === 'play' || mode === 'over') {
+    const S = Math.min(VW, VH) / 700;
+    // 敵人倒數圈
+    const aimers = ents.filter(e => (e.type === 'enemy' || e.type === 'mann') && e.alive && (e.state === 'aim' || e.state === 'reveal'));
+    if (boss && boss.aimers) boss.aimers().forEach(a => aimers.push(a));
+    for (const e of aimers) {
+      e.h.root.updateMatrixWorld(); _wp.set(0, e.ringY !== undefined ? e.ringY : 1.3, 0); e.h.body.localToWorld(_wp);
+      const p = scrPos(_wp);
+      let col, r, prog = 0;
+      if (e.bonus) {
+        col = '#40e0ff'; r = 26 * S + Math.sin(gameTime * 8) * 3;
+        g2.font = `900 ${Math.round(13 * S + 4)}px sans-serif`; g2.textAlign = 'center'; g2.lineWidth = 3; g2.strokeStyle = '#000';
+        const lb = e.mg ? 'BONUS 機槍' : 'BONUS'; g2.strokeText(lb, p.x, p.y - r - 6); g2.fillStyle = col; g2.fillText(lb, p.x, p.y - r - 6);
+      }
+      else if (e.state === 'reveal') { col = '#ff3020'; r = 28 * S; }
+      else {
+        prog = clamp(e.t / e.wait, 0, 1);
+        r = lerp(70, 16, prog) * S;
+        col = prog < 0.55 ? '#6fe36a' : prog < 0.8 ? '#ffc531' : '#ff3a2a';
+      }
+      if (p.z > 1) { // 在背後：畫邊緣箭頭
+        continue;
+      }
+      const off = p.x < 0 || p.x > VW || p.y < 0 || p.y > VH;
+      if (off) {
+        const cx = clamp(p.x, 24, VW - 24), cy = clamp(p.y, 24, VH - 24);
+        g2.fillStyle = col; g2.beginPath(); g2.arc(cx, cy, 10, 0, Math.PI * 2); g2.fill(); continue;
+      }
+      g2.lineWidth = 3 * S + 1; g2.strokeStyle = '#000'; g2.beginPath(); g2.arc(p.x, p.y, r, 0, Math.PI * 2); g2.stroke();
+      g2.lineWidth = 3 * S; g2.strokeStyle = col; g2.beginPath(); g2.arc(p.x, p.y, r, 0, Math.PI * 2); g2.stroke();
+      if (e.state === 'aim') { g2.lineWidth = 2; g2.beginPath(); g2.arc(p.x, p.y, 14 * S, 0, Math.PI * 2); g2.stroke(); }
+      if (prog > 0.8 && Math.floor(gameTime * 16) % 2) { g2.fillStyle = 'rgba(255,40,30,.35)'; g2.beginPath(); g2.arc(p.x, p.y, 14 * S, 0, Math.PI * 2); g2.fill(); }
+    }
+    // 飛行中的手榴彈警示
+    for (const g of grenades) {
+      const p = scrPos(g.mesh.position); if (p.z > 1) continue;
+      const k = g.t / g.dur;
+      g2.strokeStyle = k > 0.7 ? '#ff3a2a' : '#ffc531'; g2.lineWidth = 2;
+      g2.beginPath(); g2.arc(p.x, p.y, (12 + 8 * Math.sin(gameTime * 20)) * S + 6, 0, Math.PI * 2); g2.stroke();
+    }
+    // 分數飄字
+    for (const p of popups) {
+      const a = 1 - p.t / 1.1;
+      g2.globalAlpha = Math.max(0, a); g2.font = `900 ${p.big ? 26 : 19}px "Noto Sans TC","Microsoft JhengHei",sans-serif`; g2.textAlign = 'center';
+      g2.lineWidth = 4; g2.strokeStyle = '#000'; g2.strokeText(p.text, p.x, p.y - p.t * 40); g2.fillStyle = p.color; g2.fillText(p.text, p.x, p.y - p.t * 40);
+      g2.globalAlpha = 1;
+    }
+  }
+  if (mode === 'play' && !paused) {
+    // 準心
+    const x = mouse.x, y = mouse.y, k = 1 + recoil * 0.6;
+    g2.lineWidth = 4; g2.strokeStyle = 'rgba(0,0,0,.7)'; crossPath(x, y, k); g2.stroke();
+    g2.lineWidth = 2; g2.strokeStyle = reloading > 0 ? '#888' : (ammo === 0 && !SET.infmg && mgAmmo <= 0) ? '#ff4a3a' : '#fff'; crossPath(x, y, k); g2.stroke();
+    g2.fillStyle = '#ff3a2a'; g2.fillRect(x - 1.5, y - 1.5, 3, 3);
+    if (reloading > 0) { g2.strokeStyle = '#ffc531'; g2.lineWidth = 3; g2.beginPath(); g2.arc(x, y, 22, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * (1 - reloading / C.player.reloadTime)); g2.stroke(); }
+  }
+}
+function crossPath(x, y, k) {
+  g2.beginPath(); g2.arc(x, y, 14 * k, 0, Math.PI * 2);
+  g2.moveTo(x - 22 * k, y); g2.lineTo(x - 8 * k, y); g2.moveTo(x + 8 * k, y); g2.lineTo(x + 22 * k, y);
+  g2.moveTo(x, y - 22 * k); g2.lineTo(x, y - 8 * k); g2.moveTo(x, y + 8 * k); g2.lineTo(x, y + 22 * k);
+}
+
+// ================= 主迴圈 =================
+let lastT = performance.now();
+function frame(now) {
+  requestAnimationFrame(frame);
+  let rdt = Math.min(0.05, (now - lastT) / 1000); lastT = now;
+  musicTick();
+  if (mode === 'play' && !paused) {
+    let dt = rdt;
+    if (slowmo > 0) { slowmo -= rdt; dt *= 0.3; }
+    gameTime += dt;
+    if (invuln > 0) invuln -= dt;
+    if (reloading > 0) { reloading -= rdt; if (reloading <= 0) { reloading = 0; ammo = MAG(); showReload(false); updHud(); } }
+    if ((mgAmmo > 0 || SET.infmg) && mouse.down) shoot();
+    updateStep(dt);
+    ents.slice().forEach(e => updateEnt(e, dt));
+    updGrenades(dt); updItems(dt); updFx(dt);
+  } else if (mode === 'over' || mode === 'result') {
+    updFx(rdt * 0.5);
+  }
+  if (ST && ST.tick && !paused) ST.tick(rdt, now / 1000);
+  if (!paused) {
+    updEnv(rdt);
+    if (centerT > 0) { centerT -= rdt; if (centerT < 0.5) $('center').style.opacity = Math.max(0, centerT / 0.5); }
+    if (hintT > 0) { hintT -= rdt; if (hintT <= 0) $('hint').style.display = 'none'; }
+    if (mode === 'play') sayTick(rdt);
+    popups.forEach(p => p.t += rdt); popups = popups.filter(p => p.t < 1.1);
+    recoil = Math.max(0, recoil - rdt * 8);
+  }
+  // 鏡頭
+  camera.position.copy(camPos); camera.quaternion.copy(camQ);
+  if (mode === 'title' && ST) { const t = now / 1000, tp = ST.title.pos, tl = ST.title.look; camera.position.set(tp[0] + Math.sin(t * 0.15) * (ST.title.sway || 6), tp[1], tp[2]); camDummy.position.copy(camera.position); camDummy.lookAt(tl[0], tl[1], tl[2]); camera.quaternion.copy(camDummy.quaternion); }
+  if (shakeT > 0 && !paused) { shakeT -= rdt; camera.position.x += rand(-1, 1) * shakeA * (shakeT / 0.35); camera.position.y += rand(-1, 1) * shakeA * (shakeT / 0.35); }
+  if (recoil > 0) camera.rotateX(recoil * 0.012);
+  renderer.render(scene, camera);
+  drawFx();
+}
+function updGrenades(dt) {
+  grenades.forEach(g => {
+    g.t += dt; const k = Math.min(1, g.t / g.dur);
+    const prev = g.mesh.position.clone();
+    g.mesh.position.lerpVectors(g.from, g.to, k); g.mesh.position.y += Math.sin(k * Math.PI) * g.arc;
+    if (g.rocket) { if (prev.distanceToSquared(g.mesh.position) > 1e-6) g.mesh.lookAt(g.mesh.position.clone().add(g.mesh.position.clone().sub(prev))); }
+    else if (g.spinMesh) { g.mesh.rotation.x += dt * 9; g.mesh.rotation.z += dt * 6; } else g.mesh.rotation.y += dt * 14;
+    if (k >= 1 && !g.dead) { g.dead = true; explode(g.mesh.position.clone(), 3); $('flash').style.transition = 'none'; $('flash').style.opacity = 0.7; requestAnimationFrame(() => { $('flash').style.transition = 'opacity .5s'; $('flash').style.opacity = 0; }); playerHurt(g.damage); }
+  });
+  grenades = grenades.filter(g => { if (g.dead) scene.remove(g.mesh); return !g.dead; });
+}
+function updItems(dt) {
+  items.forEach(it => {
+    it.t += dt; if (it.noSpin) return; it.g.rotation.y += dt * 3; it.g.position.y = it.base + Math.sin(it.t * 4) * 0.08;
+    if (it.t > C.items.life - 1.2) it.g.visible = Math.floor(it.t * 10) % 2 === 0;
+    if (it.t > C.items.life) it.dead = true;
+  });
+  items = items.filter(it => { if (it.dead) scene.remove(it.g); return !it.dead; });
+}
+function updFx(dt) {
+  fxs.forEach(f => {
+    f.t += dt;
+    if (f.kind === 'debris') {
+      f.vel.y -= 12 * dt; f.mesh.position.addScaledVector(f.vel, dt);
+      f.mesh.rotation.x += f.spin.x * dt; f.mesh.rotation.y += f.spin.y * dt; f.mesh.rotation.z += f.spin.z * dt;
+      if (f.mesh.position.y < f.floor + 0.08) { f.mesh.position.y = f.floor + 0.08; f.vel.multiplyScalar(0.4); f.vel.y = Math.abs(f.vel.y) * 0.3; }
+      if (f.t > 2.5) f.dead = true;
+    } else if (f.kind === 'flutter') { // 慢慢飄落、左右搖擺
+      f.vel.y = Math.max(-0.9, f.vel.y - 6 * dt); f.vel.x *= 1 - dt * 1.2; f.vel.z *= 1 - dt * 1.2;
+      f.mesh.position.addScaledVector(f.vel, dt); f.mesh.position.x += Math.sin(f.t * 5 + f.ph) * dt * 0.6;
+      f.mesh.rotation.x += f.spin.x * dt; f.mesh.rotation.z += f.spin.z * dt;
+      if (f.mesh.position.y < f.floor + 0.02) { f.mesh.position.y = f.floor + 0.02; f.vel.set(0, 0, 0); f.spin.set(0, 0, 0); }
+      if (f.t > 4) f.dead = true;
+    } else if (f.kind === 'shard') {
+      f.vel.y -= 10 * dt; f.mesh.position.addScaledVector(f.vel, dt); f.mesh.rotation.x += f.spin.x * dt; f.mesh.rotation.y += f.spin.y * dt;
+      if (f.mesh.position.y < f.floor) { f.mesh.position.y = f.floor; f.vel.multiplyScalar(0.2); }
+      if (f.t > 1.6) f.dead = true;
+    } else if (f.kind === 'drop') { // 水花
+      f.vel.y -= 9 * dt; f.mesh.position.addScaledVector(f.vel, dt); if (f.t > 0.7) f.dead = true;
+    } else if (f.kind === 'fall') { // 會掉下來的大物件（手臂、石柱碎塊）
+      f.vel.y -= 9 * dt; f.mesh.position.addScaledVector(f.vel, dt); f.mesh.rotation.x += f.spin.x * dt; f.mesh.rotation.z += f.spin.z * dt;
+      if (f.mesh.position.y < (f.floor || 0)) { f.mesh.position.y = f.floor || 0; f.vel.set(0, 0, 0); f.spin.set(0, 0, 0); }
+      if (f.t > (f.life || 3)) f.dead = true;
+    } else if (f.kind === 'spark') {
+      f.vel.y -= 9 * dt; f.mesh.position.addScaledVector(f.vel, dt); if (f.t > 0.35) f.dead = true;
+    } else if (f.kind === 'boom') {
+      const k = f.t / 0.5; f.mesh.scale.setScalar(f.size * (0.3 + k)); f.mesh.material.opacity = Math.max(0, 1 - k); if (k >= 1) f.dead = true;
+    }
+  });
+  fxs = fxs.filter(f => { if (f.dead) scene.remove(f.mesh); return !f.dead; });
+}
+
+// ================= 輸入 =================
+box.addEventListener('mousemove', e => {
+  const r = box.getBoundingClientRect(); mouse.x = e.clientX - r.left; mouse.y = e.clientY - r.top;
+  mouse.nx = mouse.x / VW * 2 - 1; mouse.ny = -(mouse.y / VH * 2 - 1);
+});
+box.addEventListener('mousedown', e => {
+  if (e.target.closest('.screen.on') || e.target.closest('#tut')) return;
+  const r = box.getBoundingClientRect(); mouse.x = e.clientX - r.left; mouse.y = e.clientY - r.top;
+  mouse.nx = mouse.x / VW * 2 - 1; mouse.ny = -(mouse.y / VH * 2 - 1);
+  if (e.button === 0) { mouse.down = true; shoot(); } else if (e.button === 2) doReload();
+});
+box.addEventListener('contextmenu', e => e.preventDefault());
+// ===== 手機觸控 =====
+function touchAim(t) { const r = box.getBoundingClientRect(); mouse.x = t.clientX - r.left; mouse.y = t.clientY - r.top; mouse.nx = mouse.x / VW * 2 - 1; mouse.ny = -(mouse.y / VH * 2 - 1); }
+const uiTouch = e => e.target.closest('.screen.on') || e.target.closest('#tut') || e.target.closest('#mob') || e.target.closest('button');
+box.addEventListener('touchstart', e => {
+  if (SET.device !== 'mobile' || uiTouch(e)) return;
+  e.preventDefault(); audioInit();
+  if (e.touches.length >= 2) { doReload(); return; } // 兩指同時點：換彈
+  touchAim(e.changedTouches[0]); mouse.down = true; shoot();
+}, { passive: false });
+box.addEventListener('touchmove', e => { if (SET.device !== 'mobile' || uiTouch(e)) return; e.preventDefault(); if (e.touches.length === 1) touchAim(e.touches[0]); }, { passive: false });
+box.addEventListener('touchend', e => { if (SET.device !== 'mobile') return; if (!e.touches.length) mouse.down = false; });
+box.addEventListener('touchcancel', () => { mouse.down = false; });
+const mobBtn = (id, fn) => { const el = $(id); el.addEventListener('touchstart', e => { e.preventDefault(); e.stopPropagation(); fn(); }, { passive: false }); el.addEventListener('click', e => { e.stopPropagation(); fn(); }); el.addEventListener('mousedown', e => e.stopPropagation()); };
+mobBtn('mReload', () => doReload());
+mobBtn('mPause', () => { if (mode === 'play') togglePause(); });
+function applyDevice() { document.body.classList.toggle('mobile', SET.device === 'mobile'); }
+if (!SET.device) { try { SET.device = matchMedia('(pointer: coarse)').matches ? 'mobile' : 'pc'; } catch (e) { SET.device = 'pc'; } }
+applyDevice();
+window.addEventListener('mouseup', e => { if (e.button === 0) mouse.down = false; });
+window.addEventListener('keydown', e => {
+  const k = e.key.toLowerCase();
+  if (k === 'r') doReload();
+  if (k === 'enter') tutSkip();
+  if (k === 'm') { musicOn = !musicOn; applyVol(); }
+  if ((k === 'p' || k === 'escape') && (mode === 'play')) togglePause();
+});
+function togglePause() { paused = !paused; showScreen(paused ? 'sPause' : null); }
+window.addEventListener('blur', () => { if (mode === 'play' && !paused) togglePause(); });
+
+// ================= 選單 =================
+let setFrom = 'sTitle';
+function renderSet() {
+  $('diffRow').innerHTML = Object.keys(C.difficulty).map(k => `<button data-d="${k}" class="${k === diffKey ? 'sel' : ''}">${C.difficulty[k].label}</button>`).join('');
+  $('diffRow').querySelectorAll('button').forEach(b => b.onclick = () => { if (mode === 'play') return; diffKey = SET.diff = b.dataset.d; saveSet(); renderSet(); });
+  $('infRow').innerHTML = `<button data-v="0" class="${!SET.inf ? 'sel' : ''}">關閉</button><button data-v="1" class="${SET.inf ? 'sel' : ''}">開啟</button>`;
+  $('infRow').querySelectorAll('button').forEach(b => b.onclick = () => { SET.inf = b.dataset.v === '1'; saveSet(); renderSet(); updHud(); lastHud = ''; if (mode === 'play') { lastHud = ''; updHud(); } });
+  $('mgRow').innerHTML = `<button data-v="0" class="${!SET.infmg ? 'sel' : ''}">關閉</button><button data-v="1" class="${SET.infmg ? 'sel' : ''}">開啟</button>`;
+  $('mgRow').querySelectorAll('button').forEach(b => b.onclick = () => { SET.infmg = b.dataset.v === '1'; saveSet(); renderSet(); lastHud = ''; if (stats) updHud(); });
+  $('tutRow').innerHTML = `<button data-v="1" class="${SET.tut ? 'sel' : ''}">開啟</button><button data-v="0" class="${!SET.tut ? 'sel' : ''}">關閉</button>`;
+  $('tutRow').querySelectorAll('button').forEach(b => b.onclick = () => { SET.tut = b.dataset.v === '1'; saveSet(); renderSet(); });
+  $('devRow').innerHTML = `<button data-v="pc" class="${SET.device !== 'mobile' ? 'sel' : ''}">電腦（滑鼠）</button><button data-v="mobile" class="${SET.device === 'mobile' ? 'sel' : ''}">手機（觸控）</button>`;
+  $('devRow').querySelectorAll('button').forEach(b => b.onclick = () => { SET.device = b.dataset.v; saveSet(); applyDevice(); renderSet(); });
+  $('voRow').innerHTML = `<button data-v="1" class="${SET.voice ? 'sel' : ''}">開啟</button><button data-v="0" class="${!SET.voice ? 'sel' : ''}">關閉</button>`;
+  $('voRow').querySelectorAll('button').forEach(b => b.onclick = () => { SET.voice = b.dataset.v === '1'; saveSet(); renderSet(); if (!SET.voice) sayReset(); });
+  $('vMusic').value = SET.music; $('tMusic').textContent = SET.music; $('vSfx').value = SET.sfx; $('tSfx').textContent = SET.sfx;
+  const d = C.difficulty[diffKey];
+  $('diffDesc').textContent = `${d.label}：開局 ${d.hp} 格血，敵人開火前等待時間 ×${d.fireWaitMul}，每匣 ${d.magazine || C.player.magazine} 發子彈` + (d.enemyHpAdd ? `，敵人血量 +${d.enemyHpAdd}（要多打 ${d.enemyHpAdd} 槍）` : '') + (d.bossHpMul && d.bossHpMul !== 1 ? `，魔王血量 ×${d.bossHpMul}` : '') + '。' + (mode === 'play' ? '（遊戲中不能改難度）' : '') + (SET.inf || SET.infmg ? ' 無限血量或無限機槍開啟時不記錄最高分。' : '') + (SET.infmg ? ' 無限機槍：按住左鍵連射，不用換彈。' : '');
+  $('setInfo').textContent = `難度：${d.label}` + (SET.inf ? '　無限血量：開啟' : '') + (SET.infmg ? '　無限機槍：開啟' : '');
+}
+$('vMusic').oninput = e => { SET.music = +e.target.value; $('tMusic').textContent = SET.music; applyVol(); saveSet(); };
+$('vSfx').oninput = e => { SET.sfx = +e.target.value; $('tSfx').textContent = SET.sfx; applyVol(); saveSet(); };
+$('vSfx').onchange = () => sfx('shot');
+function openSet(from) { audioInit(); applyVol(); setFrom = from; renderSet(); showScreen('sSet'); }
+$('bSet').onclick = () => openSet('sTitle');
+$('bPauseSet').onclick = () => openSet('sPause');
+$('bSetBack').onclick = () => { renderSet(); showScreen(setFrom); };
+function toTitle() {
+  mode = 'title'; paused = false; clearDynamic(); $('hud').style.display = 'none'; $('center').style.opacity = 0; $('hint').style.display = 'none';
+  campaign = false;
+  applyEnv(AREAS[0].env); showScreen('sTitle'); setMusic(null); renderSet();
+  let b = 0; try { b = +localStorage.getItem('su_best') || 0; } catch (e) { }
+  $('best').textContent = b ? '破關模式最高分（三關合計）：' + b : '';
+}
+function buildStageList() {
+  $('stageList').innerHTML = STAGES.map((st, si) => {
+    let b = 0; try { b = +localStorage.getItem('su_best_s' + st.id) || 0; } catch (e) { }
+    return `<div class="stage on"><div class="sn">STAGE ${si + 1}</div><div class="st">${st.name}</div>${st.brief ? `<div class="brief"><div class="bh">${st.brief.head}</div>${st.brief.text.map(t => `<p>${t.replace(/\[\[(.*?)\]\]/g, (m, x) => `<span class="rd">${x}</span>`)}</p>`).join('')}${b ? `<div class="best">最高分：${b}</div>` : ''}</div>` : `<div class="sd">${st.desc}${b ? '　最高分：' + b : ''}</div>`}
+      <button data-s="${si}" class="sStart">從頭開始</button>
+      <div class="muted" style="margin-top:8px">或從某一區開始練習（不記錄最高分）：</div>
+      <div class="areas">${st.areas.map((a, i) => `<button data-s="${si}" data-a="${i}">${a.name}<small>${a.en}</small></button>`).join('')}</div></div>`;
+  }).join('');
+  $('stageList').querySelectorAll('button').forEach(b => b.onclick = () => { campaign = false; startGame(+b.dataset.s, b.dataset.a !== undefined ? +b.dataset.a : undefined); });
+}
+$('bStart').onclick = () => { campaign = true; campTotal = 0; startGame(0); };
+$('bHelp').onclick = () => showScreen('sHelp');
+$('bStage').onclick = () => { audioInit(); buildStageList(); showScreen('sStage'); };
+document.querySelectorAll('.back').forEach(b => b.onclick = () => showScreen('sTitle'));
+$('bResume').onclick = () => togglePause();
+$('bRetryArea').onclick = () => { paused = false; hp = diff().hp; ammo = MAG(); reloading = 0; beginFrom(curArea); };
+$('bQuit').onclick = $('bQuit2').onclick = $('bQuit3').onclick = () => toTitle();
+$('bCont').onclick = () => { continues++; hp = diff().hp; ammo = MAG(); reloading = 0; invuln = 0; combo = 0; beginFrom(curArea); };
+$('bAgain').onclick = () => { campaign = false; startGame(curStage, practiceArea >= 0 ? practiceArea : undefined); };
+$('bNext').onclick = () => startGame(curStage + 1);
+
+</script>
+<script src="stage1.js"></script>
+<script src="stage2.js"></script>
+<script src="stage3.js"></script>
+<script>
+buildStageList(); resize(); loadStage(0); toTitle();
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>

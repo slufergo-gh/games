@@ -1,0 +1,1256 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
+<title>烏雞空戰隊</title>
+<style>
+  :root { --bg:#0b0d1e; --fg:#f4f1ff; }
+  html,body { margin:0; height:100%; background:var(--bg); color:var(--fg); overflow:hidden;
+    font-family:"Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif; }
+  #wrap { position:fixed; inset:0; display:flex; align-items:center; justify-content:center; }
+  canvas { display:block; background:#000; touch-action:none; cursor:crosshair;
+    box-shadow:0 0 40px rgba(120,100,255,.35); border-radius:6px; }
+</style>
+</head>
+<body>
+<div id="wrap"><canvas id="c" width="480" height="720"></canvas></div>
+<script>
+(() => {
+'use strict';
+const W = 480, H = 720, PI = Math.PI, TAU = PI * 2;
+const cv = document.getElementById('c'), ctx = cv.getContext('2d');
+
+function fit() {
+  const s = Math.min(innerWidth / W, innerHeight / H);
+  cv.style.width = (W * s) + 'px'; cv.style.height = (H * s) + 'px';
+}
+addEventListener('resize', fit); fit();
+
+// ---------- 素材 ----------
+const IMG = {};
+for (const k of ['wuji','lala','laoda','devil','cookie','bean','rabbit','kuku','didi']) {
+  IMG[k] = new Image(); IMG[k].src = 'assets/images/' + k + '.png';
+}
+// 惡魔烏雞：把烏雞染成暗紫紅色
+let darkWuji = null;
+function getDarkWuji() {
+  if (darkWuji) return darkWuji;
+  const im = IMG.wuji; if (!im.complete || !im.naturalWidth) return im;
+  const c = document.createElement('canvas'); c.width = im.naturalWidth; c.height = im.naturalHeight;
+  const g = c.getContext('2d'); g.drawImage(im, 0, 0);
+  g.globalCompositeOperation = 'source-atop'; g.fillStyle = 'rgba(120,0,80,.5)'; g.fillRect(0, 0, c.width, c.height);
+  return (darkWuji = c);
+}
+
+// 音樂：用到才載入
+const MUSIC_SRC = { menu:'menu', st1:'bgm', st2:'st2', st3:'st3', st4:'st4', st5:'st5', st6:'st6', boss:'boss', final:'final', result:'result' };
+const MUSIC = {};
+let curMusic = null, curKey = null, muted = false;
+function playMusic(k) {
+  if (curKey === k) return;
+  if (curMusic) curMusic.pause();
+  curKey = k; curMusic = null;
+  if (!k) return;
+  let a = MUSIC[k];
+  if (!a) { a = new Audio('assets/audio/' + MUSIC_SRC[k] + '.mp3'); a.loop = k !== 'result'; a.volume = .45; MUSIC[k] = a; }
+  curMusic = a;
+  if (!muted) { a.currentTime = 0; a.play().catch(() => {}); }
+}
+
+// 音效：WebAudio 合成
+let AC = null;
+function sfx(type) {
+  if (muted) return;
+  try {
+    AC = AC || new (window.AudioContext || window.webkitAudioContext)();
+    const t = AC.currentTime, o = AC.createOscillator(), g = AC.createGain();
+    o.connect(g); g.connect(AC.destination);
+    const S = {
+      shot:  ['square', 880, 660, .025, .04],
+      boom:  ['sawtooth', 160, 40, .2, .3],
+      item:  ['triangle', 660, 1320, .12, .1],
+      power: ['triangle', 520, 1560, .2, .25],
+      hurt:  ['sawtooth', 400, 60, .25, .45],
+      bomb:  ['sawtooth', 90, 30, .3, .8],
+      graze: ['sine', 1400, 1600, .03, .03],
+      warn:  ['sine', 700, 700, .05, .12],
+      laser: ['sawtooth', 220, 520, .06, .3],
+      talk:  ['square', 600, 600, .03, .03],
+      sel:   ['triangle', 880, 990, .1, .06],
+    }[type];
+    o.type = S[0]; o.frequency.setValueAtTime(S[1], t);
+    o.frequency.exponentialRampToValueAtTime(S[2], t + S[4]);
+    g.gain.setValueAtTime(S[3], t); g.gain.exponentialRampToValueAtTime(.0001, t + S[4]);
+    o.start(t); o.stop(t + S[4] + .02);
+  } catch (e) {}
+}
+
+// ---------- 難度與機師 ----------
+const DIFFS = [
+  { name:'簡單', en:'EASY',    c:'#7fe08a', n:.55, sp:.8,  rate:.6, hp:.8, mul:.5, desc:'彈幕又少又慢，適合第一次玩' },
+  { name:'普通', en:'NORMAL',  c:'#7cc8ff', n:1,   sp:1,   rate:1,  hp:1,  mul:1,  desc:'標準難度' },
+  { name:'困難', en:'HARD',    c:'#ffb35c', n:1.35,sp:1.12,rate:1.3,hp:1.1,mul:1.5,desc:'彈幕更密、更快' },
+  { name:'發狂', en:'LUNATIC', c:'#ff5c8a', n:1.8, sp:1.25,rate:1.7,hp:1.2,mul:2.2,desc:'給彈幕老手的挑戰' },
+];
+let diff = 1, D = DIFFS[1];
+
+const PILOTS = [
+  { id:'wuji',  name:'烏雞',       shot:'散彈',   bomb:'全畫面衝擊波', desc:'散彈範圍廣，適合新手', speed:4.6 },
+  { id:'lala',  name:'大長今略略', shot:'追蹤針', bomb:'三顆追蹤巨彈', desc:'追蹤針會自己找敵人，火力越高越強', speed:4.2 },
+  { id:'laoda', name:'老大',       shot:'貫穿雷射', bomb:'超強力直線砲', desc:'雷射貫穿敵人，正前方火力最強', speed:5.0 },
+];
+
+// ---------- 輸入 ----------
+const keys = {};
+let mouse = { x: W/2, y: H - 120, active:false };
+addEventListener('keydown', e => {
+  if (!keys[e.code]) onKey(e.code);
+  keys[e.code] = true;
+  if (['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Space'].includes(e.code)) e.preventDefault();
+});
+addEventListener('keyup', e => { keys[e.code] = false; });
+function toLocal(e) {
+  const r = cv.getBoundingClientRect();
+  return { x: (e.clientX - r.left) * W / r.width, y: (e.clientY - r.top) * H / r.height };
+}
+cv.addEventListener('pointermove', e => { const p = toLocal(e); mouse.x = p.x; mouse.y = p.y; mouse.active = true; });
+cv.addEventListener('pointerdown', e => {
+  const p = toLocal(e); mouse.x = p.x; mouse.y = p.y; mouse.active = true;
+  if (e.button === 2) { useBomb(); return; }
+  onClick(p);
+});
+cv.addEventListener('contextmenu', e => e.preventDefault());
+const isOK = c => c === 'Enter' || c === 'Space' || c === 'KeyZ';
+const focusing = () => keys.ShiftLeft || keys.ShiftRight;
+
+// ---------- 遊戲狀態 ----------
+let scene = 'title', sel = 0, frame = 0;
+let P, pBul, pBombs, eBul, lasers, enemies, items, parts = [], popups = [], boss, score;
+let stage = 0, stageT = 0, SCRIPT = [], scriptIdx = 0, stageLen = 1, clearT = 0, talk = null, bossWarn = 0;
+let shake = 0, flash = 0, paused = false, endT = 0, hiScore = 0;
+function lsGet(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
+function lsSet(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }
+function loadHi() { hiScore = +(lsGet('wuji_hi_' + diff) || 0); }
+// 設定：命數 1~9、炸彈 0~9，INF 代表無限
+const INF = 10;
+let SET = { diff: 1, lives: 3, bombs: 3 };
+try { Object.assign(SET, JSON.parse(lsGet('wuji_set') || '{}')); } catch (e) {}
+function applySet() { diff = SET.diff; D = DIFFS[diff]; loadHi(); lsSet('wuji_set', JSON.stringify(SET)); }
+applySet();
+let mode = 'story', menuSel = 0, stSel = 0, setRow = 0;
+const practice = () => SET.lives === INF || SET.bombs === INF;   // 無限模式不記最高分
+
+function newGame() {
+  P = { pilot: PILOTS[sel], x: W/2, y: H - 100, lives: SET.lives === INF ? 3 : SET.lives, bombs: SET.bombs === INF ? 3 : SET.bombs,
+    infL: SET.lives === INF, infB: SET.bombs === INF, pp: 0, inv: 120, cool: 0, bombT: 0, bombKind: null, graze: 0 };
+  score = 0; endT = 0; paused = false; parts = []; popups = [];
+  scene = 'play'; startStage(mode === 'single' ? stSel : 0);
+}
+function toTitle() { scene = 'menu'; paused = false; playMusic('menu'); }
+
+function changeSet(row, d) {
+  if (row === 0) SET.diff = (SET.diff + d + 4) % 4;
+  if (row === 1) SET.lives = Math.max(1, Math.min(INF, SET.lives + d));
+  if (row === 2) SET.bombs = Math.max(0, Math.min(INF, SET.bombs + d));
+  applySet(); sfx('sel');
+}
+function menuGo(i) {
+  sfx('sel');
+  if (i === 0) { mode = 'story'; scene = 'select'; }
+  else if (i === 1) scene = 'stagesel';
+  else { scene = 'settings'; setRow = 0; }
+}
+function backFromSelect() { scene = mode === 'single' ? 'stagesel' : 'menu'; }
+function onKey(code) {
+  if (code === 'KeyM') { muted = !muted; if (curMusic) muted ? curMusic.pause() : curMusic.play().catch(() => {}); return; }
+  const up = code === 'ArrowUp' || code === 'KeyW', down = code === 'ArrowDown' || code === 'KeyS';
+  const left = code === 'ArrowLeft' || code === 'KeyA', right = code === 'ArrowRight' || code === 'KeyD';
+  const back = code === 'Escape' || code === 'KeyX';
+  if (scene === 'title') { if (isOK(code)) { scene = 'menu'; sfx('sel'); playMusic('menu'); } }
+  else if (scene === 'menu') {
+    if (up) { menuSel = (menuSel + 2) % 3; sfx('sel'); }
+    if (down) { menuSel = (menuSel + 1) % 3; sfx('sel'); }
+    if (isOK(code)) menuGo(menuSel);
+    if (back) scene = 'title';
+  } else if (scene === 'stagesel') {
+    if (left || right) { stSel = stSel % 2 ? stSel - 1 : stSel + 1; sfx('sel'); }
+    if (up) { stSel = (stSel + 4) % 6; sfx('sel'); }
+    if (down) { stSel = (stSel + 2) % 6; sfx('sel'); }
+    if (isOK(code)) { mode = 'single'; scene = 'select'; sfx('sel'); }
+    if (back) scene = 'menu';
+  } else if (scene === 'settings') {
+    if (up) { setRow = (setRow + 3) % 4; sfx('sel'); }
+    if (down) { setRow = (setRow + 1) % 4; sfx('sel'); }
+    if (setRow < 3 && (left || right)) changeSet(setRow, left ? -1 : 1);
+    if ((isOK(code) && setRow === 3) || back) scene = 'menu';
+  } else if (scene === 'select') {
+    if (left) { sel = (sel + 2) % 3; sfx('sel'); }
+    if (right) { sel = (sel + 1) % 3; sfx('sel'); }
+    if (isOK(code)) newGame();
+    if (back) backFromSelect();
+  } else if (scene === 'play') {
+    if (talk && !paused && (isOK(code) || code === 'KeyX')) { nextTalk(); return; }
+    if (code === 'KeyX' && !paused) useBomb();
+    if (code === 'Escape' || code === 'KeyP') paused = !paused;
+    if (paused && code === 'KeyQ') toTitle();
+  } else if ((scene === 'over' || scene === 'win') && endT > 60 && isOK(code)) { scene = 'menu'; playMusic('menu'); }
+}
+const STSEL_XY = i => ({ x: i % 2 ? 355 : 125, y: 170 + Math.floor(i / 2) * 140 });
+function onClick(p) {
+  if (scene === 'title') { scene = 'menu'; sfx('sel'); playMusic('menu'); }
+  else if (scene === 'menu') {
+    for (let i = 0; i < 3; i++) if (p.y > 230 + i * 105 && p.y < 320 + i * 105 && Math.abs(p.x - W/2) < 160) { if (menuSel === i) menuGo(i); else { menuSel = i; sfx('sel'); } return; }
+    if (p.y > 630) scene = 'title';
+  } else if (scene === 'stagesel') {
+    for (let i = 0; i < 6; i++) { const c = STSEL_XY(i);
+      if (Math.abs(p.x - c.x) < 105 && p.y > c.y && p.y < c.y + 120) { if (stSel === i) { mode = 'single'; scene = 'select'; } else stSel = i; sfx('sel'); return; } }
+    if (p.y > 630) scene = 'menu';
+  } else if (scene === 'settings') {
+    for (let i = 0; i < 3; i++) if (p.y > 200 + i * 100 && p.y < 280 + i * 100) {
+      setRow = i;
+      if (p.x > 210 && p.x < 290) changeSet(i, -1);
+      else if (p.x > 400) changeSet(i, 1);
+      return;
+    }
+    if (p.y > 540 && p.y < 600) scene = 'menu';
+  } else if (scene === 'select') {
+    for (let i = 0; i < 3; i++) {
+      const cx = 90 + i * 150;
+      if (Math.abs(p.x - cx) < 70 && p.y > 170 && p.y < 420) { if (sel === i) newGame(); else { sel = i; sfx('sel'); } return; }
+    }
+    if (p.y > 560 && p.y < 610) newGame();
+    if (p.y > 640) backFromSelect();
+  } else if (scene === 'play') { if (talk && !paused) nextTalk(); }
+  else if ((scene === 'over' || scene === 'win') && endT > 60) { scene = 'menu'; playMusic('menu'); }
+}
+
+// ---------- 工具 ----------
+const rnd = (a, b) => a + Math.random() * (b - a);
+const ang = (ax, ay, bx, by) => Math.atan2(by - ay, bx - ax);
+const aimA = o => ang(o.x, o.y, P.x, P.y);
+// 依難度調整頻率：每 period 幀一次
+function ev(t, period, phase = 0) {
+  const p = Math.max(2, Math.round(period / D.rate));
+  return t >= phase && (t - phase) % p === 0;
+}
+// 子彈形狀：orb 圓彈、rice 米粒彈、big 大型圓彈
+function shoot(x, y, a, sp, o = {}) {
+  eBul.push({ x, y, a, sp: sp * D.sp, r: o.r || (o.shape === 'big' ? 16 : 5), c: o.c || '#ff6b9a',
+    shape: o.shape || 'orb', acc: o.acc || 0, max: (o.max || 6) * D.sp, turn: o.turn || 0, tt: o.tt || 0, grazed: false });
+}
+function scaleN(n, min = 1) { let k = Math.max(min, Math.round(n * D.n)); if (n % 2 && !(k % 2)) k++; return k; }
+function ring(x, y, n, sp, off = 0, o) { const k = scaleN(n, 3); for (let i = 0; i < k; i++) shoot(x, y, off + i * TAU / k, sp, o); }
+function fan(x, y, n, sp, spread, base, o) {
+  const k = scaleN(n); const s = spread * (k > n ? Math.min(1.5, k / n) : 1);
+  for (let i = 0; i < k; i++) shoot(x, y, base + (k === 1 ? 0 : (i / (k - 1) - .5) * s), sp, o);
+}
+// 雷射：先出現細預告線，再變粗
+function laser(x, y, a, o = {}) {
+  lasers.push({ x, y, a, len: o.len || 1000, w: o.w || 16, warn: o.warn || 50, on: o.on || 45, t: 0,
+    c: o.c || '#ff7bd5', spin: o.spin || 0, owner: o.owner || null });
+  sfx('warn');
+}
+function burst(x, y, c, n = 14) {
+  for (let i = 0; i < n; i++) { const a = rnd(0, TAU), s = rnd(1, 5);
+    parts.push({ x, y, vx: Math.cos(a) * s, vy: Math.sin(a) * s, life: rnd(20, 40), c }); }
+}
+function popup(x, y, t, c = '#fff') { popups.push({ x, y, t, c, life: 50 }); }
+function drop(x, y, type, n = 1, spread = 20) {
+  for (let i = 0; i < n; i++) items.push({ x: x + rnd(-spread, spread), y: y + rnd(-spread / 2, spread / 2), vy: -2.5 - rnd(0, 1.5), type });
+}
+function distSeg(px, py, x1, y1, x2, y2) {
+  const dx = x2 - x1, dy = y2 - y1, l = dx * dx + dy * dy;
+  const t = Math.max(0, Math.min(1, ((px - x1) * dx + (py - y1) * dy) / l));
+  return Math.hypot(px - x1 - t * dx, py - y1 - t * dy);
+}
+
+// ---------- 火力 ----------
+const LV_PTS = [0, 15, 40], MAXLV = LV_PTS.length;
+function lv() { let l = 1; for (let i = 1; i < MAXLV; i++) if (P.pp >= LV_PTS[i]) l = i + 1; return l; }
+function addPower(n) {
+  if (P.pp >= LV_PTS[MAXLV - 1]) { score += 500; return; }
+  const before = lv(); P.pp = Math.min(LV_PTS[MAXLV - 1], P.pp + n);
+  if (lv() > before) { popup(P.x, P.y - 34, lv() === MAXLV ? 'FULL POWER!' : 'POWER UP!', '#ff8a8a'); sfx('power'); }
+}
+
+// ---------- 小怪（一般敵人，不是吉祥物） ----------
+const MOBS = {
+  puff:  { hp:3,  size:30, score:100, name:'小雲朵' },
+  star:  { hp:5,  size:30, score:150, name:'星星仔' },
+  bat:   { hp:7,  size:34, score:200, name:'小蝙蝠' },
+  candy: { hp:18, size:42, score:500, name:'糖果兵' },
+  ghost: { hp:90, size:70, score:2000, name:'大幽靈' },
+};
+function spawn(kind, x, y, move, fire) {
+  const k = MOBS[kind];
+  enemies.push({ kind, ...k, maxHp: k.hp, x, y, x0: x, t: 0, move, fire, hitT: 0 });
+}
+const MV = {
+  down:     e => { e.y += 2.2; },
+  sineDown: e => { e.y += 1.8; e.x = e.x0 + Math.sin(e.t / 30) * 70; },
+  swoopL:   e => { e.x += 3; e.y += 1.2 + Math.sin(e.t / 25) * 1.5; },
+  swoopR:   e => { e.x -= 3; e.y += 1.2 + Math.sin(e.t / 25) * 1.5; },
+  stopGo:   e => { if (e.t < 60) e.y += 3; else if (e.t > 300) e.y -= 2; },
+};
+const FR = {
+  none:    () => {},
+  aim:     e => { if (ev(e.t, 90, 40)) shoot(e.x, e.y, aimA(e), 3.2, { c:'#ff6b9a' }); },
+  aim3:    e => { if (ev(e.t, 80, 40)) fan(e.x, e.y, 3, 3, .5, aimA(e), { c:'#5cb8ff', shape:'rice' }); },
+  ring:    e => { if (e.t > 60 && ev(e.t, 70, 60)) ring(e.x, e.y, 14, 2.4, e.t / 50, { c:'#c08cff', r:6 }); },
+  spiral:  e => { if (e.t > 60 && e.t < 280 && ev(e.t, 5)) { const a = e.t * .17; shoot(e.x, e.y, a, 2.6, { c:'#ff9a4d' }); shoot(e.x, e.y, a + PI, 2.6, { c:'#ff9a4d' }); } },
+  big:     e => { if (e.t > 50 && ev(e.t, 100, 50)) fan(e.x, e.y, 1, 2, .6, aimA(e), { shape:'big', r:18, c:'#ff5c8a' }); },
+  bigRing: e => { if (e.t > 60 && ev(e.t, 110, 60)) ring(e.x, e.y, 8, 1.5, e.t / 40, { shape:'big', r:15, c:'#4dd6c4' }); },
+  laser:   e => { if (e.t > 50 && e.t < 300 && ev(e.t, 150, 60)) laser(e.x, e.y, aimA(e), { w:14, c:'#ffd166', warn:55, on:40 }); },
+};
+
+// 波次小工具
+function waves(at) {
+  return {
+    line:  (t0, kind, x, n, gap, fire = FR.none) => { for (let i = 0; i < n; i++) at(t0 + i * gap, () => spawn(kind, x, -30, MV.down, fire)); },
+    snake: (t0, kind, x, n, gap, fire = FR.none) => { for (let i = 0; i < n; i++) at(t0 + i * gap, () => spawn(kind, x, -30, MV.sineDown, fire)); },
+    swoop: (t0, kind, side, n, gap, y0, fire = FR.none) => { for (let i = 0; i < n; i++) at(t0 + i * gap, () => spawn(kind, side === 'L' ? -30 : W + 30, y0 + i * 8, side === 'L' ? MV.swoopL : MV.swoopR, fire)); },
+    rain:  (t0, kind, n, gap, fire = FR.none) => { for (let i = 0; i < n; i++) at(t0 + i * gap, () => spawn(kind, rnd(40, W - 40), -30, MV.down, fire)); },
+    one:   (t, kind, x, fire = FR.none) => at(t, () => spawn(kind, x, -50, MV.stopGo, fire)),
+  };
+}
+
+// ---------- 魔王（吉祥物） ----------
+const BOSSES = {
+  bean: { img:'bean', name:'小綠豆', size:100, phases:[
+    { name:'豆符「綠豆散射」', hp:350, fn(b, t) {
+      b.x = W/2 + Math.sin(t / 70) * 120;
+      if (ev(t, 50)) ring(b.x, b.y, 14, 2.4, t / 30, { c:'#6be36b' });
+      if (ev(t, 100, 50)) fan(b.x, b.y, 5, 3, .7, aimA(b), { c:'#c4f05a', shape:'rice' });
+    }},
+    { name:'豆符「綠豆大雨」', hp:420, fn(b, t) {
+      b.x += (W/2 - b.x) * .04;
+      if (ev(t, 7)) shoot(rnd(20, W - 20), -10, PI/2 + rnd(-.15, .15), rnd(1.8, 3), { c:'#6be36b', shape:'rice' });
+      if (ev(t, 80, 40)) fan(b.x, b.y, 3, 1.8, .7, aimA(b), { c:'#3cbf4a', shape:'big', r:16 });
+    }},
+  ]},
+  rabbit: { img:'rabbit', name:'兔兔', size:100, phases:[
+    { name:'兔符「跳跳兔」', hp:420, fn(b, t) {
+      const k = t % 90;
+      if (k === 1) b.tx = rnd(100, W - 100);
+      b.x += ((b.tx || W/2) - b.x) * .08; b.y = b.ty - (k < 20 ? Math.sin(k / 20 * PI) * 30 : 0);
+      if (k === 25) { ring(b.x, b.y, 18, 2.6, rnd(0, 1), { c:'#ffb3d9' }); fan(b.x, b.y, 5, 3.4, .6, aimA(b), { c:'#ff7ac0', shape:'rice' }); }
+    }},
+    { name:'兔符「紅蘿蔔雷射」', hp:500, fn(b, t) {
+      b.x = W/2 + Math.sin(t / 90) * 100;
+      if (ev(t, 120, 30)) { const n = scaleN(3); for (let i = 0; i < n; i++) laser(b.x, b.y, aimA(b) + (i - (n - 1) / 2) * .35, { w:16, c:'#ff9a3c', warn:50, on:40 }); }
+      if (ev(t, 60)) ring(b.x, b.y, 16, 2, t / 20, { c:'#ffb3d9' });
+    }},
+  ]},
+  kuku: { img:'kuku', name:'kuku', size:110, phases:[
+    { name:'咕符「咕咕連射」', hp:420, fn(b, t) {
+      b.x += (P.x - b.x) * .015;
+      if (t % 70 < 24 && ev(t, 4)) fan(b.x, b.y + 30, 3, 4, .3, aimA(b), { c:'#5cb8ff', shape:'rice' });
+      if (ev(t, 70, 35)) ring(b.x, b.y, 20, 2, 0, { c:'#9fe8c8', r:6 });
+    }},
+    { name:'咕符「羽毛風暴」', hp:500, fn(b, t) {
+      b.x = W/2 + Math.sin(t / 60) * 140;
+      if (ev(t, 7)) shoot(rnd(20, W - 20), -10, PI/2 + rnd(-.3, .3), rnd(2, 3.2), { c:'#dff', shape:'rice' });
+      if (ev(t, 60)) ring(b.x, b.y, 22, 2.2, (t / 60) % 2 ? .14 : 0, { c:'#5cb8ff', r:6 });
+    }},
+    { name:'咕符「森林巨球」', hp:560, fn(b, t) {
+      b.x += (W/2 - b.x) * .05;
+      if (ev(t, 70)) ring(b.x, b.y, 8, 1.5, t / 40, { shape:'big', r:18, c:'#4dd6c4' });
+      if (ev(t, 9)) shoot(b.x, b.y, t * .21, 2.6, { c:'#cfe', shape:'rice' });
+    }},
+  ]},
+  cookie: { img:'cookie', name:'餅乾怪獸', size:130, phases:[
+    { name:'餅符「餅乾雨」', hp:550, fn(b, t) {
+      b.x = W/2 + Math.sin(t / 80) * 120;
+      if (ev(t, 40)) fan(b.x, b.y + 40, 7, 3, 1.4, aimA(b), { c:'#ffb000', r:9 });
+      if (ev(t, 6)) shoot(rnd(20, W - 20), -10, PI/2 + rnd(-.2, .2), rnd(2, 3.4), { c:'#c98a4b', r:7 });
+    }},
+    { name:'餅符「奶油漩渦」', hp:650, fn(b, t) {
+      b.x += (W/2 - b.x) * .05;
+      if (ev(t, 4)) { const a = t * .11; for (let k = 0; k < 4; k++) shoot(b.x, b.y, a + k * PI/2, 2.4, { c:'#fff3d6', shape:'rice' }); }
+      if (ev(t, 90)) ring(b.x, b.y, 24, 1.8, 0, { c:'#8fd0ff', r:7 });
+    }},
+    { name:'餅符「暴食巧克力」', hp:750, fn(b, t) {
+      b.x = W/2 + Math.sin(t / 50) * 150;
+      if (ev(t, 50)) ring(b.x, b.y, 26, 2.6, t, { c:'#a8683a', r:6 });
+      if (ev(t, 50, 25)) ring(b.x, b.y, 10, 1.6, t + .1, { c:'#6b3a1f', shape:'big', r:15 });
+      if (ev(t, 120, 60)) fan(b.x, b.y, 11, 4.2, 1, aimA(b), { c:'#ff5555', shape:'rice' });
+    }},
+  ]},
+  didi: { img:'didi', name:'烏雞弟弟', size:105, phases:[
+    { name:'弟符「玩具之環」', hp:600, fn(b, t) {
+      b.x = W/2 + Math.sin(t / 70) * 130;
+      if (ev(t, 45)) ring(b.x, b.y, 16, 2.4, t / 40, { c:'#c08cff', r:6 });
+      if (ev(t, 90, 45)) fan(b.x, b.y, 5, 3.2, .8, aimA(b), { c:'#ff66cc', shape:'rice' });
+    }},
+    { name:'弟符「旋轉陀螺」', hp:700, fn(b, t) {
+      b.x += (W/2 - b.x) * .05;
+      if (ev(t, 5)) { const a = t * .13; for (let k = 0; k < 3; k++) shoot(b.x, b.y, a + k * TAU / 3, 2.6, { c:'#ff9a4d' }); }
+      if (ev(t, 100, 50)) fan(b.x, b.y, 7, 3.6, 1, aimA(b), { c:'#ff66cc', shape:'rice' });
+    }},
+    { name:'弟符「十字光線」', hp:750, fn(b, t) {
+      b.x += (W/2 - b.x) * .05;
+      if (t % 240 === 30) { const n = scaleN(4, 2), s = Math.random() < .5 ? 1 : -1, o = rnd(0, 1);
+        for (let i = 0; i < n; i++) laser(b.x, b.y, o + i * TAU / n, { w:18, warn:60, on:130, spin:.009 * s, owner:b, c:'#ff4d4d' }); }
+      if (ev(t, 40)) fan(b.x, b.y, 5, 2.6, .8, aimA(b), { c:'#ff99cc', shape:'rice' });
+      if (ev(t, 90, 45)) ring(b.x, b.y, 10, 1.6, 0, { shape:'big', r:14, c:'#ff5c5c' });
+    }},
+  ]},
+  devil: { img:'devil', name:'惡魔', size:120, phases:[
+    { name:'魔符「暗黑散彈」', hp:650, fn(b, t) {
+      b.x = W/2 + Math.sin(t / 60) * 130;
+      if (ev(t, 14)) fan(b.x, b.y + 20, 7, 3.4, 1.4, PI/2 + Math.sin(t / 30) * .6, { c:'#b46bff', shape:'rice' });
+      if (ev(t, 90, 45)) ring(b.x, b.y, 20, 2, 0, { c:'#ff4daa' });
+    }},
+    { name:'影符「迷途的追蹤彈」', hp:700, fn(b, t) {
+      b.x += (W/2 - b.x) * .05;
+      if (ev(t, 6)) { const a = t * .17; for (let k = 0; k < 2; k++) shoot(b.x, b.y, a + k * PI, 2.2, { c:'#d77bff', turn: k ? .012 : -.012, tt: 120 }); }
+      if (ev(t, 100, 50)) fan(b.x, b.y, 5, 3.6, .5, aimA(b), { shape:'big', r:14, c:'#8a3cff' });
+    }},
+    { name:'深淵「黑暗雷射」', hp:750, fn(b, t) {
+      b.x = W/2 + Math.sin(t / 80) * 90;
+      if (t % 200 === 20) { const n = scaleN(5, 3), o = rnd(0, 1), s = t % 400 === 20 ? 1 : -1;
+        for (let i = 0; i < n; i++) laser(b.x, b.y, o + i * TAU / n, { w:16, warn:55, on:120, spin:.008 * s, owner:b, c:'#c04dff' }); }
+      if (ev(t, 50)) ring(b.x, b.y, 24, 1.9, t / 17, { c:'#ff66cc' });
+    }},
+    { name:'終符「紫雲的盡頭」', hp:900, fn(b, t) {
+      b.x += (W/2 - b.x) * .05;
+      if (ev(t, 4)) { const a = t * .1; for (let k = 0; k < 3; k++) { shoot(b.x, b.y, a + k * TAU / 3, 2.4, { c:'#ffffff', shape:'rice' }); shoot(b.x, b.y, -a + k * TAU / 3 + .5, 2.0, { c:'#ff5cae' }); } }
+      if (ev(t, 120, 60)) ring(b.x, b.y, 12, 1.4, 0, { shape:'big', r:20, c:'#9a3cff' });
+      if (ev(t, 180, 90)) laser(b.x, b.y, aimA(b), { w:22, c:'#ffd166', warn:60, on:50 });
+    }},
+  ]},
+};
+
+// ---------- 六大關 ----------
+const STAGES = [
+  { title:'月夜雲海', sub:'～ 紫色的雲在發光 ～', bg:'night', music:'st1', boss:'bean', mid:'bean',
+    midLine:'咦？有人來了！先閃人～',
+    talk:[['B','嘿嘿～這片雲是我的地盤！'],['P','小綠豆？你的眼睛怎麼變成紫色的？'],['B','我也不知道……只是突然好想發射豆子！'],['P','看來是被什麼東西控制了，先讓你冷靜一下！']],
+    build(w) {
+      w.line(60, 'puff', 120, 6, 15); w.line(200, 'puff', 360, 6, 15);
+      w.swoop(380, 'star', 'L', 5, 18, 80, FR.aim); w.swoop(520, 'star', 'R', 5, 18, 80, FR.aim);
+      w.snake(700, 'puff', 240, 8, 12);
+      w.one(1000, 'candy', 120, FR.aim3); w.one(1000, 'candy', 360, FR.aim3);
+      w.rain(1150, 'star', 8, 18, FR.aim);
+      w.one(1300, 'ghost', 240, FR.ring);
+      return 1650;
+    }},
+  { title:'花田之丘', sub:'～ 兔兔不准你踩花 ～', bg:'flower', music:'st2', boss:'rabbit', mid:'bean',
+    midLine:'剛剛只是熱身啦！再來一次！',
+    talk:[['B','站住！不准踩我的花田！'],['P','我們在天上飛，根本沒踩到啊……'],['B','我不管！紫色的雲說你們是壞人！'],['P','又是紫色的雲……兔兔，醒醒啊！']],
+    build(w) {
+      w.swoop(60, 'star', 'L', 6, 16, 60, FR.aim); w.swoop(60, 'star', 'R', 6, 16, 60, FR.aim);
+      w.snake(300, 'puff', 120, 8, 12, FR.aim); w.snake(300, 'puff', 360, 8, 12);
+      w.one(500, 'candy', 100, FR.big); w.one(500, 'candy', 380, FR.big);
+      w.rain(1000, 'bat', 10, 16, FR.aim);
+      w.one(1200, 'ghost', 240, FR.bigRing);
+      w.line(1350, 'star', 80, 6, 14, FR.aim3); w.line(1350, 'star', 400, 6, 14, FR.aim3);
+      return 1700;
+    }},
+  { title:'迷霧森林', sub:'～ 樹林裡傳來咕咕聲 ～', bg:'forest', music:'st3', boss:'kuku', mid:'rabbit',
+    midLine:'我的花田還沒原諒你們！',
+    talk:[['B','咕咕～誰都不能通過這座森林。'],['P','kuku，你知道紫色的雲是從哪裡來的嗎？'],['B','咕……想知道的話，就先打贏我吧！'],['P','好，說話要算話喔！']],
+    build(w) {
+      w.snake(60, 'bat', 120, 8, 12); w.snake(60, 'bat', 360, 8, 12, FR.aim);
+      w.one(260, 'candy', 100, FR.laser); w.one(260, 'candy', 380, FR.laser);
+      w.swoop(450, 'star', 'L', 6, 16, 60, FR.aim3); w.swoop(520, 'star', 'R', 6, 16, 100, FR.aim3);
+      w.one(1000, 'ghost', 140, FR.spiral); w.one(1000, 'ghost', 340, FR.laser);
+      w.rain(1250, 'puff', 12, 10, FR.aim);
+      w.one(1400, 'candy', 240, FR.bigRing);
+      return 1750;
+    }},
+  { title:'甜點城堡', sub:'～ 到處都是餅乾屑 ～', bg:'candy', music:'st4', boss:'cookie', mid:'kuku',
+    midLine:'咕咕！森林外面也不讓你過！',
+    talk:[['B','餅乾！更多的餅乾！你身上有餅乾的味道！'],['P','沒有啦！那是早餐的味道！'],['B','惡魔說，只要打倒你，就有吃不完的餅乾！'],['P','惡魔？果然是惡魔在搞鬼！']],
+    build(w) {
+      w.rain(60, 'puff', 14, 10, FR.aim);
+      w.one(220, 'candy', 80, FR.big); w.one(220, 'candy', 240, FR.laser); w.one(220, 'candy', 400, FR.big);
+      w.swoop(450, 'bat', 'L', 8, 12, 60, FR.aim3); w.swoop(500, 'bat', 'R', 8, 12, 100, FR.aim3);
+      w.one(1000, 'ghost', 140, FR.ring); w.one(1000, 'ghost', 340, FR.spiral);
+      w.snake(1250, 'star', 120, 10, 10, FR.aim); w.snake(1250, 'star', 360, 10, 10, FR.aim);
+      w.one(1450, 'ghost', 240, FR.bigRing);
+      return 1800;
+    }},
+  { title:'黃昏熔岩', sub:'～ 空氣越來越熱了 ～', bg:'lava', music:'st5', boss:'didi', mid:'cookie',
+    midLine:'餅乾……還要更多餅乾……',
+    talk:[['B','站住！這裡由我來守！'],['P','烏雞弟弟？連你也被紫色的雲控制了嗎？'],['B','惡魔大人說，只要守住這裡，就送我最大的玩具！'],['P','果然是惡魔……弟弟，等一下就帶你回家！']],
+    talkWuji:[['B','哥哥！你不能再往前了！'],['P','弟弟？你怎麼會在這裡？'],['B','惡魔大人說，只要攔住你，就送我最大的玩具！'],['P','玩具哥哥再買給你，現在先讓你清醒一下！']],
+    build(w) {
+      w.swoop(60, 'bat', 'L', 8, 12, 60, FR.aim3); w.swoop(60, 'bat', 'R', 8, 12, 60, FR.aim3);
+      w.one(300, 'candy', 80, FR.laser); w.one(300, 'candy', 400, FR.laser); w.one(320, 'ghost', 240, FR.bigRing);
+      w.rain(1000, 'star', 14, 10, FR.aim);
+      w.one(1200, 'ghost', 120, FR.spiral); w.one(1200, 'ghost', 360, FR.spiral);
+      w.line(1450, 'puff', 60, 8, 10, FR.aim); w.line(1450, 'puff', 420, 8, 10, FR.aim);
+      w.one(1550, 'candy', 160, FR.big); w.one(1550, 'candy', 320, FR.big);
+      return 1850;
+    }},
+  { title:'魔界之塔', sub:'～ 一切的源頭 ～', bg:'abyss', music:'st6', boss:'devil', mid:'didi',
+    midLine:'惡魔大人就在上面，你過不去的！',
+    talk:[['B','呵呵，終於爬到這裡了啊。'],['P','惡魔！讓大家變奇怪的紫色雲，都是你搞的鬼吧！'],['B','沒錯。只要大家都聽我的話，整片天空就是我的了！'],['P','大家才不是你的玩具！我要把天空搶回來！'],['B','那就讓我看看你的本事吧！']],
+    build(w) {
+      w.snake(60, 'bat', 120, 8, 12, FR.aim); w.snake(60, 'bat', 360, 8, 12, FR.aim);
+      w.one(250, 'ghost', 240, FR.ring);
+      w.swoop(450, 'star', 'L', 8, 12, 50, FR.aim3); w.swoop(450, 'star', 'R', 8, 12, 110, FR.aim3);
+      w.one(1000, 'candy', 80, FR.laser); w.one(1000, 'candy', 240, FR.bigRing); w.one(1000, 'candy', 400, FR.laser);
+      w.one(1250, 'ghost', 140, FR.spiral); w.one(1250, 'ghost', 340, FR.ring);
+      w.rain(1500, 'puff', 16, 8, FR.aim);
+      w.one(1650, 'ghost', 240, FR.bigRing);
+      return 1950;
+    }},
+];
+const MID_AT = 800;
+
+function startStage(n) {
+  stage = n; SCRIPT = []; scriptIdx = 0; stageT = 0; boss = null; bossWarn = 0; clearT = 0; talk = null;
+  pBul = []; pBombs = []; eBul = []; lasers = []; enemies = []; items = [];
+  const at = (t, f) => SCRIPT.push([t, f]);
+  const S = STAGES[n];
+  const bossAt = S.build(waves(at));
+  at(MID_AT, () => spawnBoss(S.mid, true));
+  at(bossAt, () => { bossWarn = 150; playMusic(null); });
+  at(bossAt + 150, () => spawnBoss(S.boss, false));
+  SCRIPT.sort((a, b) => a[0] - b[0]);
+  stageLen = bossAt + 150;
+  initBg(S.bg);
+  playMusic(S.music);
+}
+
+function spawnBoss(id, mid) {
+  const d = BOSSES[id];
+  const phases = mid ? [d.phases[0]] : d.phases;
+  const hp = Math.round((mid ? 260 + stage * 30 : phases[0].hp) * D.hp);
+  boss = { id, def: d, phases, mid, x: W/2, y: -120, ty: mid ? 130 : 150, t: 0, phase: 0, hp, maxHp: hp,
+    size: mid ? d.size * .85 : d.size, hitT: 0, inv: 60, dead: 0, flee: 0, talked: mid, life: 0 };
+  if (!mid) clearEnemies();
+}
+function clearEnemies() { for (const e of enemies) burst(e.x, e.y, '#fff', 8); enemies = []; }
+function bossActive() { return boss && !boss.dead && !boss.flee && boss.y >= boss.ty && !talk; }
+
+function bossUpdate() {
+  const b = boss; b.t++;
+  if (b.flee) { b.y -= 5; if (b.y < -160) boss = null; return; }
+  if (b.dead) {
+    b.dead++;
+    if (b.dead % 6 === 0) { burst(b.x + rnd(-60, 60), b.y + rnd(-50, 50), '#ffd166', 20); sfx('boom'); shake = 8; }
+    if (b.dead > 120) { score += Math.round(20000 * (stage + 1) * D.mul); boss = null; stageClear(); }
+    return;
+  }
+  if (b.y < b.ty) { b.y += 2.5; return; }
+  if (!b.talked) {
+    b.talked = true; eBul = []; lasers = [];
+    const S = STAGES[stage];
+    talk = { lines: (P.pilot.id === 'wuji' && S.talkWuji) || S.talk, i: 0, t: 0 };
+    playMusic(stage === 5 ? 'final' : 'boss');
+    return;
+  }
+  if (talk) return;
+  if (b.inv > 0) b.inv--;
+  b.life++;
+  if (b.mid && b.life > 1500) { b.flee = 1; clearBullets(true); return; }  // 中 boss 時間到會逃走
+  b.phases[b.phase].fn(b, b.t);
+}
+function nextTalk() {
+  if (!talk) return;
+  sfx('talk');
+  if (++talk.i >= talk.lines.length) { talk = null; boss.t = 0; boss.inv = 40; }
+  else talk.t = 0;
+}
+function bossHit(dmg) {
+  const b = boss; if (!bossActive() || b.inv > 0) return;
+  b.hp -= dmg; b.hitT = 4; score += Math.round(dmg * 5 * D.mul);
+  if (b.hp > 0) return;
+  clearBullets(true); burst(b.x, b.y, '#fff', 40); sfx('boom'); shake = 12;
+  if (b.mid) { drop(b.x, b.y, 'P', 6, 50); drop(b.x, b.y, 'S', 4, 50); b.flee = 1; popup(b.x, b.y + 60, '逃走了！', '#ffd166'); return; }
+  b.phase++;
+  drop(b.x, b.y, 'PP', 1, 10); drop(b.x, b.y, 'S', 5, 60);
+  if (b.phase >= b.phases.length) { drop(b.x, b.y, 'B', 1, 10); b.dead = 1; return; }
+  b.hp = b.maxHp = Math.round(b.phases[b.phase].hp * D.hp); b.inv = 90; b.t = 0;
+}
+function stageClear() {
+  if (mode === 'single' || stage >= STAGES.length - 1) { winGame(); return; }
+  clearT = 240; playMusic('result');
+}
+function clearBullets(toItems) {
+  if (toItems) for (const s of eBul) items.push({ x: s.x, y: s.y, vy: -1, type: 'c', auto: true });
+  eBul = []; lasers = [];
+}
+function cancelNear(x, y, r) {
+  eBul = eBul.filter(s => { if (Math.hypot(s.x - x, s.y - y) < r + s.r) { items.push({ x: s.x, y: s.y, vy: -1, type: 'c', auto: true }); return false; } return true; });
+}
+
+// ---------- 玩家 ----------
+function playerFire() {
+  const L = lv(), id = P.pilot.id, x = P.x, y = P.y - 20, focus = focusing();
+  const push = (dx, vx, vy, dmg, homing) => pBul.push({ x: x + dx, y, vx, vy, dmg, homing, kind: id });
+  if (id === 'wuji') {
+    const n = [3, 7, 11][L - 1], spread = (focus ? .25 : .75) * (1 + (L - 1) * .2);
+    for (let i = 0; i < n; i++) { const a = -PI/2 + (i / (n - 1) - .5) * spread; push(0, Math.cos(a) * 11, Math.sin(a) * 11, 1); }
+  } else if (id === 'lala') {
+    push(-6, 0, -12, 1); push(6, 0, -12, 1);
+    const n = [2, 4, 6][L - 1], hd = L === 1 ? .45 : .8;   // 一級就有追蹤，但較弱
+    for (let i = 0; i < n; i++) { const s = i % 2 ? 1 : -1; push(s * (14 + i * 3), s * 3, -7, hd, true); }
+  } else {
+    const n = [1, 2, 3][L - 1];
+    for (let i = 0; i < n; i++) push((i - (n - 1) / 2) * (focus ? 8 : 18) + (n === 1 ? 14 : 0), 0, -15, 1);
+  }
+}
+function laserStat() {
+  const L = lv(), f = focusing();
+  return { w: [10, 16, 24][L - 1] * (f ? .7 : 1), dmg: [.3, .44, .6][L - 1] * (f ? 1.25 : 1) };
+}
+function nearestTarget(x, y) {
+  let tgt = null, best = 1e9;
+  for (const e of enemies) { const d = Math.hypot(e.x - x, e.y - y); if (d < best && e.y > 0) { best = d; tgt = e; } }
+  if (bossActive()) { const d = Math.hypot(boss.x - x, boss.y - y); if (d < best) tgt = boss; }
+  return tgt;
+}
+function useBomb() {
+  if (scene !== 'play' || paused || !P || (P.bombs <= 0 && !P.infB) || P.bombT > 0 || talk || clearT) return;
+  if (!P.infB) P.bombs--; P.bombKind = P.pilot.id; sfx('bomb');
+  if (P.bombKind === 'wuji') {
+    P.bombT = 120; flash = 22; shake = 14; clearBullets(true);
+    for (const e of enemies) { e.hp -= 40; e.hitT = 4; }
+  } else if (P.bombKind === 'lala') {
+    P.bombT = 170; flash = 8;
+    for (let i = -1; i <= 1; i++) pBombs.push({ x: P.x + i * 40, y: P.y - 30, vx: i * 3, vy: -4, r: 38, life: 150, hue: [330, 50, 190][i + 1] });
+  } else {
+    P.bombT = 150; flash = 10; shake = 10;
+  }
+  P.inv = Math.max(P.inv, P.bombT + 30);
+}
+function updateBomb() {
+  if (P.bombT <= 0) return;
+  P.bombT--;
+  if (P.bombKind === 'wuji') {
+    clearBullets(true);
+    for (const e of enemies) { e.hp -= .8; e.hitT = 2; }
+    bossHit(1.3);
+  } else if (P.bombKind === 'laoda') {
+    const w = sparkW();
+    for (const e of enemies) if (Math.abs(e.x - P.x) < w / 2 + e.size * .4 && e.y < P.y) { e.hp -= 3; e.hitT = 2; }
+    if (boss && Math.abs(boss.x - P.x) < w / 2 + 45 && boss.y < P.y) bossHit(1.6);
+    eBul = eBul.filter(s => { if (Math.abs(s.x - P.x) < w / 2 + s.r && s.y < P.y + 20) { items.push({ x: s.x, y: s.y, vy: -1, type: 'c', auto: true }); return false; } return true; });
+    if (P.bombT % 4 === 0) shake = Math.max(shake, 4);
+  }
+}
+function sparkW() { const t = 150 - P.bombT; return 100 * Math.min(1, t / 15) * Math.min(1, P.bombT / 20); }
+function updatePBombs() {
+  for (const o of pBombs) {
+    o.life--;
+    const tgt = nearestTarget(o.x, o.y);
+    if (tgt) { const a = ang(o.x, o.y, tgt.x, tgt.y); o.vx += Math.cos(a) * .35; o.vy += Math.sin(a) * .35; } else o.vy -= .1;
+    const s = Math.hypot(o.vx, o.vy); if (s > 5) { o.vx *= 5 / s; o.vy *= 5 / s; }
+    o.x = Math.max(20, Math.min(W - 20, o.x + o.vx)); o.y = Math.max(20, Math.min(H - 20, o.y + o.vy));
+    for (const e of enemies) if (Math.hypot(e.x - o.x, e.y - o.y) < o.r + e.size * .4) { e.hp -= 1.2; e.hitT = 2; }
+    if (boss && Math.hypot(boss.x - o.x, boss.y - o.y) < o.r + 50) bossHit(1);
+    cancelNear(o.x, o.y, o.r + 8);
+    if (o.life <= 0) {
+      burst(o.x, o.y, `hsl(${o.hue},100%,75%)`, 40); sfx('boom'); shake = 10;
+      for (const e of enemies) if (Math.hypot(e.x - o.x, e.y - o.y) < 110) e.hp -= 25;
+      if (boss && Math.hypot(boss.x - o.x, boss.y - o.y) < 140) bossHit(25);
+      cancelNear(o.x, o.y, 130);
+    }
+  }
+  pBombs = pBombs.filter(o => o.life > 0);
+}
+function playerHurt() {
+  if (P.inv > 0) return;
+  sfx('hurt'); burst(P.x, P.y, '#ff6b8a', 30); shake = 14; flash = 10;
+  if (!P.infL) P.lives--;
+  P.inv = 150;
+  const lost = Math.min(P.pp, 12);
+  P.pp = 0;                                     // 火力回到一級
+  drop(P.x, P.y - 40, 'P', Math.max(3, Math.round(lost / 3)), 70);
+  P.bombs = Math.max(P.bombs, Math.min(2, SET.bombs));
+  clearBullets(false);
+  if (P.lives < 0) { P.lives = 0; gameOver(); }
+}
+function gameOver() { scene = 'over'; endT = 0; saveHi(); playMusic('result'); }
+function winGame()  { scene = 'win'; endT = 0; score += Math.round(((P.infL ? 0 : P.lives) * 30000 + (P.infB ? 0 : P.bombs) * 10000) * D.mul); saveHi(); playMusic('result'); }
+function saveHi() { if (mode === 'story' && !practice() && score > hiScore) { hiScore = score; lsSet('wuji_hi_' + diff, hiScore); } }
+
+// ---------- 背景 ----------
+const BG = {
+  night:  { top:'#0d1030', bot:'#3a2a6a', deco:'stars' },
+  flower: { top:'#2f5e4c', bot:'#6f9a63', deco:'petals' },
+  forest: { top:'#0c2418', bot:'#2d5236', deco:'leaves' },
+  candy:  { top:'#9a5a86', bot:'#c98e6c', deco:'sprinkles' },
+  lava:   { top:'#250808', bot:'#8a2a10', deco:'embers' },
+  abyss:  { top:'#07020f', bot:'#35093f', deco:'runes' },
+};
+let bg = BG.night, bgName = 'night', deco = [], blobs = [];
+function initBg(name) {
+  bgName = name; bg = BG[name];
+  deco = Array.from({ length: 70 }, () => ({ x: rnd(0, W), y: rnd(0, H), z: rnd(.4, 1.4), a: rnd(0, TAU), c: Math.floor(rnd(0, 5)) }));
+  blobs = Array.from({ length: 6 }, (_, i) => ({ x: rnd(0, W), y: i * H / 6, s: rnd(50, 110) }));
+}
+initBg('night');
+function drawBlob(b) {
+  const x = b.x, y = b.y, s = b.s;
+  ctx.save();
+  switch (bgName) {
+    case 'night':
+      ctx.fillStyle = 'rgba(255,255,255,.06)';
+      ctx.beginPath(); ctx.arc(x, y, s * .5, 0, TAU); ctx.arc(x + s * .4, y + 10, s * .4, 0, TAU); ctx.arc(x - s * .4, y + 12, s * .35, 0, TAU); ctx.fill(); break;
+    case 'flower':
+      ctx.fillStyle = 'rgba(40,90,50,.55)'; ctx.beginPath(); ctx.arc(x, y, s * .55, 0, TAU); ctx.fill();
+      for (let i = 0; i < 5; i++) { ctx.fillStyle = ['#ffb3d9','#fff3a0','#ffffff'][i % 3]; ctx.globalAlpha = .55; ctx.beginPath(); ctx.arc(x + Math.cos(i * 1.3) * s * .3, y + Math.sin(i * 1.3) * s * .3, 5, 0, TAU); ctx.fill(); }
+      break;
+    case 'forest':
+      ctx.fillStyle = 'rgba(10,40,20,.65)';
+      for (let k = 0; k < 3; k++) { ctx.beginPath(); ctx.moveTo(x, y - s * .7 + k * s * .3); ctx.lineTo(x - s * .45, y - s * .1 + k * s * .3); ctx.lineTo(x + s * .45, y - s * .1 + k * s * .3); ctx.fill(); }
+      break;
+    case 'candy':
+      ctx.strokeStyle = 'rgba(255,220,240,.35)'; ctx.lineWidth = s * .22; ctx.beginPath(); ctx.arc(x, y, s * .35, 0, TAU); ctx.stroke(); break;
+    case 'lava':
+      ctx.fillStyle = 'rgba(30,8,4,.6)'; ctx.beginPath(); ctx.ellipse(x, y, s * .6, s * .35, .3, 0, TAU); ctx.fill();
+      ctx.strokeStyle = 'rgba(255,120,40,.35)'; ctx.lineWidth = 3; ctx.stroke(); break;
+    case 'abyss':
+      ctx.strokeStyle = 'rgba(190,90,255,.18)'; ctx.lineWidth = 2;
+      ctx.translate(x, y); ctx.rotate(frame / 200);
+      ctx.beginPath(); ctx.arc(0, 0, s * .5, 0, TAU); ctx.stroke();
+      ctx.beginPath(); for (let i = 0; i < 6; i++) { const a = i * 2 * TAU / 5; ctx[i ? 'lineTo' : 'moveTo'](Math.cos(a) * s * .45, Math.sin(a) * s * .45); } ctx.stroke();
+      break;
+  }
+  ctx.restore();
+}
+function drawBg() {
+  const g = ctx.createLinearGradient(0, 0, 0, H);
+  g.addColorStop(0, bg.top); g.addColorStop(1, bg.bot);
+  ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+  for (const b of blobs) {
+    b.y += .7; if (b.y - b.s > H) { b.y = -b.s; b.x = rnd(0, W); b.s = rnd(50, 110); }
+    drawBlob(b);
+  }
+  for (const d of deco) {
+    switch (bg.deco) {
+      case 'stars':
+        d.y += d.z * 1.4; ctx.fillStyle = `rgba(255,255,255,${d.z * .45})`; ctx.fillRect(d.x, d.y, d.z * 1.6, d.z * 1.6); break;
+      case 'petals':
+        d.y += d.z * 1.2; d.x += Math.sin(frame / 40 + d.a) * .6;
+        ctx.fillStyle = ['rgba(255,180,220,.6)','rgba(255,255,255,.5)'][d.c % 2];
+        ctx.beginPath(); ctx.ellipse(d.x, d.y, 4 * d.z, 2.2 * d.z, frame / 30 + d.a, 0, TAU); ctx.fill(); break;
+      case 'leaves':
+        d.y += d.z * 1.5; d.x += Math.sin(frame / 50 + d.a) * .5;
+        ctx.fillStyle = `rgba(${120 + d.c * 20},200,120,.35)`;
+        ctx.beginPath(); ctx.ellipse(d.x, d.y, 5 * d.z, 2.5 * d.z, d.a + frame / 60, 0, TAU); ctx.fill(); break;
+      case 'sprinkles':
+        d.y += d.z * 1.3;
+        ctx.strokeStyle = ['#ffd1e8','#fff2a8','#b8f0ff','#d4ffb8','#ffffff'][d.c]; ctx.globalAlpha = .45; ctx.lineWidth = 3; ctx.lineCap = 'round';
+        ctx.beginPath(); ctx.moveTo(d.x - Math.cos(d.a) * 4, d.y - Math.sin(d.a) * 4); ctx.lineTo(d.x + Math.cos(d.a) * 4, d.y + Math.sin(d.a) * 4); ctx.stroke(); ctx.globalAlpha = 1; break;
+      case 'embers':
+        d.y -= d.z * 1.1; d.x += Math.sin(frame / 25 + d.a) * .4;
+        ctx.fillStyle = `rgba(255,${120 + d.c * 25},40,${.3 + d.z * .3})`; ctx.fillRect(d.x, d.y, 2 * d.z, 2 * d.z); break;
+      case 'runes':
+        d.y -= d.z * .6;
+        ctx.fillStyle = `rgba(200,110,255,${.15 + d.z * .2})`; ctx.beginPath(); ctx.arc(d.x, d.y, 1.6 * d.z, 0, TAU); ctx.fill(); break;
+    }
+    if (d.y > H + 10) { d.y = -10; d.x = rnd(0, W); }
+    if (d.y < -10) { d.y = H + 10; d.x = rnd(0, W); }
+  }
+}
+
+// ---------- 繪製工具 ----------
+function drawImg(im, x, y, h, alpha = 1) {
+  const iw = im.naturalWidth || im.width, ih = im.naturalHeight || im.height;
+  if (!iw) { ctx.fillStyle = '#f0f'; ctx.fillRect(x - h/2, y - h/2, h, h); return; }
+  const w = h * iw / ih;
+  ctx.save(); ctx.globalAlpha = alpha; ctx.drawImage(im, x - w/2, y - h/2, w, h); ctx.restore();
+}
+function text(t, x, y, size, c = '#fff', align = 'center', stroke = true) {
+  ctx.font = `bold ${size}px "Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif`;
+  ctx.textAlign = align; ctx.textBaseline = 'middle';
+  if (stroke) { ctx.lineWidth = Math.max(3, size / 7); ctx.strokeStyle = 'rgba(0,0,0,.75)'; ctx.lineJoin = 'round'; ctx.strokeText(t, x, y); }
+  ctx.fillStyle = c; ctx.fillText(t, x, y);
+}
+function wrap(t, maxW, size) {
+  ctx.font = `bold ${size}px "Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif`;
+  const lines = []; let cur = '';
+  for (const ch of t) { if (ctx.measureText(cur + ch).width > maxW) { lines.push(cur); cur = ch; } else cur += ch; }
+  if (cur) lines.push(cur); return lines;
+}
+function face(r) {
+  ctx.fillStyle = '#222';
+  ctx.beginPath(); ctx.arc(-r * .3, -r * .08, r * .12, 0, TAU); ctx.arc(r * .3, -r * .08, r * .12, 0, TAU); ctx.fill();
+  ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(-r * .27, -r * .13, r * .04, 0, TAU); ctx.arc(r * .33, -r * .13, r * .04, 0, TAU); ctx.fill();
+  ctx.fillStyle = 'rgba(255,120,150,.6)';
+  ctx.beginPath(); ctx.ellipse(-r * .5, r * .17, r * .13, r * .08, 0, 0, TAU); ctx.ellipse(r * .5, r * .17, r * .13, r * .08, 0, 0, TAU); ctx.fill();
+}
+function drawMob(e) {
+  const r = e.size / 2;
+  ctx.save(); ctx.translate(e.x, e.y);
+  const lit = e.hitT > 0;
+  switch (e.kind) {
+    case 'puff':
+      ctx.fillStyle = lit ? '#fff' : '#eef0ff';
+      ctx.beginPath(); ctx.arc(0, 0, r * .7, 0, TAU); ctx.arc(-r * .55, r * .15, r * .5, 0, TAU); ctx.arc(r * .55, r * .15, r * .5, 0, TAU); ctx.arc(0, -r * .35, r * .5, 0, TAU); ctx.fill();
+      ctx.strokeStyle = '#a9b2e8'; ctx.lineWidth = 1.5; ctx.stroke(); face(r * .9); break;
+    case 'star':
+      ctx.rotate(Math.sin(e.t / 15) * .2);
+      ctx.fillStyle = lit ? '#fff7c2' : '#ffd84d'; ctx.strokeStyle = '#d08a00'; ctx.lineWidth = 2;
+      ctx.beginPath(); for (let i = 0; i < 10; i++) { const a = -PI/2 + i * PI / 5, rr = i % 2 ? r * .5 : r; ctx[i ? 'lineTo' : 'moveTo'](Math.cos(a) * rr, Math.sin(a) * rr); } ctx.closePath(); ctx.fill(); ctx.stroke();
+      face(r * .7); break;
+    case 'bat': {
+      const f = Math.sin(e.t / 4) * .5;
+      ctx.fillStyle = lit ? '#c9a8ff' : '#6b3fb8';
+      for (const s of [-1, 1]) { ctx.save(); ctx.scale(s, 1); ctx.rotate(f); ctx.beginPath(); ctx.moveTo(r * .3, 0); ctx.lineTo(r * 1.2, -r * .5); ctx.lineTo(r * 1.05, r * .1); ctx.lineTo(r * .8, -r * .05); ctx.lineTo(r * .6, r * .3); ctx.closePath(); ctx.fill(); ctx.restore(); }
+      ctx.fillStyle = lit ? '#d9c2ff' : '#8a5cd6'; ctx.beginPath(); ctx.arc(0, 0, r * .6, 0, TAU); ctx.fill();
+      face(r * .65); break;
+    }
+    case 'candy':
+      ctx.rotate(e.t / 40);
+      ctx.fillStyle = '#ff7eb6';
+      ctx.beginPath(); ctx.moveTo(-r * .6, 0); ctx.lineTo(-r * 1.1, -r * .45); ctx.lineTo(-r * 1.1, r * .45); ctx.fill();
+      ctx.beginPath(); ctx.moveTo(r * .6, 0); ctx.lineTo(r * 1.1, -r * .45); ctx.lineTo(r * 1.1, r * .45); ctx.fill();
+      ctx.fillStyle = lit ? '#fff' : '#ffc2df'; ctx.beginPath(); ctx.arc(0, 0, r * .7, 0, TAU); ctx.fill();
+      ctx.strokeStyle = '#ff5c9d'; ctx.lineWidth = 3;
+      for (let i = -1; i <= 1; i++) { ctx.beginPath(); ctx.arc(0, 0, r * .7, i * 1.2 - .3, i * 1.2 + .3); ctx.stroke(); }
+      ctx.rotate(-e.t / 40); face(r * .7); break;
+    case 'ghost': {
+      ctx.fillStyle = lit ? '#fff' : 'rgba(214,200,255,.95)';
+      ctx.beginPath(); ctx.arc(0, -r * .1, r * .75, PI, 0);
+      const wv = e.t / 6;
+      ctx.lineTo(r * .75, r * .55);
+      for (let i = 0; i <= 6; i++) ctx.lineTo(r * .75 - i * r * .25, r * .55 + Math.sin(wv + i) * r * .12 + (i % 2 ? r * .12 : 0));
+      ctx.closePath(); ctx.fill();
+      ctx.strokeStyle = '#8f7ad9'; ctx.lineWidth = 2; ctx.stroke();
+      face(r * .8);
+      ctx.fillStyle = '#333'; ctx.beginPath(); ctx.ellipse(0, r * .22, r * .1, r * .13, 0, 0, TAU); ctx.fill();
+      break;
+    }
+  }
+  ctx.restore();
+}
+function drawBoss(b) {
+  const wob = Math.sin(b.t / 15) * 4, y = b.y + wob;
+  const alpha = b.inv > 0 && b.t % 6 < 3 ? .6 : 1;
+  if (b.def.dark) {
+    // 翅膀
+    const f = Math.sin(frame / 10) * .25;
+    ctx.save(); ctx.translate(b.x, y);
+    ctx.fillStyle = '#2a0838'; ctx.strokeStyle = '#c04dff'; ctx.lineWidth = 2;
+    for (const s of [-1, 1]) {
+      ctx.save(); ctx.scale(s, 1); ctx.rotate(-f);
+      ctx.beginPath(); ctx.moveTo(30, -10); ctx.lineTo(115, -55); ctx.lineTo(105, 0); ctx.lineTo(85, -15); ctx.lineTo(80, 25); ctx.lineTo(60, 5); ctx.lineTo(45, 30); ctx.closePath(); ctx.fill(); ctx.stroke();
+      ctx.restore();
+    }
+    ctx.restore();
+    ctx.save(); ctx.shadowColor = '#d04dff'; ctx.shadowBlur = 20 + Math.sin(frame / 8) * 8;
+    drawImg(getDarkWuji(), b.x, y, b.size, alpha); ctx.restore();
+    // 角
+    ctx.fillStyle = '#e0245e';
+    for (const s of [-1, 1]) { ctx.beginPath(); ctx.moveTo(b.x + s * 22, y - b.size * .36); ctx.quadraticCurveTo(b.x + s * 46, y - b.size * .55, b.x + s * 30, y - b.size * .68); ctx.lineTo(b.x + s * 36, y - b.size * .4); ctx.fill(); }
+  } else {
+    drawImg(IMG[b.def.img], b.x, y, b.size, alpha);
+  }
+  if (b.hitT > 0) { b.hitT--; ctx.globalCompositeOperation = 'lighter'; drawImg(b.def.dark ? getDarkWuji() : IMG[b.def.img], b.x, y, b.size, .3); ctx.globalCompositeOperation = 'source-over'; }
+  if (b.mid && b.life < 150 && !b.flee && !b.dead && b.y >= b.ty) {
+    const lines = wrap(STAGES[stage].midLine, 200, 15);
+    const bw = 220, bh = 20 + lines.length * 20, bx = Math.max(10, Math.min(W - bw - 10, b.x - bw / 2)), by = y + b.size / 2 + 10;
+    ctx.fillStyle = 'rgba(255,255,255,.92)'; ctx.beginPath(); ctx.roundRect(bx, by, bw, bh, 10); ctx.fill();
+    lines.forEach((l, i) => text(l, bx + 10, by + 20 + i * 20, 15, '#333', 'left', false));
+  }
+}
+const ITEM_STYLE = {
+  P:  { c:'#e83a3a', s:13, t:'P' },
+  PP: { c:'#e83a3a', s:22, t:'P' },
+  S:  { c:'#3a62e8', s:13, t:'點' },
+  B:  { c:'#2fae4f', s:18, t:'B' },
+  c:  { c:'#9be88a', s:6,  t:'' },
+};
+function drawItem(it) {
+  const st = ITEM_STYLE[it.type], s = st.s;
+  ctx.fillStyle = st.c; ctx.fillRect(it.x - s/2, it.y - s/2, s, s);
+  ctx.strokeStyle = '#fff'; ctx.lineWidth = 1.5; ctx.strokeRect(it.x - s/2, it.y - s/2, s, s);
+  if (st.t) text(st.t, it.x, it.y + 1, s * .75, '#fff', 'center', false);
+}
+function drawBullet(s) {
+  if (s.shape === 'rice') {
+    ctx.save(); ctx.translate(s.x, s.y); ctx.rotate(s.a);
+    ctx.fillStyle = s.c; ctx.strokeStyle = 'rgba(0,0,0,.55)'; ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.ellipse(0, 0, s.r * 1.7, s.r * .9, 0, 0, TAU); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.ellipse(0, 0, s.r * 1.1, s.r * .4, 0, 0, TAU); ctx.fill();
+    ctx.restore();
+  } else if (s.shape === 'big') {
+    ctx.globalAlpha = .35; ctx.fillStyle = s.c; ctx.beginPath(); ctx.arc(s.x, s.y, s.r * 1.3, 0, TAU); ctx.fill(); ctx.globalAlpha = 1;
+    ctx.fillStyle = s.c; ctx.beginPath(); ctx.arc(s.x, s.y, s.r, 0, TAU); ctx.fill();
+    ctx.fillStyle = 'rgba(255,255,255,.85)'; ctx.beginPath(); ctx.arc(s.x, s.y, s.r * .6, 0, TAU); ctx.fill();
+  } else {
+    ctx.fillStyle = s.c; ctx.strokeStyle = 'rgba(0,0,0,.55)'; ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.arc(s.x, s.y, s.r, 0, TAU); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(s.x, s.y, s.r * .5, 0, TAU); ctx.fill();
+  }
+}
+function drawLaser(l) {
+  const x2 = l.x + Math.cos(l.a) * l.len, y2 = l.y + Math.sin(l.a) * l.len;
+  ctx.save(); ctx.lineCap = 'round';
+  if (l.t < l.warn) {
+    ctx.strokeStyle = l.c; ctx.globalAlpha = .25 + (l.t % 10 < 5 ? .15 : 0); ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(l.x, l.y); ctx.lineTo(x2, y2); ctx.stroke();
+  } else {
+    const k = l.t - l.warn, grow = Math.min(1, k / 6), fade = Math.min(1, (l.on + 12 - k) / 12);
+    ctx.globalAlpha = fade;
+    ctx.strokeStyle = l.c; ctx.lineWidth = l.w * grow; ctx.beginPath(); ctx.moveTo(l.x, l.y); ctx.lineTo(x2, y2); ctx.stroke();
+    ctx.strokeStyle = '#fff'; ctx.lineWidth = l.w * .4 * grow; ctx.beginPath(); ctx.moveTo(l.x, l.y); ctx.lineTo(x2, y2); ctx.stroke();
+  }
+  ctx.restore();
+}
+
+// ---------- 更新 ----------
+function update() {
+  frame++;
+  if (scene === 'over' || scene === 'win') endT++;
+  if (scene !== 'play' || paused) { updateFx(); return; }
+
+  if (clearT > 0) { if (--clearT === 0) startStage(stage + 1); }
+  else if (!(boss && boss.mid)) stageT++;          // 中 boss 出現時，關卡進度暫停
+  while (scriptIdx < SCRIPT.length && SCRIPT[scriptIdx][0] <= stageT) SCRIPT[scriptIdx++][1]();
+  if (bossWarn > 0) bossWarn--;
+
+  // 玩家移動
+  const focus = focusing();
+  let sp = P.pilot.speed * (focus ? .45 : 1);
+  if (P.bombT > 0 && P.bombKind === 'laoda') sp *= .4;
+  let dx = (keys.ArrowRight || keys.KeyD ? 1 : 0) - (keys.ArrowLeft || keys.KeyA ? 1 : 0);
+  let dy = (keys.ArrowDown || keys.KeyS ? 1 : 0) - (keys.ArrowUp || keys.KeyW ? 1 : 0);
+  if (dx || dy) { const l = Math.hypot(dx, dy); P.x += dx / l * sp; P.y += dy / l * sp; mouse.active = false; }
+  else if (mouse.active) {
+    const tx = mouse.x, ty = mouse.y - 30, d = Math.hypot(tx - P.x, ty - P.y), m = Math.min(d, sp * 1.6);
+    if (d > .5) { P.x += (tx - P.x) / d * m; P.y += (ty - P.y) / d * m; }
+  }
+  P.x = Math.max(14, Math.min(W - 14, P.x)); P.y = Math.max(20, Math.min(H - 20, P.y));
+  if (P.inv > 0) P.inv--;
+  updateBomb();
+  updatePBombs();
+
+  // 自動射擊（對話中不射擊）
+  const canFire = !talk && clearT === 0;
+  if (canFire && --P.cool <= 0) { playerFire(); P.cool = 6; if (frame % 3 === 0) sfx('shot'); }
+  if (canFire && P.pilot.id === 'laoda') {
+    const L = laserStat();
+    for (const e of enemies) if (Math.abs(e.x - P.x) < L.w / 2 + e.size * .35 && e.y < P.y && e.y > 0) { e.hp -= L.dmg; e.hitT = 2; }
+    if (boss && Math.abs(boss.x - P.x) < L.w / 2 + 45 && boss.y < P.y) bossHit(L.dmg);
+  }
+
+  // 玩家子彈
+  for (const b of pBul) {
+    if (b.homing) {
+      const tgt = nearestTarget(b.x, b.y);
+      if (tgt) { const a = ang(b.x, b.y, tgt.x, tgt.y); b.vx += Math.cos(a) * .9; b.vy += Math.sin(a) * .9; const s = Math.hypot(b.vx, b.vy); b.vx = b.vx / s * 10; b.vy = b.vy / s * 10; }
+    }
+    b.x += b.vx; b.y += b.vy;
+    for (const e of enemies) if (!b.dead && Math.abs(b.x - e.x) < e.size * .45 && Math.abs(b.y - e.y) < e.size * .45) {
+      e.hp -= b.dmg; e.hitT = 3; b.dead = true; score += 10;
+    }
+    if (!b.dead && boss && !boss.flee && !boss.dead && Math.abs(b.x - boss.x) < boss.size * .42 && Math.abs(b.y - boss.y) < boss.size * .42) { b.dead = true; bossHit(b.dmg); }
+  }
+  pBul = pBul.filter(b => !b.dead && b.y > -20 && b.y < H + 20 && b.x > -20 && b.x < W + 20);
+
+  // 小怪
+  for (const e of enemies) {
+    e.t++; e.move(e); if (e.y > 0 && e.y < H * .75) e.fire(e);
+    if (e.hitT > 0) e.hitT--;
+    if (Math.hypot(e.x - P.x, e.y - P.y) < e.size * .35) playerHurt();
+    if (e.hp <= 0 && !e.dead) {
+      e.dead = true; const sc = Math.round(e.score * D.mul); score += sc;
+      burst(e.x, e.y, '#ffe08a', e.size > 60 ? 40 : 14); sfx('boom'); if (e.size > 60) shake = 8;
+      popup(e.x, e.y, '+' + sc, '#ffd166');
+      const r = Math.random();
+      if (e.kind === 'ghost') { drop(e.x, e.y, 'P', 4, 30); drop(e.x, e.y, 'S', 4, 30); if (r < .35) drop(e.x, e.y, 'B'); }
+      else if (e.kind === 'candy') { drop(e.x, e.y, 'P', 2); drop(e.x, e.y, 'S', 1); }
+      else if (r < .25) drop(e.x, e.y, r < .15 ? 'P' : 'S');
+    }
+  }
+  enemies = enemies.filter(e => !e.dead && e.y < H + 80 && e.x > -80 && e.x < W + 80 && !(e.t > 300 && e.y < -60));
+
+  if (boss) bossUpdate();
+
+  // 敵彈
+  const hr = 3.2;
+  for (const s of eBul) {
+    if (s.tt > 0) { s.a += s.turn; s.tt--; }
+    if (s.acc) s.sp = Math.min(s.max, s.sp + s.acc);
+    s.x += Math.cos(s.a) * s.sp; s.y += Math.sin(s.a) * s.sp;
+    const d = Math.hypot(s.x - P.x, s.y - P.y), cr = s.shape === 'big' ? s.r * .8 : s.shape === 'rice' ? s.r * .9 : s.r;
+    if (d < cr + hr) { playerHurt(); break; }
+    if (!s.grazed && d < cr + 18 && P.inv <= 0) { s.grazed = true; P.graze++; score += Math.round(50 * D.mul); sfx('graze'); parts.push({ x: P.x, y: P.y, vx: rnd(-2, 2), vy: rnd(-2, 2), life: 12, c: '#fff' }); }
+  }
+  eBul = eBul.filter(s => s.x > -40 && s.x < W + 40 && s.y > -60 && s.y < H + 40);
+
+  // 雷射
+  for (const l of lasers) {
+    l.t++;
+    if (l.owner) { if (l.owner !== boss || boss.dead || boss.flee) l.t = 1e9; else { l.x = l.owner.x; l.y = l.owner.y; } }
+    l.a += l.spin;
+    if (l.t === l.warn) sfx('laser');
+    const k = l.t - l.warn;
+    if (k > 6 && k < l.on && P.inv <= 0 && distSeg(P.x, P.y, l.x, l.y, l.x + Math.cos(l.a) * l.len, l.y + Math.sin(l.a) * l.len) < l.w * .35 + hr) playerHurt();
+  }
+  lasers = lasers.filter(l => l.t < l.warn + l.on + 12);
+
+  // 道具：上方收集線以上自動吸取
+  for (const it of items) {
+    it.vy = Math.min(it.vy + .08, 2.2);
+    const d = Math.hypot(it.x - P.x, it.y - P.y);
+    if (it.auto || d < 60 || P.y < 200) { const a = ang(it.x, it.y, P.x, P.y); it.x += Math.cos(a) * 9; it.y += Math.sin(a) * 9; }
+    else it.y += it.vy;
+    if (d < 24) {
+      it.dead = true;
+      if (it.type === 'P') { addPower(1); score += 10; sfx('item'); }
+      else if (it.type === 'PP') { addPower(8); score += 100; sfx('item'); }
+      else if (it.type === 'B') { P.bombs = Math.min(P.bombs + 1, 6); popup(P.x, P.y - 34, '炸彈 +1', '#7fe08a'); sfx('power'); }
+      else if (it.type === 'S') { const v = Math.round((P.y < 200 ? 1000 : 200 + 800 * (1 - (P.y - 200) / (H - 200))) * D.mul); score += v; popup(it.x, it.y, '' + v, '#9fb8ff'); sfx('item'); }
+      else score += 50;
+    }
+  }
+  items = items.filter(it => !it.dead && it.y < H + 30);
+  updateFx();
+}
+function updateFx() {
+  for (const p of parts) { p.x += p.vx; p.y += p.vy; p.vx *= .95; p.vy *= .95; p.life--; }
+  parts = parts.filter(p => p.life > 0);
+  for (const p of popups) { p.y -= .8; p.life--; }
+  popups = popups.filter(p => p.life > 0);
+  if (talk) talk.t++;
+  if (shake > 0) shake--; if (flash > 0) flash--;
+}
+
+// ---------- 畫面 ----------
+function draw() {
+  ctx.save();
+  if (shake) ctx.translate(rnd(-shake, shake) * .5, rnd(-shake, shake) * .5);
+  drawBg();
+  if (scene === 'title') drawTitle();
+  else if (scene === 'menu') drawMenu();
+  else if (scene === 'stagesel') drawStageSel();
+  else if (scene === 'settings') drawSettings();
+  else if (scene === 'select') drawSelect();
+  else drawGame();
+  ctx.restore();
+  if (flash) { ctx.fillStyle = `rgba(255,255,255,${flash / 25})`; ctx.fillRect(0, 0, W, H); }
+}
+function drawTitle() {
+  const bob = Math.sin(frame / 20) * 8;
+  drawImg(IMG.devil, W/2 + 110, 260 + bob, 140, .9);
+  drawImg(IMG.wuji, W/2 - 90, 330 - bob, 140);
+  text('烏雞空戰隊', W/2, 130, 54, '#ffd166');
+  text('～ 紫色雲朵的祕密 ～', W/2, 185, 22, '#fff');
+  const pulse = 1 + Math.sin(frame / 15) * .04;
+  ctx.save(); ctx.translate(W/2, 520); ctx.scale(pulse, pulse);
+  ctx.fillStyle = '#ffd166'; ctx.beginPath(); ctx.roundRect(-110, -30, 220, 60, 30); ctx.fill();
+  text('遊戲開始', 0, 1, 28, '#2a1a00', 'center', false);
+  ctx.restore();
+  text('滑鼠移動 / 方向鍵　自動射擊', W/2, 600, 16, '#ccd', 'center', false);
+  text('Shift 精準移動　X 或 右鍵 炸彈　P 暫停　M 靜音', W/2, 625, 16, '#ccd', 'center', false);
+}
+function button(x, y, w, h, on, c = '#ffd166') {
+  ctx.fillStyle = on ? 'rgba(255,255,255,.16)' : 'rgba(255,255,255,.05)';
+  ctx.strokeStyle = on ? c : 'rgba(255,255,255,.2)'; ctx.lineWidth = on ? 3 : 1;
+  ctx.beginPath(); ctx.roundRect(x, y, w, h, 14); ctx.fill(); ctx.stroke();
+}
+function setLabel(v) { return v === INF ? '無限' : '' + v; }
+function drawMenu() {
+  text('烏雞空戰隊', W/2, 120, 44, '#ffd166');
+  const items = [['破關模式', '從第一關一路打到最後的魔王'], ['關卡選擇', '挑一關單獨練習'], ['設定', '難度、命數、炸彈']];
+  items.forEach((it, i) => {
+    const y = 230 + i * 105, on = menuSel === i;
+    button(W/2 - 160, y, 320, 90, on);
+    text(it[0], W/2, y + 34, 28, on ? '#ffd166' : '#fff');
+    text(it[1], W/2, y + 66, 15, '#ccd', 'center', false);
+  });
+  text('難度：' + D.name + '　命：' + setLabel(SET.lives) + '　炸彈：' + setLabel(SET.bombs), W/2, 585, 16, D.c);
+  text('↑ ↓ 選擇　Enter 決定　Esc 返回', W/2, 660, 16, '#ccd', 'center', false);
+}
+function drawStageSel() {
+  text('關卡選擇', W/2, 100, 40, '#ffd166');
+  STAGES.forEach((S, i) => {
+    const c = STSEL_XY(i), on = stSel === i;
+    button(c.x - 105, c.y, 210, 120, on);
+    text('STAGE ' + (i + 1), c.x - 90, c.y + 22, 16, '#ccd', 'left');
+    text(S.title, c.x - 90, c.y + 52, 24, on ? '#ffd166' : '#fff', 'left');
+    drawImg(IMG[BOSSES[S.boss].img], c.x + 62, c.y + 78, 64, on ? 1 : .6);
+    text('魔王：' + BOSSES[S.boss].name, c.x - 90, c.y + 95, 14, '#ccd', 'left', false);
+  });
+  text('方向鍵選擇　Enter 決定　Esc 返回', W/2, 660, 16, '#ccd', 'center', false);
+}
+function drawSettings() {
+  text('設定', W/2, 110, 40, '#ffd166');
+  const rows = [['難度', D.name, D.c], ['初始命數', setLabel(SET.lives), '#ff7b9c'], ['初始炸彈', setLabel(SET.bombs), '#7fe08a']];
+  rows.forEach((r, i) => {
+    const y = 200 + i * 100, on = setRow === i;
+    button(30, y, W - 60, 80, on);
+    text(r[0], 55, y + 40, 22, on ? '#ffd166' : '#fff', 'left');
+    text('◀', 250, y + 40, 26, on ? '#fff' : '#889');
+    text(r[1], 345, y + 40, 26, r[2]);
+    text('▶', 440, y + 40, 26, on ? '#fff' : '#889');
+  });
+  text(D.desc, W/2, 505, 15, '#ccd', 'center', false);
+  button(W/2 - 90, 540, 180, 56, setRow === 3);
+  text('返回', W/2, 568, 22, setRow === 3 ? '#ffd166' : '#fff');
+  if (practice()) text('有設定「無限」時不會記錄最高分', W/2, 625, 15, '#ffb35c', 'center', false);
+  text('↑ ↓ 選擇　← → 調整　Esc 返回', W/2, 665, 16, '#ccd', 'center', false);
+}
+function drawSelect() {
+  text('選擇機師', W/2, 80, 40, '#ffd166');
+  for (let i = 0; i < 3; i++) {
+    const p = PILOTS[i], cx = 90 + i * 150, on = sel === i;
+    ctx.fillStyle = on ? 'rgba(255,209,102,.18)' : 'rgba(255,255,255,.06)';
+    ctx.strokeStyle = on ? '#ffd166' : 'rgba(255,255,255,.2)'; ctx.lineWidth = on ? 3 : 1;
+    ctx.beginPath(); ctx.roundRect(cx - 68, 170, 136, 250, 14); ctx.fill(); ctx.stroke();
+    drawImg(IMG[p.id], cx, 270 + (on ? Math.sin(frame / 12) * 5 : 0), on ? 140 : 120);
+    text(p.name, cx, 385, p.name.length > 3 ? 18 : 22, on ? '#ffd166' : '#fff');
+  }
+  const p = PILOTS[sel];
+  text('射擊：' + p.shot + '　　炸彈：' + p.bomb, W/2, 460, 18);
+  text(p.desc, W/2, 495, 16, '#dde');
+  ctx.fillStyle = '#ffd166'; ctx.beginPath(); ctx.roundRect(W/2 - 90, 560, 180, 50, 25); ctx.fill();
+  text('出擊！', W/2, 585, 24, '#2a1a00', 'center', false);
+  text((mode === 'single' ? 'STAGE ' + (stSel + 1) + ' ' + STAGES[stSel].title : '破關模式') + '　難度：' + D.name, W/2, 530, 15, D.c);
+  text('← → 選擇　Enter 出擊　Esc 返回', W/2, 660, 16, '#ccd', 'center', false);
+}
+function drawTalk() {
+  const line = talk.lines[talk.i], who = line[0];
+  const bd = boss.def, pIm = IMG[P.pilot.id], bIm = bd.dark ? getDarkWuji() : IMG[bd.img];
+  drawImg(pIm, 95, H - 290, who === 'P' ? 180 : 150, who === 'P' ? 1 : .45);
+  drawImg(bIm, W - 95, H - 290, who === 'B' ? 180 : 150, who === 'B' ? 1 : .45);
+  ctx.fillStyle = 'rgba(10,8,30,.85)'; ctx.strokeStyle = who === 'P' ? '#ffd166' : '#ff7bd5'; ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.roundRect(16, H - 200, W - 32, 130, 12); ctx.fill(); ctx.stroke();
+  text(who === 'P' ? P.pilot.name : bd.name, 32, H - 180, 17, who === 'P' ? '#ffd166' : '#ff9ad8', 'left');
+  const shown = line[1].slice(0, Math.floor(talk.t / 2) + 1);
+  wrap(shown, W - 70, 18).forEach((l, i) => text(l, 32, H - 148 + i * 26, 18, '#fff', 'left', false));
+  if (frame % 40 < 28) text('▼ 點擊 / Z', W - 32, H - 86, 13, '#aab', 'right', false);
+}
+function drawGame() {
+  for (const it of items) drawItem(it);
+  for (const e of enemies) {
+    drawMob(e);
+    if (e.kind === 'ghost' || e.kind === 'candy') { const w = e.size * .8; ctx.fillStyle = '#400'; ctx.fillRect(e.x - w/2, e.y - e.size * .65, w, 4); ctx.fillStyle = '#ff5c5c'; ctx.fillRect(e.x - w/2, e.y - e.size * .65, w * Math.max(0, e.hp) / e.maxHp, 4); }
+  }
+  if (boss && (!boss.dead || boss.dead % 4 < 2)) drawBoss(boss);
+  if (boss && bossActive()) {
+    const b = boss;
+    ctx.fillStyle = 'rgba(0,0,0,.5)'; ctx.fillRect(20, 44, W - 40, 8);
+    ctx.fillStyle = b.mid ? '#ffd166' : ['#ff9ad8','#8fd0ff','#ff6b6b','#c08cff'][b.phase % 4];
+    ctx.fillRect(20, 44, (W - 40) * Math.max(0, b.hp) / b.maxHp, 8);
+    text(b.def.name + (b.mid ? '' : '　' + '★'.repeat(b.phases.length - b.phase - 1)), 22, 64, 14, '#fff', 'left');
+    if (!b.mid) {
+      const nm = b.phases[b.phase].name, big = b.t < 90;
+      text(nm, W - 18, big ? 110 : 64, big ? 20 : 14, '#ffe0f0', 'right');
+    }
+  }
+  // 玩家雷射（老大）
+  if (P.pilot.id === 'laoda' && !talk && clearT === 0 && scene === 'play') {
+    const L = laserStat(), fl = 1 + Math.sin(frame) * .1;
+    ctx.globalAlpha = .55; ctx.fillStyle = '#5cf0ff'; ctx.fillRect(P.x - L.w / 2 * fl, 0, L.w * fl, P.y - 18);
+    ctx.globalAlpha = .9; ctx.fillStyle = '#fff'; ctx.fillRect(P.x - L.w / 5, 0, L.w * .4, P.y - 18);
+    ctx.globalAlpha = 1;
+  }
+  for (const b of pBul) {
+    ctx.fillStyle = b.kind === 'wuji' ? '#ffe066' : b.kind === 'lala' ? (b.homing ? '#ff8fd0' : '#fff') : '#7df9ff';
+    ctx.globalAlpha = .8; ctx.beginPath(); ctx.ellipse(b.x, b.y, 3, 7, Math.atan2(b.vy, b.vx) + PI/2, 0, TAU); ctx.fill(); ctx.globalAlpha = 1;
+  }
+  // 炸彈
+  if (P.bombT > 0) {
+    if (P.bombKind === 'wuji') {
+      const r = (120 - P.bombT) * 8;
+      ctx.strokeStyle = `rgba(255,230,120,${P.bombT / 120})`; ctx.lineWidth = 22;
+      ctx.beginPath(); ctx.arc(P.x, P.y, r, 0, TAU); ctx.stroke();
+      ctx.fillStyle = `rgba(255,240,180,${P.bombT / 600})`; ctx.fillRect(0, 0, W, H);
+    } else if (P.bombKind === 'laoda') {
+      const w = sparkW(), g = ctx.createLinearGradient(P.x - w/2, 0, P.x + w/2, 0);
+      g.addColorStop(0, 'rgba(255,80,200,0)'); g.addColorStop(.2, 'rgba(255,120,220,.7)'); g.addColorStop(.5, 'rgba(255,255,255,.95)');
+      g.addColorStop(.8, 'rgba(120,220,255,.7)'); g.addColorStop(1, 'rgba(120,220,255,0)');
+      ctx.fillStyle = g; ctx.fillRect(P.x - w/2, 0, w, P.y - 10);
+    }
+  }
+  for (const o of pBombs) {
+    const g = ctx.createRadialGradient(o.x, o.y, 4, o.x, o.y, o.r);
+    g.addColorStop(0, '#fff'); g.addColorStop(.5, `hsla(${o.hue},100%,70%,.85)`); g.addColorStop(1, `hsla(${o.hue},100%,60%,0)`);
+    ctx.fillStyle = g; ctx.beginPath(); ctx.arc(o.x, o.y, o.r * (1 + Math.sin(frame / 4) * .06), 0, TAU); ctx.fill();
+  }
+  // 玩家
+  if (scene === 'play' || scene === 'win') {
+    if (!(P.inv > 0 && frame % 6 < 3)) drawImg(IMG[P.pilot.id], P.x, P.y, 56);
+    if (focusing()) { ctx.strokeStyle = '#fff'; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.arc(P.x, P.y, 18, frame / 10, frame / 10 + 5); ctx.stroke(); }
+    ctx.fillStyle = '#fff'; ctx.strokeStyle = '#f33'; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.arc(P.x, P.y, 4, 0, TAU); ctx.fill(); ctx.stroke();
+  }
+  for (const l of lasers) drawLaser(l);
+  for (const s of eBul) drawBullet(s);
+  for (const p of parts) { ctx.globalAlpha = Math.min(1, p.life / 20); ctx.fillStyle = p.c; ctx.fillRect(p.x - 2, p.y - 2, 4, 4); }
+  ctx.globalAlpha = 1;
+  for (const p of popups) { ctx.globalAlpha = Math.min(1, p.life / 25); text(p.t, p.x, p.y, 15, p.c); }
+  ctx.globalAlpha = 1;
+
+  // HUD
+  text('分數 ' + score.toLocaleString(), 12, 20, 18, '#fff', 'left');
+  text(D.name + '　最高 ' + Math.max(hiScore, score).toLocaleString(), W - 12, 20, 14, D.c, 'right');
+  text('命 ' + (P.infL ? '∞' : '❤'.repeat(P.lives)), 12, H - 46, 16, '#ff7b9c', 'left');
+  text('炸彈 ' + (P.infB ? '∞' : '★'.repeat(P.bombs)), 12, H - 22, 16, '#7fe08a', 'left');
+  const L = lv();
+  text('火力 Lv' + L + (L === MAXLV ? ' MAX' : ''), W - 12, H - 52, 16, '#ff8a8a', 'right');
+  if (L < MAXLV) { const f = (P.pp - LV_PTS[L - 1]) / (LV_PTS[L] - LV_PTS[L - 1]); ctx.fillStyle = 'rgba(255,255,255,.2)'; ctx.fillRect(W - 92, H - 40, 80, 4); ctx.fillStyle = '#ff8a8a'; ctx.fillRect(W - 92, H - 40, 80 * f, 4); }
+  text('擦彈 ' + P.graze, W - 12, H - 20, 14, '#ddd', 'right');
+  if (!boss && scene === 'play' && clearT === 0) {
+    const prog = Math.min(1, stageT / stageLen);
+    ctx.fillStyle = 'rgba(255,255,255,.15)'; ctx.fillRect(W - 8, 60, 4, 200);
+    ctx.fillStyle = '#ffd166'; ctx.fillRect(W - 8, 60 + 200 * (1 - prog), 4, 200 * prog);
+  }
+  if (bossWarn > 0 && bossWarn % 30 < 20) {
+    ctx.fillStyle = 'rgba(200,0,60,.35)'; ctx.fillRect(0, H/2 - 50, W, 100);
+    text('⚠ WARNING ⚠', W/2, H/2 - 14, 40, '#fff');
+    text(BOSSES[STAGES[stage].boss].name + ' 接近中', W/2, H/2 + 26, 20, '#fdd');
+  }
+  if (stageT < 180 && clearT === 0 && scene === 'play' && !boss) {
+    const S = STAGES[stage];
+    ctx.globalAlpha = Math.min(1, (180 - stageT) / 30);
+    text('STAGE ' + (stage + 1), W/2, H/2 - 90, 30, '#fff');
+    text(S.title, W/2, H/2 - 50, 34, '#ffd166');
+    text(S.sub, W/2, H/2 - 14, 18, '#eef');
+    ctx.globalAlpha = 1;
+  }
+  if (clearT > 0) { text('STAGE CLEAR!', W/2, H/2 - 40, 44, '#ffd166'); text('準備前往下一關……', W/2, H/2 + 10, 18); }
+  if (talk && scene === 'play') drawTalk();
+  if (paused) { ctx.fillStyle = 'rgba(0,0,0,.6)'; ctx.fillRect(0, 0, W, H); text('暫停', W/2, H/2, 40); text('P 繼續　Q 回標題', W/2, H/2 + 44, 18, '#ccd'); }
+
+  if (scene === 'over' || scene === 'win') {
+    ctx.fillStyle = `rgba(0,0,0,${Math.min(.75, endT / 60)})`; ctx.fillRect(0, 0, W, H);
+    const win = scene === 'win';
+    const single = mode === 'single';
+    text(win ? (single ? 'STAGE ' + (stage + 1) + ' 通過！' : '任務完成！') : 'GAME OVER', W/2, 170, 48, win ? '#ffd166' : '#ff6b8a');
+    if (win && single) text(STAGES[stage].title + '　' + BOSSES[STAGES[stage].boss].name + ' 清醒了！', W/2, 230, 18);
+    else if (win) {
+      text('惡魔被打跑了，紫色的雲也散開了，', W/2, 230, 18);
+      text('大家都清醒過來，天空又恢復了藍色！', W/2, 258, 18);
+    } else text('到達 STAGE ' + (stage + 1) + '　' + STAGES[stage].title, W/2, 230, 18);
+    drawImg(IMG[P.pilot.id], W/2, 360, 120);
+    text('分數 ' + score.toLocaleString(), W/2, 460, 28);
+    text(D.name + '　擦彈 ' + P.graze + '　最高分 ' + hiScore.toLocaleString(), W/2, 500, 16, '#ccd');
+    if (endT > 60 && frame % 60 < 40) text('點擊 或 按 Enter 回到選單', W/2, 600, 20);
+  }
+}
+
+// ---------- 主迴圈（固定 60fps 邏輯） ----------
+let last = performance.now(), acc = 0;
+function loop(now) {
+  acc += Math.min(100, now - last); last = now;
+  while (acc >= 1000 / 60) { update(); acc -= 1000 / 60; }
+  draw();
+  requestAnimationFrame(loop);
+}
+requestAnimationFrame(loop);
+
+// 除錯用
+window.__dbg = {
+  get state() { return { scene, stage, stageT, stageLen, clearT, talk: !!talk, boss: boss && { id: boss.id, mid: boss.mid, phase: boss.phase, hp: boss.hp, flee: boss.flee, dead: boss.dead }, P, eBul: eBul && eBul.length, lasers: lasers && lasers.length }; },
+  skipTo(t) { stageT = t; while (scriptIdx < SCRIPT.length && SCRIPT[scriptIdx][0] < t) scriptIdx++; },
+  stage(n) { startStage(n); },
+  hurtBoss() { if (boss) { boss.inv = 0; boss.hp = .5; bossHit(1); } },
+  endTalk() { while (talk) nextTalk(); },
+  set(k, v) { P[k] = v; },
+};
+})();
+</script>
+</body>
+</html>
