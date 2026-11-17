@@ -1,0 +1,1747 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
+<title>我們這一家大戰甜點</title>
+<style>
+:root{
+  --ink:#4a2c1a; --cream:#fff6e6; --pink:#ff8fb1; --pinkd:#e0628c; --mint:#8fe0c4; --gold:#ffcf4a;
+  --panel:#fff3dd; --wood:#b97a46; --woodd:#8a5530;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){color-scheme:dark}}
+:root[data-theme="dark"]{color-scheme:dark}
+html,body{margin:0;height:100%;background:#2a1a12;overflow:hidden;touch-action:none;
+  font-family:"Noto Sans TC","PingFang TC","Microsoft JhengHei","Heiti TC",sans-serif;color:var(--ink);
+  -webkit-user-select:none;user-select:none}
+#wrap{position:absolute;left:50%;top:50%;width:1280px;height:720px;transform-origin:center center;
+  transform:translate(-50%,-50%);background:#2a1a12;overflow:hidden;border-radius:6px}
+#cv{position:absolute;left:0;top:0;width:1280px;height:720px;display:block}
+.scr{position:absolute;inset:0;display:none;flex-direction:column;align-items:center;justify-content:center}
+.scr.on{display:flex}
+.btn{font:inherit;font-weight:800;font-size:24px;color:#fff;background:linear-gradient(#ff9fc0,#ec6f98);
+  border:4px solid #fff;border-radius:22px;padding:12px 34px;margin:8px;cursor:pointer;
+  box-shadow:0 6px 0 #b9466f,0 10px 18px rgba(0,0,0,.25);text-shadow:0 2px 0 #b9466f;min-width:220px}
+.btn:hover{filter:brightness(1.08);transform:translateY(-1px)}
+.btn:active{transform:translateY(4px);box-shadow:0 2px 0 #b9466f}
+.btn.g{background:linear-gradient(#8fe7c9,#41bf95);box-shadow:0 6px 0 #2a8a69,0 10px 18px rgba(0,0,0,.25);text-shadow:0 2px 0 #2a8a69}
+.btn.y{background:linear-gradient(#ffe07a,#f5b928);box-shadow:0 6px 0 #b8841a,0 10px 18px rgba(0,0,0,.25);text-shadow:0 2px 0 #b8841a}
+.btn.s{font-size:18px;padding:8px 20px;min-width:0;border-width:3px}
+.btn:disabled{filter:grayscale(1) brightness(.85);cursor:default;transform:none}
+.card{background:var(--panel);border:5px solid #fff;border-radius:28px;box-shadow:0 12px 30px rgba(0,0,0,.35);padding:24px 30px}
+h1.logo{font-size:64px;margin:0 0 4px;color:#fff;letter-spacing:4px;
+  text-shadow:0 5px 0 #e0628c,0 -3px 0 #e0628c,4px 0 0 #e0628c,-4px 0 0 #e0628c,0 10px 20px rgba(0,0,0,.4)}
+.sub{color:#fff;font-size:20px;margin-bottom:18px;text-shadow:0 2px 4px rgba(0,0,0,.5)}
+.title-bg{background:#3a2240 url(assets/images/cover.jpg) center/cover no-repeat;justify-content:flex-start;align-items:stretch}
+.title-bg::before{content:"";position:absolute;inset:0;background:linear-gradient(90deg,rgba(30,12,30,.55) 0,rgba(30,12,30,.15) 34%,rgba(0,0,0,0) 50%),linear-gradient(rgba(30,12,30,.5) 0,rgba(0,0,0,0) 26%);pointer-events:none}
+.title-bg>*{position:relative}
+.title-head{text-align:center;padding-top:26px}
+.title-menu{display:flex;flex-direction:column;align-items:flex-start;padding:22px 0 0 44px}
+.title-menu .btn{min-width:300px}
+.title-menu .btn.s{min-width:0;margin-left:0;margin-right:16px}
+.title-menu .row{margin-top:6px}
+.title-menu .row{justify-content:flex-start}
+.charrow{display:flex;gap:4px;margin:6px 0 14px;height:110px;align-items:flex-end}
+.charrow img{height:96px;animation:bob 1.6s ease-in-out infinite;filter:drop-shadow(0 6px 4px rgba(0,0,0,.25))}
+@keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+.map-bg{background:linear-gradient(#ffe6ef,#ffd2a8)}
+.map{display:flex;flex-direction:column;gap:14px;width:1100px}
+.scene{display:flex;align-items:center;gap:14px;background:rgba(255,255,255,.7);border-radius:22px;padding:12px 18px;border:4px solid #fff}
+.scene .nm{width:150px;font-size:22px;font-weight:900}
+.scene .nm small{display:block;font-size:14px;font-weight:600;opacity:.7}
+.lv{width:120px;height:86px;border-radius:18px;border:4px solid #fff;font:inherit;font-size:26px;font-weight:900;cursor:pointer;
+  background:linear-gradient(#ffc2d6,#ff8fb1);color:#fff;text-shadow:0 2px 0 #c0507a;position:relative;box-shadow:0 5px 0 #c0507a}
+.lv.n{background:linear-gradient(#a9b4ff,#6c79e0);text-shadow:0 2px 0 #3d47a0;box-shadow:0 5px 0 #3d47a0}
+.lv.k{background:linear-gradient(#fff0c2,#f7c96b);color:#8a5530;text-shadow:none;box-shadow:0 5px 0 #b8841a}
+.lv.boss{width:220px;background:linear-gradient(#ff8a8a,#c93a3a);box-shadow:0 5px 0 #7d1f1f;text-shadow:0 2px 0 #7d1f1f;font-size:22px}
+.lv:disabled{filter:grayscale(1);opacity:.55;cursor:default}
+.lv .ck{position:absolute;right:-8px;top:-10px;background:#3bc48a;border:3px solid #fff;border-radius:50%;width:30px;height:30px;font-size:18px;line-height:24px;color:#fff;text-shadow:none}
+.lv small{display:block;font-size:12px;font-weight:700;margin-top:2px}
+.topbar{position:absolute;top:14px;left:18px;right:18px;display:flex;justify-content:space-between;align-items:center}
+.sel-wrap{display:flex;gap:18px;width:1200px;height:600px}
+.sel-left{flex:1;display:flex;flex-direction:column}
+.sel-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:10px;overflow:auto;padding:4px}
+.pick{background:#fff;border:4px solid #f1d7b8;border-radius:16px;padding:6px 4px 4px;text-align:center;cursor:pointer;position:relative}
+.pick img{height:74px;max-width:100%;object-fit:contain}
+.pick .pn{font-size:14px;font-weight:800;white-space:nowrap}
+.pick .pr{font-size:12px;opacity:.75}
+.pick .pc{position:absolute;left:6px;top:4px;background:#59c2ff;color:#fff;border-radius:10px;padding:0 6px;font-size:13px;font-weight:900}
+.pick.on{border-color:#ff8fb1;background:#ffe5ee;opacity:.5}
+.tray{display:flex;gap:8px;min-height:120px;background:linear-gradient(#ffd0de,#ffb3c9);border:4px solid #ff8fb1;border-radius:18px;padding:8px;margin-bottom:10px;box-shadow:0 4px 0 #e0628c}
+.sec-h{font-size:18px;font-weight:900;margin:0 0 6px 4px;display:flex;align-items:center;gap:8px}
+.sec-h small{font-size:13px;font-weight:700;opacity:.65}
+.sec-h.go{color:#d0457a}.sec-h.stay{color:#6b4a2f;margin-top:2px}
+.sel-grid{background:rgba(138,85,48,.12);border-radius:18px;padding:8px !important}
+.pick .badge{position:absolute;right:6px;top:4px;background:#ff8fb1;color:#fff;border-radius:10px;padding:0 6px;font-size:12px;font-weight:900}
+.tray .pick{width:96px;opacity:1}
+.tray .slot{width:96px;border:3px dashed rgba(138,85,48,.35);border-radius:16px}
+.sel-right{width:300px;display:flex;flex-direction:column;gap:10px}
+.info{background:#fff;border-radius:18px;padding:14px;font-size:15px;line-height:1.5;flex:1;overflow:auto}
+.info b{font-size:20px}
+.ov{position:absolute;inset:0;background:rgba(40,20,10,.55);display:none;align-items:center;justify-content:center;flex-direction:column}
+.ov.on{display:flex}
+.res-title{font-size:56px;font-weight:900;color:#fff;margin:0 0 8px;text-shadow:0 5px 0 #e0628c,0 10px 20px rgba(0,0,0,.4)}
+.res-title.lose{text-shadow:0 5px 0 #7b4a2a,0 10px 20px rgba(0,0,0,.4)}
+.newfriend{display:flex;align-items:center;gap:18px;background:#fff;border-radius:20px;padding:12px 24px;margin:8px 0 14px}
+.newfriend img{height:110px}
+.row{display:flex;gap:6px;flex-wrap:wrap;justify-content:center}
+.codex{width:1200px;height:610px;display:flex;flex-direction:column}
+.tabs{display:flex;gap:8px;margin-bottom:10px}
+.tab{font:inherit;font-weight:800;font-size:18px;border:3px solid #fff;border-radius:14px;padding:6px 18px;background:#f4d9b9;color:var(--ink);cursor:pointer}
+.tab.on{background:#ff8fb1;color:#fff}
+.tbl-wrap{flex:1;overflow:auto;background:#fff;border-radius:18px;padding:6px}
+table{border-collapse:collapse;width:100%;font-size:14px}
+th{position:sticky;top:0;background:#ffe2ec;padding:6px 6px;text-align:left;font-size:13px;white-space:nowrap;z-index:1}
+td{border-top:1px solid #f3e3d0;padding:4px 6px;vertical-align:middle}
+td img,td canvas{height:52px;display:block}
+td.d{font-size:12.5px;opacity:.8;max-width:260px}
+.intro-grid{margin-top:58px;width:1220px;height:630px;display:grid;grid-template-columns:repeat(4,1fr);grid-auto-rows:min-content;gap:12px;overflow:auto;padding:4px}
+.ic{background:#fff;border:4px solid #fff;border-radius:22px;box-shadow:0 6px 0 rgba(138,85,48,.18);display:flex;gap:10px;padding:10px 12px;align-items:flex-start}
+.ic img{width:84px;height:96px;object-fit:contain;flex:none;animation:bob 1.8s ease-in-out infinite}
+.ic .nm{font-size:19px;font-weight:900;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.ic .tag{font-size:12px;font-weight:800;color:#fff;background:#ff8fb1;border-radius:10px;padding:1px 8px}
+.ic .cost{font-size:12px;font-weight:800;color:#fff;background:#59c2ff;border-radius:10px;padding:1px 8px}
+.ic .tx{font-size:13.5px;line-height:1.55;margin-top:4px}
+.ic.lock{opacity:.6}.ic.lock img{filter:brightness(0) opacity(.35);animation:none}
+.set-row{display:flex;align-items:center;gap:14px;margin:12px 0;font-size:20px;font-weight:700}
+.set-row input[type=range]{width:260px;accent-color:#ec6f98}
+.set-row input[type=checkbox]{width:26px;height:26px;accent-color:#ec6f98}
+.note{font-size:14px;opacity:.75;max-width:520px;line-height:1.5}
+#rot{position:fixed;inset:0;background:#2a1a12;color:#fff;display:none;align-items:center;justify-content:center;font-size:22px;text-align:center;z-index:9}
+@media (orientation:portrait) and (max-width:700px){#rot{display:flex}}
+</style>
+</head>
+<body>
+<div id="wrap">
+  <canvas id="cv" width="1280" height="720"></canvas>
+
+  <!-- 標題 -->
+  <div class="scr title-bg on" id="s-title">
+    <div class="title-head">
+      <h1 class="logo">我們這一家大戰甜點</h1>
+      <div class="sub">甜點大軍要來吃掉我們的家了！排好吉祥物，守住家門！</div>
+    </div>
+    <div class="charrow" id="title-chars" style="display:none"></div>
+    <div class="title-menu">
+    <button class="btn" id="b-start">開始冒險</button>
+    <button class="btn y" id="b-endless">無盡模式</button>
+    <div class="row">
+      <button class="btn g s" id="b-intro">角色介紹</button>
+      <button class="btn g s" id="b-set">設定</button>
+    </div>
+    </div>
+  </div>
+
+  <!-- 關卡地圖 -->
+  <div class="scr map-bg" id="s-map">
+    <div class="topbar"><button class="btn s g" data-go="title">← 回標題</button><div style="font-size:28px;font-weight:900">選擇關卡</div><div style="width:120px"></div></div>
+    <div class="map" id="map"></div>
+  </div>
+
+  <!-- 選角 -->
+  <div class="scr map-bg" id="s-select">
+    <div class="topbar"><button class="btn s g" data-go="map">← 回地圖</button><div style="font-size:28px;font-weight:900" id="sel-title">選擇出戰夥伴</div><div style="width:120px"></div></div>
+    <div class="sel-wrap" style="margin-top:50px">
+      <div class="sel-left">
+        <div class="sec-h go">⚔ 出戰隊伍 <span id="tray-n"></span><small>點一下可以移回休息</small></div>
+        <div class="tray" id="tray"></div>
+        <div class="sec-h stay">🏠 休息夥伴<small>點一下加入出戰隊伍</small></div>
+        <div class="sel-grid" id="sel-grid"></div>
+      </div>
+      <div class="sel-right">
+        <div class="info" id="sel-info"></div>
+        <button class="btn" id="b-go">開戰！</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 圖鑑 -->
+  <div class="scr map-bg" id="s-codex">
+    <div class="topbar"><button class="btn s g" data-go="set">← 回設定</button><div style="font-size:28px;font-weight:900">數值表</div><div style="width:120px"></div></div>
+    <div class="codex" style="margin-top:56px">
+      <div class="tabs"><button class="tab on" data-tab="def">吉祥物</button><button class="tab" data-tab="ene">甜點大軍</button><button class="tab" data-tab="lvl">關卡</button></div>
+      <div class="tbl-wrap" id="codex-body"></div>
+    </div>
+  </div>
+
+  <!-- 角色介紹 -->
+  <div class="scr map-bg" id="s-intro">
+    <div class="topbar"><button class="btn s g" data-go="title">← 回標題</button><div style="font-size:28px;font-weight:900">夥伴介紹</div><div style="width:120px"></div></div>
+    <div class="intro-grid" id="intro-grid"></div>
+  </div>
+
+  <!-- 設定 -->
+  <div class="scr map-bg" id="s-set">
+    <div class="card" style="min-width:560px">
+      <div style="font-size:30px;font-weight:900;margin-bottom:8px">設定</div>
+      <div class="set-row">音樂 <input type="range" min="0" max="1" step="0.05" id="v-music"></div>
+      <div class="set-row">音效 <input type="range" min="0" max="1" step="0.05" id="v-sfx"></div>
+      <div class="set-row"><input type="checkbox" id="v-auto"> 自動收集泡泡</div>
+      <div class="set-row"><input type="checkbox" id="v-sky"> 新手模式：夜晚關卡天上也會持續掉泡泡</div>
+      <div class="set-row"><input type="checkbox" id="v-test"> 測試模式（全部關卡與角色解鎖）</div>
+      <div class="note">測試模式方便調平衡用，關掉後會回到原本的進度。<br>「數值表」可以看所有角色、甜點和關卡的數值。數值都在遊戲資料夾裡的 config.js，改完重新整理頁面就會生效。</div>
+      <div class="row" style="margin-top:14px">
+        <button class="btn s y" id="b-codex">數值表</button>
+        <button class="btn s y" id="b-retut">重看教學</button>
+        <button class="btn s" id="b-reset">清除存檔</button>
+        <button class="btn s g" data-go="title">完成</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 暫停 -->
+  <div class="ov" id="o-pause">
+    <div class="card" style="text-align:center;min-width:420px">
+      <div style="font-size:36px;font-weight:900;margin-bottom:6px">暫停</div>
+      <div class="set-row" style="justify-content:center">音樂 <input type="range" min="0" max="1" step="0.05" id="p-music"></div>
+      <div class="set-row" style="justify-content:center">音效 <input type="range" min="0" max="1" step="0.05" id="p-sfx"></div>
+      <button class="btn g" id="b-resume">繼續</button><br>
+      <button class="btn s y" id="b-restart">重新開始</button>
+      <button class="btn s" id="b-quit">回到地圖</button>
+    </div>
+  </div>
+
+  <!-- 結算 -->
+  <div class="ov" id="o-result">
+    <div class="res-title" id="res-title"></div>
+    <div id="res-body" style="color:#fff;font-size:22px;font-weight:700;text-shadow:0 2px 4px rgba(0,0,0,.6);margin-bottom:8px;text-align:center"></div>
+    <div class="row" id="res-btns"></div>
+  </div>
+</div>
+<div id="rot">請把手機轉成橫向來玩 ↻</div>
+
+<script src="config.js"></script>
+<script>
+'use strict';
+// ======================================================================
+//  基本設定
+// ======================================================================
+const C = window.CONFIG, G = C.global, D = C.defenders, E = C.enemies;
+const W = 1280, H = 720, BX = 150, BY = 135, CW = 110, CH = 114, ROWS = 5, COLS = 9;
+const BR = BX + CW * COLS; // 場地右緣
+const BOSS_X = 1135;
+const SCENES = [
+  { name: '客廳', sub: '白天', night: false, bgm: 'stage1' },
+  { name: '臥室', sub: '夜晚・天上不掉泡泡', night: true, bgm: 'stage2' },
+  { name: '廚房', sub: '白天・甜點大本營', night: false, bgm: 'stage3' },
+];
+const cv = document.getElementById('cv'), ctx = cv.getContext('2d');
+const $ = id => document.getElementById(id);
+const rand = (a, b) => a + Math.random() * (b - a);
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+const lerp = (a, b, t) => a + (b - a) * t;
+const colX = c => BX + c * CW + CW / 2;
+const rowY = r => BY + r * CH + CH / 2;
+const rowBottom = r => BY + r * CH + CH - 10;
+
+const IMG = {};
+for (const k in D) { const i = new Image(); i.src = 'assets/images/' + D[k].img; IMG[k] = i; }
+const imgOk = i => i && i.complete && i.naturalWidth > 0;
+
+// ======================================================================
+//  存檔
+// ======================================================================
+function defaultSave() { return { cleared: [], endlessBest: 0, music: 0.6, sfx: 0.7, test: false, lastPick: [], tutorialDone: false }; }
+function loadSave() { try { const s = JSON.parse(localStorage.getItem('wjtd_save')); if (s) return Object.assign(defaultSave(), s); } catch (e) {} return defaultSave(); }
+function persist() { try { localStorage.setItem('wjtd_save', JSON.stringify(save)); } catch (e) {} }
+let save = loadSave();
+function unlockedDefs() {
+  if (save.test) return Object.keys(D);
+  const u = [...C.startUnlocked];
+  for (const L of C.levels) if (L.unlock && save.cleared.includes(L.id) && !u.includes(L.unlock)) u.push(L.unlock);
+  return Object.keys(D).filter(k => u.includes(k));
+}
+function levelOpen(i) { return save.test || i === 0 || save.cleared.includes(C.levels[i - 1].id); }
+function endlessOpen() { return save.test || save.cleared.includes('3-5'); }
+
+// ======================================================================
+//  音樂與音效
+// ======================================================================
+const BGM = {}; let bgmKey = null;
+function playBgm(k, loop = true) {
+  if (bgmKey === k) { const a = BGM[k]; if (a && a.paused) a.play().catch(() => {}); return; }
+  if (bgmKey && BGM[bgmKey]) BGM[bgmKey].pause();
+  bgmKey = k; if (!k) return;
+  if (!BGM[k]) BGM[k] = new Audio('assets/audio/' + k + '.mp3');
+  const a = BGM[k]; a.loop = loop; a.volume = save.music; a.currentTime = 0; a.play().catch(() => {});
+}
+function setMusicVol(v) { save.music = v; for (const k in BGM) BGM[k].volume = v; persist(); }
+let AC = null;
+function ac() {
+  if (!AC) { try { AC = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) {} }
+  if (AC && AC.state === 'suspended') AC.resume();
+  return AC;
+}
+function tone(f, d, type = 'sine', v = 0.2, f2, delay = 0) {
+  const a = ac(); if (!a || save.sfx <= 0) return;
+  const t = a.currentTime + delay, o = a.createOscillator(), g = a.createGain();
+  o.type = type; o.frequency.setValueAtTime(f, t); if (f2) o.frequency.exponentialRampToValueAtTime(f2, t + d);
+  g.gain.setValueAtTime(v * save.sfx, t); g.gain.exponentialRampToValueAtTime(0.001, t + d);
+  o.connect(g).connect(a.destination); o.start(t); o.stop(t + d + 0.02);
+}
+let noiseBuf = null;
+function noise(d, v = 0.3, freq = 800) {
+  const a = ac(); if (!a || save.sfx <= 0) return;
+  if (!noiseBuf) { noiseBuf = a.createBuffer(1, a.sampleRate, a.sampleRate); const ch = noiseBuf.getChannelData(0); for (let i = 0; i < ch.length; i++) ch[i] = Math.random() * 2 - 1; }
+  const s = a.createBufferSource(), f = a.createBiquadFilter(), g = a.createGain();
+  s.buffer = noiseBuf; f.type = 'lowpass'; f.frequency.value = freq;
+  g.gain.setValueAtTime(v * save.sfx, a.currentTime); g.gain.exponentialRampToValueAtTime(0.001, a.currentTime + d);
+  s.connect(f).connect(g).connect(a.destination); s.start(); s.stop(a.currentTime + d);
+}
+const sfxLast = {};
+function sfx(name) {
+  const now = performance.now(); if (sfxLast[name] && now - sfxLast[name] < 45) return; sfxLast[name] = now;
+  switch (name) {
+    case 'shoot': tone(820, 0.08, 'triangle', 0.07, 520); break;
+    case 'ice': tone(1400, 0.12, 'sine', 0.07, 900); break;
+    case 'lob': tone(300, 0.15, 'sine', 0.08, 600); break;
+    case 'pop': tone(520, 0.14, 'sine', 0.22, 1150); break;
+    case 'hit': noise(0.05, 0.1, 2500); break;
+    case 'armor': tone(1600, 0.05, 'square', 0.04, 1200); break;
+    case 'chomp': noise(0.12, 0.25, 700); tone(160, 0.1, 'square', 0.06, 90); break;
+    case 'boom': noise(0.7, 0.55, 380); tone(110, 0.5, 'sine', 0.3, 40); break;
+    case 'place': tone(220, 0.12, 'square', 0.1, 130); break;
+    case 'fire': noise(0.35, 0.14, 1400); break;
+    case 'heal': tone(880, 0.15, 'sine', 0.06, 1320); break;
+    case 'up': [523, 659, 784, 1047].forEach((f, i) => tone(f, 0.14, 'triangle', 0.15, null, i * 0.07)); break;
+    case 'alarm': [0, 0.35, 0.7].forEach(t => tone(600, 0.3, 'sawtooth', 0.08, 900, t)); break;
+    case 'mower': noise(1.0, 0.18, 500); tone(90, 1, 'sawtooth', 0.05, 140); break;
+    case 'win': [523, 659, 784, 1047, 1319].forEach((f, i) => tone(f, 0.25, 'triangle', 0.18, null, i * 0.12)); break;
+    case 'lose': [392, 349, 311, 262].forEach((f, i) => tone(f, 0.35, 'triangle', 0.18, null, i * 0.22)); break;
+    case 'click': tone(660, 0.06, 'sine', 0.12); break;
+    case 'bad': tone(180, 0.15, 'square', 0.08); break;
+    case 'splat': noise(0.25, 0.3, 900); break;
+  }
+}
+
+// ======================================================================
+//  畫面切換
+// ======================================================================
+let screen = 'title';
+function show(id) {
+  screen = id;
+  document.querySelectorAll('.scr').forEach(s => s.classList.toggle('on', s.id === 's-' + id));
+  if (id !== 'game') { $('o-pause').classList.remove('on'); $('o-result').classList.remove('on'); }
+  if (id === 'title' || id === 'map' || id === 'select' || id === 'codex' || id === 'set' || id === 'intro') playBgm('menu');
+  if (id === 'intro') buildIntro();
+  if (id === 'title') buildTitle();
+  if (id === 'map') buildMap();
+  if (id === 'codex') buildCodex('def');
+  if (id === 'set') { $('b-retut').textContent = '重看教學'; $('v-music').value = save.music; $('v-sfx').value = save.sfx; $('v-test').checked = save.test; $('v-sky').checked = !!save.alwaysSky; $('v-auto').checked = !!save.autoCollect; }
+}
+document.querySelectorAll('[data-go]').forEach(b => b.onclick = () => { sfx('click'); show(b.dataset.go); });
+
+function fit() {
+  const s = Math.min(innerWidth / W, innerHeight / H);
+  $('wrap').style.transform = `translate(-50%,-50%) scale(${s})`;
+}
+addEventListener('resize', fit); fit();
+
+function buildTitle() {
+  const row = $('title-chars'); row.innerHTML = '';
+  Object.keys(D).forEach((k, i) => { const im = document.createElement('img'); im.src = IMG[k].src; im.style.animationDelay = (i * 0.13) + 's'; row.appendChild(im); });
+  $('b-endless').disabled = !endlessOpen();
+  $('b-endless').textContent = endlessOpen() ? `無盡模式（最佳：${save.endlessBest} 波）` : '無盡模式（通過 3-5 解鎖）';
+}
+$('b-start').onclick = () => { sfx('click'); show('map'); };
+$('b-endless').onclick = () => { sfx('click'); openSelect(-1); };
+$('b-codex').onclick = () => { sfx('click'); show('codex'); };
+$('b-intro').onclick = () => { sfx('click'); show('intro'); };
+$('b-retut').onclick = () => { sfx('click'); save.tutorialDone = false; persist(); $('b-retut').textContent = '下次玩 1-1 會再出現'; };
+$('b-set').onclick = () => { sfx('click'); show('set'); };
+
+function buildIntro() {
+  const g = $('intro-grid'); g.innerHTML = '';
+  const un = unlockedDefs();
+  for (const k in D) {
+    const d = D[k], have = un.includes(k);
+    const from = C.levels.find(L => L.unlock === k);
+    const el = document.createElement('div'); el.className = 'ic' + (have ? '' : ' lock');
+    el.innerHTML = `<img src="${IMG[k].src}"><div><div class="nm">${have ? d.name : '？？？'}<span class="tag">${have ? d.role : '還沒加入'}</span>${have ? `<span class="cost">${d.cost} 泡泡</span>` : ''}</div>` +
+      `<div class="tx">${have ? (d.intro || d.desc) : `通過 ${from ? from.id : ''} 之後就會加入喔！`}</div></div>`;
+    g.appendChild(el);
+  }
+}
+function levelName(L) { return L.boss ? '最終決戰' : `${SCENES[L.scene].name} ${L.id}`; }
+function buildMap() {
+  const m = $('map'); m.innerHTML = '';
+  const cls = ['', 'n', 'k'];
+  SCENES.forEach((sc, si) => {
+    const div = document.createElement('div'); div.className = 'scene';
+    div.innerHTML = `<div class="nm">${sc.name}<small>${sc.sub}</small></div>`;
+    C.levels.forEach((L, i) => {
+      if (L.scene !== si || L.boss) return;
+      const b = document.createElement('button'); b.className = 'lv ' + cls[si];
+      b.innerHTML = L.id + (L.unlock ? `<small>得到 ${D[L.unlock].name}</small>` : '<small>&nbsp;</small>') + (save.cleared.includes(L.id) ? '<span class="ck">✓</span>' : '');
+      b.disabled = !levelOpen(i);
+      b.onclick = () => { sfx('click'); openSelect(i); };
+      div.appendChild(b);
+    });
+    m.appendChild(div);
+  });
+  const bi = C.levels.findIndex(L => L.boss);
+  if (bi >= 0) {
+    const div = document.createElement('div'); div.className = 'scene'; div.style.justifyContent = 'center';
+    const b = document.createElement('button'); b.className = 'lv boss';
+    b.innerHTML = '最終決戰<small>超級婚禮蛋糕</small>' + (save.cleared.includes('B') ? '<span class="ck">✓</span>' : '');
+    b.disabled = !levelOpen(bi); b.onclick = () => { sfx('click'); openSelect(bi); };
+    div.appendChild(b); m.appendChild(div);
+  }
+}
+
+// ---------------- 選角 ----------------
+let selLevel = 0, picks = [];
+function levelDef(i) { return i < 0 ? Object.assign({ id: 'E', endless: true }, C.endless) : C.levels[i]; }
+function openSelect(i) {
+  selLevel = i; const L = levelDef(i);
+  const un = unlockedDefs();
+  picks = (save.lastPick || []).filter(k => un.includes(k)).slice(0, G.cardSlots);
+  if (un.length <= G.cardSlots) picks = [...un];
+  for (const k of un) if (picks.length < Math.min(G.cardSlots, un.length) && !picks.includes(k)) picks.push(k);
+  $('sel-title').textContent = (L.endless ? '無盡模式' : levelName(L)) + '・選擇出戰夥伴';
+  const sc = SCENES[L.scene];
+  const enemyNames = [...new Set((L.pool || []).concat(L.boss ? ['boss'] : []))].map(k => E[k].name).join('、');
+  $('sel-info').innerHTML = `<b>${L.endless ? '無盡模式' : levelName(L)}</b><br>場景：${sc.name}（${sc.night && save.alwaysSky ? '夜晚・新手模式會掉泡泡' : sc.sub}）<br>` +
+    (L.boss ? '' : L.endless ? '波數：無限，撐越久越好<br>' : `波數：${L.waves} 波，大波 ${L.flags} 次<br>`) +
+    `開局泡泡：${L.boss ? G.startBubbles.boss : sc.night ? G.startBubbles.night : G.startBubbles.day}<br><br>出現的甜點：<br>${enemyNames}` +
+    `<br><br><span style="opacity:.7">最多帶 ${G.cardSlots} 位。點下面的角色加入，點上面的移除。<br>戰鬥中點「升級」再點夥伴，可以花泡泡升級（最高 Lv3）。</span>`;
+  renderSelect(); show('select');
+}
+function pickCard(k, inTray) {
+  const d = D[k];
+  const el = document.createElement('div'); el.className = 'pick' + (!inTray && picks.includes(k) ? ' on' : '');
+  el.innerHTML = (!inTray && picks.includes(k) ? '<span class="badge">出戰中</span>' : '') + `<span class="pc">${d.cost}</span><img src="${IMG[k].src}"><div class="pn">${d.name}</div><div class="pr">${d.role}</div>`;
+  el.onclick = () => {
+    if (picks.includes(k)) picks = picks.filter(x => x !== k);
+    else if (picks.length < G.cardSlots) picks.push(k); else { sfx('bad'); return; }
+    sfx('click'); renderSelect();
+  };
+  return el;
+}
+function renderSelect() {
+  const tray = $('tray'), grid = $('sel-grid'); tray.innerHTML = ''; grid.innerHTML = '';
+  for (let i = 0; i < G.cardSlots; i++) {
+    if (picks[i]) tray.appendChild(pickCard(picks[i], true));
+    else { const s = document.createElement('div'); s.className = 'slot'; tray.appendChild(s); }
+  }
+  for (const k of unlockedDefs()) grid.appendChild(pickCard(k, false));
+  $('b-go').disabled = picks.length === 0;
+  $('tray-n').textContent = `（${picks.length}／${G.cardSlots}）`;
+}
+$('b-go').onclick = () => { if (!picks.length) return; save.lastPick = [...picks]; persist(); sfx('click'); startGame(selLevel, picks); };
+
+// ---------------- 圖鑑 ----------------
+document.querySelectorAll('.tab').forEach(t => t.onclick = () => { sfx('click'); buildCodex(t.dataset.tab); });
+const STAT_NAME = { atk: '攻擊力', produce: '產量', hp: '血量', heal: '回血量', chew: '嚼食速度', arm: '準備速度' };
+function buildCodex(tab) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.toggle('on', t.dataset.tab === tab));
+  const body = $('codex-body'); const m = G.upgradeMult;
+  const v = x => x === undefined || x === null ? '—' : x;
+  if (tab === 'def') {
+    let h = '<table><tr><th></th><th>名稱</th><th>能力</th><th>費用</th><th>冷卻</th><th>血量</th><th>攻擊力</th><th>攻擊頻率</th><th>射程</th><th>升級（Lv2／Lv3）</th><th>說明</th></tr>';
+    for (const k in D) {
+      const d = D[k];
+      let atk = d.atk, rate = d.rate, range = d.range;
+      if (k === 'lala') { atk = `產 ${d.produce} 泡泡`; rate = d.interval; }
+      if (k === 'gf') { atk = `回 ${d.heal}`; range = '3×3'; }
+      if (k === 'cookie') { atk = `吞食／大咬 ${d.bigBite}`; rate = `嚼 ${d.chew}`; }
+      if (k === 'kwuji') { range = '3×3'; rate = `引信 ${d.fuse}`; }
+      if (k === 'rabbit') { range = '1 格'; rate = `準備 ${d.arm}`; }
+      if (k === 'didi') atk = `${d.atk} ×${d.shots}`;
+      if (k === 'kuku') range = `${d.range}（3 線）`;
+      if (k === 'mei') atk = `${d.atk}（減速 ${d.slow * 100}% ${d.slowTime} 秒）`;
+      const up = d.upgrade ? `${d.upgrade.cost[0]}／${d.upgrade.cost[1]} 泡泡<br><small>${STAT_NAME[d.upgrade.stat]} ×${m[1]}／×${m[2]}</small>` : '不能升級';
+      h += `<tr><td><img src="${IMG[k].src}"></td><td><b>${d.name}</b></td><td>${d.role}</td><td>${d.cost}</td><td>${d.cooldown} 秒</td><td>${d.hp}</td><td>${v(atk)}</td><td>${rate !== undefined ? rate + (typeof rate === 'number' ? ' 秒' : '') : '—'}</td><td>${v(range)}</td><td>${up}</td><td class="d">${d.desc}</td></tr>`;
+    }
+    body.innerHTML = h + '</table>';
+  } else if (tab === 'ene') {
+    let h = '<table><tr><th></th><th>名稱</th><th>血量</th><th>護甲</th><th>移動速度</th><th>每秒啃咬</th><th>出場點數</th><th>說明</th></tr>';
+    for (const k in E) {
+      const e = E[k];
+      h += `<tr><td data-e="${k}"></td><td><b>${e.name}</b></td><td>${e.hp}</td><td>${e.armor || '—'}</td><td>${e.speed}${e.speedAfter ? ' → ' + e.speedAfter : ''}</td><td>${e.bite || '—'}</td><td>${e.points || '—'}</td><td class="d">${e.desc}</td></tr>`;
+    }
+    body.innerHTML = h + '</table>';
+    body.querySelectorAll('[data-e]').forEach(td => {
+      const k = td.dataset.e, c = document.createElement('canvas'); c.width = 120; c.height = 120; c.style.height = '60px';
+      const x = c.getContext('2d');
+      if (k === 'boss') { x.scale(0.2, 0.2); drawBossShape(x, 300, 560, 0, 1, false); }
+      else { const e = makeEnemy(k, 0, 0); x.translate(60, 112); drawEnemyShape(x, e, 0); }
+      td.appendChild(c);
+    });
+  } else {
+    let h = '<table><tr><th>關卡</th><th>場景</th><th>波數</th><th>大波</th><th>第一波點數</th><th>每波增加</th><th>甜點</th><th>過關得到</th></tr>';
+    for (const L of C.levels) {
+      h += `<tr><td><b>${L.boss ? '最終決戰' : L.id}</b></td><td>${SCENES[L.scene].name}</td><td>${v(L.waves)}</td><td>${v(L.flags)}</td><td>${v(L.b0)}</td><td>${v(L.bg)}</td><td>${L.pool.map(k => E[k].name).join('、')}${L.boss ? '、超級婚禮蛋糕' : ''}</td><td>${L.unlock ? D[L.unlock].name : '—'}</td></tr>`;
+    }
+    const en = C.endless;
+    h += `<tr><td><b>無盡</b></td><td>${SCENES[en.scene].name}</td><td>∞</td><td>每 ${en.bigEvery} 波</td><td>${en.b0}</td><td>${en.bg}</td><td>${en.pool.map(k => E[k].name).join('、')}</td><td>—</td></tr>`;
+    body.innerHTML = h + `</table><div class="note" style="padding:10px">每波點數 = 第一波點數 + 第幾波 × 每波增加；大波 ×${C.bigWaveMult}。各甜點的出場點數見「甜點大軍」。</div>`;
+  }
+}
+
+// ---------------- 設定 ----------------
+$('v-music').oninput = e => setMusicVol(+e.target.value);
+$('v-sfx').oninput = e => { save.sfx = +e.target.value; persist(); };
+$('v-test').onchange = e => { save.test = e.target.checked; persist(); };
+$('v-auto').onchange = e => { save.autoCollect = e.target.checked; persist(); };
+$('v-sky').onchange = e => { save.alwaysSky = e.target.checked; persist(); };
+$('b-reset').onclick = () => {
+  if (!confirm('確定要清除所有進度嗎？')) return;
+  const keep = { music: save.music, sfx: save.sfx }; save = Object.assign(defaultSave(), keep); persist(); $('v-test').checked = false; sfx('click');
+};
+$('p-music').oninput = e => setMusicVol(+e.target.value);
+$('p-sfx').oninput = e => { save.sfx = +e.target.value; persist(); };
+
+// ======================================================================
+//  遊戲狀態
+// ======================================================================
+let S = null;
+function startGame(li, pk) {
+  const L = levelDef(li), sc = SCENES[L.scene];
+  S = {
+    li, L, sc, picks: pk, time: 0, speed: 1, paused: false, over: false, endT: 0,
+    bubbles: L.boss ? G.startBubbles.boss : sc.night ? G.startBubbles.night : G.startBubbles.day,
+    grid: Array.from({ length: ROWS }, () => Array(COLS).fill(null)),
+    defs: [], enemies: [], projs: [], parts: [], texts: [], skyB: [], hazards: [], flames: [],
+    mowers: Array.from({ length: ROWS }, (_, r) => ({ r, x: BX - 52, st: 'idle' })),
+    cards: pk.map(k => ({ k, cd: D[k].cooldown >= 20 ? D[k].cooldown * 0.5 : 0 })),
+    sel: null, tool: null, mx: -1, my: -1,
+    wave: 0, waveT: G.firstWave, spawnQ: [], skyT: rand(4, 7),
+    totalWaves: L.boss ? 0 : L.endless ? Infinity : L.waves,
+    bigWaves: [], banner: null, intro: 2.4, shake: 0,
+    boss: null, collected: 0,
+    tut: L.id === '1-1' && !save.tutorialDone ? { step: 0, t: 0 } : null,
+  };
+  if (!L.boss && !L.endless) for (let f = 1; f <= L.flags; f++) S.bigWaves.push(Math.round(L.waves * f / L.flags) - 1);
+  if (L.boss) S.boss = { hp: E.boss.hp, max: E.boss.hp, throwT: E.boss.throwEvery * 2, sumT: E.boss.summonEvery * 2, flash: 0, anim: 0, dead: false };
+  $('o-pause').classList.remove('on'); $('o-result').classList.remove('on');
+  show('game');
+  playBgm(L.boss ? 'boss' : sc.bgm);
+}
+function isBig(i) { return S.L.endless ? (i + 1) % S.L.bigEvery === 0 : S.bigWaves.includes(i); }
+function lastWave() { return !S.L.endless && !S.L.boss && S.wave >= S.totalWaves; }
+
+// ---------------- 波次 ----------------
+function makeWave(i) {
+  const L = S.L;
+  let budget = L.b0 + i * L.bg; const big = isBig(i);
+  if (big) budget = budget * C.bigWaveMult + 2;
+  budget = Math.max(1, Math.round(budget));
+  const list = []; let guard = 0;
+  while (budget > 0 && guard++ < 200) {
+    const can = L.pool.filter(k => E[k].points <= budget);
+    if (!can.length) break;
+    const k = can[Math.floor(Math.random() * can.length)];
+    list.push(k); budget -= E[k].points;
+  }
+  const spread = big ? Math.min(9, 2 + list.length * 0.3) : Math.min(7, 1 + list.length * 0.6);
+  list.forEach((k, j) => S.spawnQ.push({ k, t: (j === 0 ? 0 : rand(0, spread)), r: Math.floor(Math.random() * ROWS) }));
+  if (big) { banner(S.L.endless || i < S.totalWaves - 1 ? '一大波甜點即將來襲！' : '最後一波！', '#ff5a7a'); sfx('alarm'); }
+}
+function banner(text, color = '#fff', t = 2.6) { S.banner = { text, color, t, max: t }; }
+
+// ---------------- 甜點 ----------------
+function makeEnemy(k, r, x) {
+  const d = E[k];
+  return { k, r, x, hp: d.hp, max: d.hp, armor: d.armor || 0, maxArmor: d.armor || 0, speed: d.speed, slowT: 0, flash: 0,
+    eating: false, dead: false, deadT: 0, phase: Math.random() * 6, hop: 0, state: 'walk', jumped: false, rolling: k === 'donut',
+    mini: false, frostIn: 0, ang: 0 };
+}
+function spawnEnemy(k, r, x = W + 40) { const e = makeEnemy(k, r, x); S.enemies.push(e); return e; }
+function hurt(e, dmg, o = {}) {
+  if (e.dead) return;
+  e.flash = 0.1;
+  if (e.armor > 0 && !o.lob) {
+    const a = Math.min(e.armor, dmg); e.armor -= a; dmg -= a;
+    if (!o.quiet) sfx('armor');
+    if (e.armor <= 0) burst(e.x, rowBottom(e.r) - 90, e.k === 'chocolate' ? '#6b3b1f' : '#9fe3c6', 10);
+  }
+  if (dmg > 0) { e.hp -= dmg; if (!o.quiet) sfx('hit'); }
+  if (e.hp <= 0) killEnemy(e);
+}
+function killEnemy(e) {
+  if (e.dead) return;
+  e.dead = true; e.deadT = 0.6; e.hp = 0;
+  const col = { cupcake: '#ffb3cb', macaron: '#ffb3cb', chocolate: '#ffb3cb', donut: '#f6a6c8', lollipop: '#ff6f91', pudding: '#ffd86b', icecream: '#ffe1ee', popcorn: '#fff4cc', cake: '#fff' }[e.k] || '#fff';
+  burst(e.x, rowBottom(e.r) - 40, col, 12);
+  if (!e.eaten && Math.random() < (G.killDropChance || 0)) S.skyB.push({ x: e.x, y: rowBottom(e.r) - 60, vy: -180, ty: rowBottom(e.r) - rand(10, 30), v: G.killDropValue, life: G.bubbleLife, kind: 'pop', vx: rand(-40, 40), fly: 0 });
+  if (e.k === 'pudding' && !e.mini) {
+    for (let i = 0; i < E.pudding.split; i++) {
+      const m = spawnEnemy('pudding', e.r, e.x + (i ? 24 : -14));
+      m.mini = true; m.hp = m.max = E.pudding.splitHp; m.speed = E.pudding.splitSpeed;
+    }
+  }
+}
+function hurtBoss(dmg) {
+  const b = S.boss; if (!b || b.dead) return;
+  b.hp -= dmg; b.flash = 0.1; sfx('hit');
+  if (b.hp <= 0) {
+    b.hp = 0; b.dead = true; b.deadT = 0;
+    for (const e of S.enemies) killEnemy(e);
+    for (let i = 0; i < 8; i++) setTimeout(() => { if (S) { burst(rand(1150, 1270), rand(200, 650), ['#fff', '#ffb3cb', '#ffe08a'][i % 3], 30); sfx('boom'); } }, i * 180);
+  }
+}
+
+// ---------------- 吉祥物 ----------------
+function lvMult(d) { return G.upgradeMult[d.lv - 1]; }
+function statOf(d, key) {
+  const b = D[d.k], up = b.upgrade, m = lvMult(d);
+  let v = b[key];
+  if (up && up.stat === key) v = v * m;
+  return v;
+}
+function placeDef(k, r, c) {
+  const b = D[k];
+  const d = { k, r, c, x: colX(c), y: rowBottom(r), hp: b.hp, max: b.hp, lv: 1, t: 0, anim: 0, phase: Math.random() * 6,
+    chew: 0, armed: false, armT: b.arm || 0, fuse: b.fuse || 0, frost: false, heal: 0 };
+  if (k === 'lala') d.t = b.interval - rand(b.firstDelay[0], b.firstDelay[1]);
+  else if (b.rate) d.t = b.rate * 0.6;
+  S.grid[r][c] = d; S.defs.push(d);
+  burst(d.x, d.y - 10, '#c9a77a', 8); sfx('place');
+  return d;
+}
+function removeDef(d) { if (S.grid[d.r][d.c] === d) S.grid[d.r][d.c] = null; d.gone = true; S.defs = S.defs.filter(x => x !== d); }
+function upgradeCost(d) { const u = D[d.k].upgrade; return u && d.lv < 3 ? u.cost[d.lv - 1] : null; }
+function doUpgrade(d) {
+  const cost = upgradeCost(d);
+  if (cost === null || S.bubbles < cost) { sfx('bad'); return false; }
+  S.bubbles -= cost; d.lv++;
+  const b = D[d.k];
+  if (b.upgrade.stat === 'hp') d.max = Math.round(b.hp * lvMult(d));
+  d.hp = d.max;
+  if (d.k === 'rabbit' && !d.armed) d.armT = Math.min(d.armT, b.arm / lvMult(d));
+  floatText(d.x, d.y - 100, 'Lv' + d.lv + '！', '#ffcf4a', 22);
+  burst(d.x, d.y - 50, '#ffe27a', 16); sfx('up');
+  return true;
+}
+
+// 找同一條線前方的甜點
+function laneTarget(r, x, range) {
+  let best = null;
+  for (const e of S.enemies) {
+    if (e.dead || e.r !== r || e.x > W - 15 || e.hop > 30) continue;
+    if (e.x < x - 25 || e.x > x + range * CW) continue;
+    if (!best || e.x < best.x) best = e;
+  }
+  return best;
+}
+function bossInRange(x, range) { return S.boss && !S.boss.dead && BOSS_X - x <= range * CW; }
+
+function updateDefs(dt) {
+  // 冰淇淋寒氣
+  const ices = S.enemies.filter(e => !e.dead && e.k === 'icecream' && e.x < W);
+  for (const d of S.defs) {
+    d.frost = ices.some(e => Math.hypot((e.x - d.x) / CW, e.r - d.r) <= E.icecream.aura);
+    const fm = d.frost ? E.icecream.auraSlow : 1;
+    d.anim = Math.max(0, d.anim - dt);
+    const b = D[d.k];
+    switch (d.k) {
+      case 'lala': {
+        d.t += dt;
+        const iv = b.interval;
+        if (d.t >= iv) {
+          d.t = 0; d.anim = 0.4;
+          const amt = Math.round(b.produce * lvMult(d) / 5) * 5;
+          S.skyB.push({ x: d.x + rand(-20, 20), y: d.y - 60, vy: -160, ty: d.y - rand(5, 25), v: amt, life: G.bubbleLife, kind: 'pop', vx: rand(-40, 40), fly: 0 });
+          sfx('pop');
+        }
+        break;
+      }
+      case 'wuji': case 'mei': case 'didi': case 'bean': {
+        d.t += dt / fm;
+        if (d.t >= b.rate) {
+          const tg = laneTarget(d.r, d.x, b.range) || (bossInRange(d.x, b.range) ? 'boss' : null);
+          if (!tg) { d.t = b.rate; break; }
+          d.t = 0; d.anim = 0.2;
+          const atk = statOf(d, 'atk');
+          if (d.k === 'bean') {
+            const tx = tg === 'boss' ? BOSS_X + 20 : tg.x;
+            S.projs.push({ kind: 'onigiri', r: d.r, sx: d.x + 10, sy: d.y - 70, tx, target: tg, t: 0, T: 0.9, dmg: atk, lob: true, lv: d.lv, rot: 0 });
+            sfx('lob');
+          } else if (d.k === 'didi') {
+            for (let i = 0; i < b.shots; i++) S.projs.push({ kind: 'mini', r: d.r, x: d.x + 30 - i * 36, y: d.y - 55, dmg: atk, lv: d.lv, delay: i * 0.12 });
+            sfx('shoot');
+          } else {
+            S.projs.push({ kind: d.k === 'mei' ? 'ice' : 'plane', r: d.r, x: d.x + 30, y: d.y - 55, dmg: atk, lv: d.lv, slow: d.k === 'mei' });
+            sfx(d.k === 'mei' ? 'ice' : 'shoot');
+          }
+        }
+        break;
+      }
+      case 'kuku': {
+        d.t += dt / fm;
+        if (d.t >= b.rate) {
+          let any = bossInRange(d.x, b.range);
+          for (let rr = d.r - 1; rr <= d.r + 1; rr++) if (rr >= 0 && rr < ROWS && laneTarget(rr, d.x, b.range)) any = true;
+          if (!any) { d.t = b.rate; break; }
+          d.t = 0; d.anim = 0.2;
+          for (let rr = d.r - 1; rr <= d.r + 1; rr++) if (rr >= 0 && rr < ROWS)
+            S.projs.push({ kind: 'snow', r: rr, x: d.x + 30, y: d.y - 55, ty: rowBottom(rr) - 55, dmg: statOf(d, 'atk'), lv: d.lv });
+          sfx('shoot');
+        }
+        break;
+      }
+      case 'devil': {
+        d.t += dt / fm;
+        if (d.t >= b.rate) {
+          const inR = S.enemies.filter(e => !e.dead && e.r === d.r && e.x < W - 15 && e.x > d.x - 30 && e.x < d.x + b.range * CW && e.hop < 30);
+          const boss = bossInRange(d.x, b.range);
+          if (!inR.length && !boss) { d.t = b.rate; break; }
+          d.t = 0; d.anim = 0.35;
+          const atk = statOf(d, 'atk');
+          inR.forEach(e => hurt(e, atk, { quiet: true }));
+          if (boss) hurtBoss(atk);
+          S.flames.push({ r: d.r, x: d.x + 30, len: b.range * CW - 20, t: 0.4, lv: d.lv });
+          sfx('fire');
+        }
+        break;
+      }
+      case 'gf': {
+        d.t += dt / fm;
+        if (d.t >= b.rate) {
+          d.t = 0; let healed = false;
+          const amt = statOf(d, 'heal');
+          for (const o of S.defs) if (Math.abs(o.r - d.r) <= b.range && Math.abs(o.c - d.c) <= b.range && o.hp < o.max) {
+            o.hp = Math.min(o.max, o.hp + amt); healed = true;
+            S.parts.push({ x: o.x + rand(-15, 15), y: o.y - 60, vx: 0, vy: -40, life: 0.9, max: 0.9, c: '#ff6f91', s: 14, heart: true });
+          }
+          if (healed) { d.anim = 0.3; sfx('heal'); }
+        }
+        break;
+      }
+      case 'cookie': {
+        if (d.chew > 0) { d.chew -= dt; if (d.chew <= 0) { floatText(d.x, d.y - 110, '吃完了！好餓～', '#7be08a', 18); sfx('heal'); burst(d.x, d.y - 60, '#7be08a', 10); } if (Math.random() < dt * 3) S.parts.push({ x: d.x + rand(-10, 20), y: d.y - 45, vx: rand(-30, 30), vy: rand(-80, -30), life: 0.6, max: 0.6, c: '#c68b4e', s: 4 }); break; }
+        let tg = null;
+        for (const e of S.enemies) if (!e.dead && e.r === d.r && e.hop < 30 && e.x - d.x > -20 && e.x - d.x < b.range * CW && (!tg || e.x < tg.x)) tg = e;
+        if (tg) {
+          d.anim = 0.4; sfx('chomp');
+          if (tg.k === 'cake') hurt(tg, b.bigBite); else { killEnemy(tg); tg.eaten = true; tg.deadT = 0.15; }
+          d.chew = d.chewMax = b.chew / lvMult(d);
+        }
+        break;
+      }
+      case 'kwuji': {
+        d.fuse -= dt;
+        if (d.fuse <= 0) {
+          const R = b.radius * CW;
+          for (const e of S.enemies) if (!e.dead && Math.abs(e.r - d.r) <= 1 && Math.abs(e.x - d.x) <= R) hurt(e, b.atk, { quiet: true });
+          if (S.boss && Math.abs(BOSS_X - d.x) <= R + 40) hurtBoss(b.atk);
+          explosion(d.x, d.y - 40, 1.6, '#ff6b3d');
+          removeDef(d);
+        }
+        break;
+      }
+      case 'rabbit': {
+        if (!d.armed) { d.armT -= dt; if (d.armT <= 0) { d.armed = true; burst(d.x, d.y - 10, '#9b6b3c', 10); } }
+        break;
+      }
+    }
+  }
+}
+function triggerMine(d) {
+  const b = D.rabbit;
+  for (const e of S.enemies) if (!e.dead && e.r === d.r && Math.abs(e.x - d.x) < CW * 0.75) hurt(e, b.atk, { quiet: true });
+  explosion(d.x, d.y - 30, 1.0, '#ffb347');
+  removeDef(d);
+}
+
+// ---------------- 甜點更新 ----------------
+function blockerFor(e) {
+  let best = null;
+  for (const d of S.defs) {
+    if (d.r !== e.r || d.gone) continue;
+    if (d.k === 'kwuji') continue;
+    const gap = e.x - d.x;
+    if (gap > 0 && gap < 62 && (!best || d.x > best.x)) best = d;
+  }
+  return best;
+}
+function updateEnemies(dt) {
+  for (const e of S.enemies) {
+    if (e.dead) { e.deadT -= dt; continue; }
+    e.flash -= dt; e.phase += dt;
+    if (e.slowT > 0) e.slowT -= dt;
+    const sf = e.slowT > 0 ? 1 - D.mei.slow : 1;
+    if (e.state === 'jump') {
+      e.jt += dt; const p = Math.min(1, e.jt / 0.9);
+      e.x = lerp(e.jx0, e.jx1, p); e.hop = Math.sin(Math.PI * p) * 110;
+      if (p >= 1) { e.state = 'walk'; e.hop = 0; e.jumped = true; e.speed = E.lollipop.speedAfter; }
+      continue;
+    }
+    if (e.state === 'fuse') {
+      e.ft -= dt;
+      if (e.ft <= 0) {
+        const c = Math.round((e.x - 40 - BX - CW / 2) / CW);
+        for (const d of [...S.defs]) if (Math.abs(d.r - e.r) <= 1 && Math.abs(d.x - (e.x - 45)) <= CW * 1.5) { d.hp -= E.popcorn.blast; if (d.hp <= 0) removeDef(d); }
+        explosion(e.x - 20, rowBottom(e.r) - 40, 1.3, '#ffd34d');
+        e.dead = true; e.deadT = 0.01;
+      }
+      continue;
+    }
+    const bl = blockerFor(e);
+    if (bl) {
+      if (e.k === 'lollipop' && !e.jumped) {
+        if (bl.k === 'laoda') { e.jumped = true; e.speed = E.lollipop.speedAfter; floatText(e.x, rowBottom(e.r) - 110, '咚！', '#fff', 20); sfx('armor'); }
+        else { e.state = 'jump'; e.jt = 0; e.jx0 = e.x; e.jx1 = bl.x - 70; e.eating = false; }
+        continue;
+      }
+      if (e.k === 'donut' && e.rolling) {
+        e.rolling = false; e.speed = E.donut.speedAfter; bl.hp -= E.donut.impact; e.dizzy = 2.5;
+        burst(bl.x + 20, bl.y - 40, '#f6a6c8', 8); sfx('hit');
+        if (bl.hp <= 0) removeDef(bl);
+        continue;
+      }
+      if (e.k === 'popcorn') { e.state = 'fuse'; e.ft = E.popcorn.fuse; e.eating = false; continue; }
+      if (bl.k === 'rabbit' && bl.armed) { triggerMine(bl); continue; }
+      e.eating = true;
+      bl.hp -= E[e.k].bite * sf * dt; bl.hurtT = 0.1;
+      if (Math.random() < dt * 2.5) sfx('chomp');
+      if (bl.hp <= 0) removeDef(bl);
+    } else {
+      e.eating = false;
+      let sp = e.speed * sf; if (e.dizzy > 0) { e.dizzy -= dt; }
+      e.x -= sp * dt;
+      if (e.rolling) e.ang -= sp * dt / 30;
+    }
+    // 吸塵器
+    const m = S.mowers[e.r];
+    if (e.x < BX - 8 && m.st === 'idle') { m.st = 'run'; sfx('mower'); }
+    if (e.x < BX - 75 && m.st === 'gone') lose();
+  }
+  S.enemies = S.enemies.filter(e => !(e.dead && e.deadT <= 0));
+}
+function updateMowers(dt) {
+  for (const m of S.mowers) {
+    if (m.st !== 'run') continue;
+    m.x += G.mowerSpeed * dt;
+    for (const e of S.enemies) if (!e.dead && e.r === m.r && Math.abs(e.x - m.x) < 55 && e.x < W) killEnemy(e);
+    if (m.x > W + 60) m.st = 'gone';
+  }
+}
+
+// ---------------- 子彈 ----------------
+function updateProjs(dt) {
+  for (const p of S.projs) {
+    if (p.delay > 0) { p.delay -= dt; continue; }
+    if (p.lob) {
+      p.t += dt; const k = Math.min(1, p.t / p.T); p.rot += dt * 8;
+      if (p.target !== 'boss' && p.target && !p.target.dead) p.tx = p.target.x;
+      p.x = lerp(p.sx, p.tx, k); p.y = lerp(p.sy, rowBottom(p.r) - 50, k) - Math.sin(Math.PI * k) * 150;
+      if (k >= 1) {
+        p.done = true;
+        if (p.target === 'boss') hurtBoss(p.dmg);
+        else {
+          let tg = p.target && !p.target.dead && Math.abs(p.target.x - p.x) < 50 ? p.target : null;
+          if (!tg) for (const e of S.enemies) if (!e.dead && e.r === p.r && Math.abs(e.x - p.x) < 45 && e.hop < 30) { tg = e; break; }
+          if (tg) hurt(tg, p.dmg, { lob: true });
+        }
+        burst(p.x, p.y, '#ffffff', 6);
+      }
+      continue;
+    }
+    p.x += G.projectileSpeed * dt;
+    if (p.ty !== undefined) p.y += (p.ty - p.y) * Math.min(1, dt * 10);
+    if (S.boss && !S.boss.dead && p.x >= BOSS_X) { hurtBoss(p.dmg); p.done = true; burst(p.x, p.y, '#fff', 4); continue; }
+    let tg = null;
+    for (const e of S.enemies) if (!e.dead && e.r === p.r && e.hop < 30 && e.x < W - 10 && Math.abs(e.x - p.x) < 24 && (!tg || e.x < tg.x)) tg = e;
+    if (tg) {
+      hurt(tg, p.dmg);
+      if (p.slow) tg.slowT = D.mei.slowTime;
+      burst(p.x, p.y, p.kind === 'ice' ? '#9fe6ff' : '#ffffff', 5);
+      p.done = true;
+    }
+    if (p.x > W + 30) p.done = true;
+  }
+  S.projs = S.projs.filter(p => !p.done);
+}
+
+// ---------------- Boss ----------------
+function updateBoss(dt) {
+  const b = S.boss; if (!b) return;
+  b.flash -= dt; b.anim += dt;
+  if (b.dead) { b.deadT += dt; if (b.deadT > 2.2) win(); return; }
+  const cfg = E.boss, enr = b.hp / b.max < cfg.enrageAt;
+  if (enr && !b.enraged) { b.enraged = true; banner('婚禮蛋糕暴怒了！', '#ff5a5a'); sfx('alarm'); }
+  const sp = enr ? 1.6 : 1;
+  b.throwT -= dt * sp; b.sumT -= dt * sp;
+  if (b.throwT <= 0) {
+    b.throwT = cfg.throwEvery;
+    let r, c;
+    if (S.defs.length) { const d = S.defs[Math.floor(Math.random() * S.defs.length)]; r = d.r; c = d.c; }
+    else { r = Math.floor(Math.random() * ROWS); c = Math.floor(Math.random() * COLS); }
+    S.hazards.push({ r, c, t: 1.6, max: 1.6 });
+  }
+  if (b.sumT <= 0) {
+    b.sumT = cfg.summonEvery;
+    const n = cfg.summonCount + (enr ? 1 : 0);
+    for (let i = 0; i < n; i++) spawnEnemy(S.L.pool[Math.floor(Math.random() * S.L.pool.length)], Math.floor(Math.random() * ROWS), BOSS_X - 20);
+    b.roar = 0.6;
+  }
+  if (b.roar > 0) b.roar -= dt;
+  for (const h of S.hazards) {
+    h.t -= dt;
+    if (h.t <= 0) {
+      h.done = true;
+      const d = S.grid[h.r][h.c];
+      if (d) { d.hp -= cfg.throwDmg; if (d.hp <= 0) removeDef(d); }
+      burst(colX(h.c), rowY(h.r) + 20, '#fffaf0', 18); S.shake = 0.25; sfx('splat');
+      S.parts.push({ x: colX(h.c), y: rowY(h.r) + 30, vx: 0, vy: 0, life: 3, max: 3, c: '#fffaf0', s: 0, splat: true });
+    }
+  }
+  S.hazards = S.hazards.filter(h => !h.done);
+}
+
+// ---------------- 泡泡 ----------------
+function updateBubbles(dt) {
+  if (!S.sc.night || S.L.boss || save.alwaysSky) {
+    S.skyT -= dt;
+    if (S.skyT <= 0) {
+      S.skyT = rand(G.skyBubbleInterval[0], G.skyBubbleInterval[1]);
+      S.skyB.push({ x: rand(BX + 40, BR - 60), y: 100, vy: 55, ty: rand(BY + 50, BY + ROWS * CH - 40), v: G.skyBubbleValue, life: G.bubbleLife, kind: 'sky', vx: 0, fly: 0 });
+    }
+  }
+  for (const b of S.skyB) {
+    if (b.fly > 0) {
+      b.fly += dt * 2.2; const k = Math.min(1, b.fly);
+      b.x = lerp(b.fx, 58, k); b.y = lerp(b.fy, 55, k);
+      if (k >= 1) { b.done = true; S.bubbles += b.v; }
+      continue;
+    }
+    if (b.kind === 'pop') {
+      b.vy += 500 * dt; b.y += b.vy * dt; b.x += b.vx * dt;
+      if (b.y >= b.ty && b.vy > 0) { b.y = b.ty; b.vy = 0; b.vx = 0; b.kind = 'rest'; }
+    } else if (b.kind === 'sky') {
+      b.y += b.vy * dt; if (b.y >= b.ty) { b.y = b.ty; b.kind = 'rest'; }
+    } else { b.life -= dt; if (save.autoCollect && G.bubbleLife - b.life > 0.3) { collect(b); continue; } if (b.life <= 0) b.done = true; }
+  }
+  S.skyB = S.skyB.filter(b => !b.done);
+}
+function collect(b) { S.collected++; b.fly = 0.0001; b.fx = b.x; b.fy = b.y; sfx('pop'); }
+
+// ---------------- 特效 ----------------
+function burst(x, y, c, n) { for (let i = 0; i < n; i++) { const a = Math.random() * Math.PI * 2, s = rand(60, 220); S.parts.push({ x, y, vx: Math.cos(a) * s, vy: Math.sin(a) * s - 60, life: rand(0.3, 0.7), max: 0.7, c, s: rand(3, 7), g: true }); } }
+function explosion(x, y, size, c) {
+  burst(x, y, c, 26); burst(x, y, '#fff3a0', 14);
+  S.parts.push({ x, y, vx: 0, vy: 0, life: 0.45, max: 0.45, c, s: 0, ring: size * 120 });
+  S.shake = 0.3; sfx('boom');
+}
+function floatText(x, y, t, c = '#fff', s = 18) { S.texts.push({ x, y, t, c, s, life: 1.2 }); }
+function updateFx(dt) {
+  for (const p of S.parts) { p.life -= dt; p.x += p.vx * dt; p.y += p.vy * dt; if (p.g) p.vy += 400 * dt; }
+  S.parts = S.parts.filter(p => p.life > 0);
+  for (const t of S.texts) { t.life -= dt; t.y -= 30 * dt; }
+  S.texts = S.texts.filter(t => t.life > 0);
+  for (const f of S.flames) f.t -= dt;
+  S.flames = S.flames.filter(f => f.t > 0);
+  if (S.shake > 0) S.shake -= dt;
+  if (S.banner) { S.banner.t -= dt; if (S.banner.t <= 0) S.banner = null; }
+}
+
+// ---------------- 主更新 ----------------
+function update(dt) {
+  S.time += dt;
+  if (S.intro > 0) S.intro -= dt;
+  if (S.tut) tutUpdate(dt);
+  for (const c of S.cards) if (c.cd > 0) c.cd -= dt;
+  updateBubbles(dt);
+  // 波次
+  if (!S.L.boss && S.wave < S.totalWaves) {
+    if (!S.tut) S.waveT -= dt;
+    const alive = S.enemies.some(e => !e.dead) || S.spawnQ.length;
+    if (!alive && S.wave > 0 && S.waveT > 4) S.waveT = 4;
+    if (S.waveT <= 0) {
+      makeWave(S.wave); S.wave++;
+      S.waveT = G.waveInterval;
+      if (S.L.endless) save.endlessBest = Math.max(save.endlessBest, S.wave - 1), persist();
+    }
+  }
+  for (const q of S.spawnQ) { q.t -= dt; if (q.t <= 0) { spawnEnemy(q.k, q.r); q.done = true; } }
+  S.spawnQ = S.spawnQ.filter(q => !q.done);
+  updateDefs(dt); updateEnemies(dt); updateProjs(dt); updateMowers(dt); updateBoss(dt); updateFx(dt);
+  if (S.over) return;
+  if (lastWave() && !S.spawnQ.length && !S.enemies.some(e => !e.dead)) { S.endT += dt; if (S.endT > 1.2) win(); }
+}
+
+// ======================================================================
+//  勝負
+// ======================================================================
+function win() {
+  if (S.over) return; S.over = true;
+  const L = S.L; let unlockNew = null;
+  if (!save.cleared.includes(L.id)) { save.cleared.push(L.id); if (L.unlock && !C.startUnlocked.includes(L.unlock)) unlockNew = L.unlock; }
+  persist();
+  playBgm('result', false); sfx('win');
+  setTimeout(() => {
+    $('res-title').className = 'res-title'; $('res-title').textContent = L.boss ? '打倒超級婚禮蛋糕！' : '守住了！過關！';
+    let body = L.boss ? '甜點大軍全部投降，家裡又恢復和平了 🎉' : '';
+    if (unlockNew) body = `<div class="newfriend"><img src="${IMG[unlockNew].src}"><div style="color:#4a2c1a;text-shadow:none;text-align:left"><div style="font-size:16px">新夥伴加入！</div><div style="font-size:30px;font-weight:900">${D[unlockNew].name}</div><div style="font-size:18px">${D[unlockNew].role}：${D[unlockNew].desc}</div></div></div>`;
+    if (L.id === '3-5' && !save.test) body += '<div>無盡模式解鎖了！</div>';
+    $('res-body').innerHTML = body;
+    const btns = $('res-btns'); btns.innerHTML = '';
+    const next = S.li + 1;
+    if (next < C.levels.length) btns.appendChild(mkBtn('下一關', '', () => openSelect(next)));
+    btns.appendChild(mkBtn('回地圖', 'g', () => show('map')));
+    $('o-result').classList.add('on');
+  }, 600);
+}
+function lose() {
+  if (S.over) return; S.over = true;
+  playBgm(null); sfx('lose');
+  setTimeout(() => {
+    $('res-title').className = 'res-title lose';
+    $('res-title').textContent = '甜點大軍吃掉了你的家！';
+    $('res-body').innerHTML = S.L.endless ? `撐過了 ${Math.max(0, S.wave - 1)} 波（最佳紀錄 ${save.endlessBest} 波）` : '換個排法再試一次吧！';
+    const btns = $('res-btns'); btns.innerHTML = '';
+    btns.appendChild(mkBtn('再試一次', '', () => startGame(S.li, S.picks)));
+    btns.appendChild(mkBtn(S.L.endless ? '回標題' : '回地圖', 'g', () => show(S.L.endless ? 'title' : 'map')));
+    $('o-result').classList.add('on');
+  }, 900);
+}
+function mkBtn(t, cls, fn) { const b = document.createElement('button'); b.className = 'btn ' + cls; b.textContent = t; b.onclick = () => { sfx('click'); fn(); }; return b; }
+
+function pause(on) {
+  if (!S || S.over) return;
+  S.paused = on; $('o-pause').classList.toggle('on', on);
+  $('p-music').value = save.music; $('p-sfx').value = save.sfx;
+  if (on && BGM[bgmKey]) BGM[bgmKey].pause(); else if (BGM[bgmKey]) BGM[bgmKey].play().catch(() => {});
+}
+$('b-resume').onclick = () => { sfx('click'); pause(false); };
+$('b-restart').onclick = () => { sfx('click'); startGame(S.li, S.picks); };
+$('b-quit').onclick = () => { sfx('click'); S = null; show(selLevel < 0 ? 'title' : 'map'); };
+
+// ======================================================================
+//  操作
+// ======================================================================
+const HUD = { card0: 124, cardW: 80, cardGap: 6, cardY: 10, cardH: 94 };
+const BTN = { up: { x: 830, y: 12, w: 72, h: 90 }, shovel: { x: 908, y: 12, w: 72, h: 90 }, speed: { x: 1150, y: 14, w: 56, h: 46 }, pause: { x: 1212, y: 14, w: 56, h: 46 } };
+const inRect = (x, y, r) => x >= r.x && x <= r.x + r.w && y >= r.y && y <= r.y + r.h;
+function cardRect(i) { return { x: HUD.card0 + i * (HUD.cardW + HUD.cardGap), y: HUD.cardY, w: HUD.cardW, h: HUD.cardH }; }
+function toLocal(ev) { const r = cv.getBoundingClientRect(); return [(ev.clientX - r.left) / r.width * W, (ev.clientY - r.top) / r.height * H]; }
+function cellAt(x, y) { const c = Math.floor((x - BX) / CW), r = Math.floor((y - BY) / CH); return r >= 0 && r < ROWS && c >= 0 && c < COLS ? [r, c] : null; }
+
+cv.addEventListener('pointermove', ev => { if (S) [S.mx, S.my] = toLocal(ev); });
+cv.addEventListener('contextmenu', ev => ev.preventDefault());
+cv.addEventListener('pointerdown', ev => {
+  ac();
+  if (!S || screen !== 'game' || S.over) return;
+  const [x, y] = toLocal(ev); S.mx = x; S.my = y;
+  if (ev.button === 2) { S.sel = null; S.tool = null; return; }
+  if (S.tut && !S.paused && tutClick(x, y)) return;
+  if (S.paused) return;
+  if (S.confirm) {
+    const cf = S.confirm, cost = upgradeCost(cf.d);
+    if (inRect(x, y, CF.ok) && cost !== null && S.bubbles >= cost && !cf.d.gone) { doUpgrade(cf.d); S.confirm = null; S.tool = null; return; }
+    if (inRect(x, y, CF.ok)) { sfx('bad'); return; }
+    if (inRect(x, y, CF.no) || !inRect(x, y, CF.box)) { sfx('click'); S.confirm = null; }
+    return;
+  }
+  const hadInfo = S.info; S.info = null;
+  if (inRect(x, y, BTN.pause)) { sfx('click'); pause(true); return; }
+  if (inRect(x, y, BTN.speed)) { sfx('click'); S.speed = S.speed === 1 ? 2 : 1; return; }
+  // 泡泡
+  for (let i = S.skyB.length - 1; i >= 0; i--) { const b = S.skyB[i]; if (!b.fly && Math.hypot(b.x - x, b.y - y) < 40) { collect(b); return; } }
+  // 卡片
+  for (let i = 0; i < S.cards.length; i++) if (inRect(x, y, cardRect(i))) {
+    const c = S.cards[i];
+    if (c.cd > 0 || S.bubbles < D[c.k].cost) { sfx('bad'); return; }
+    S.sel = S.sel === i ? null : i; S.tool = null; sfx('click'); return;
+  }
+  if (inRect(x, y, BTN.up)) { S.tool = S.tool === 'up' ? null : 'up'; S.sel = null; sfx('click'); return; }
+  if (inRect(x, y, BTN.shovel)) { S.tool = S.tool === 'shovel' ? null : 'shovel'; S.sel = null; sfx('click'); return; }
+  const cell = cellAt(x, y);
+  if (!cell) { S.sel = null; S.tool = null; return; }
+  const [r, c] = cell, d = S.grid[r][c];
+  if (S.sel !== null) {
+    const card = S.cards[S.sel], b = D[card.k];
+    if (d) { sfx('bad'); return; }
+    if (S.bubbles < b.cost || card.cd > 0) { sfx('bad'); S.sel = null; return; }
+    S.bubbles -= b.cost; card.cd = b.cooldown; placeDef(card.k, r, c);
+    S.sel = null; return;
+  }
+  if (S.tool === 'shovel') { if (d) { removeDef(d); burst(d.x, d.y - 20, '#c9a77a', 10); sfx('place'); } S.tool = null; return; }
+  if (S.tool === 'up') {
+    if (!d) { S.tool = null; return; }
+    if (upgradeCost(d) === null) { sfx('bad'); floatText(d.x, d.y - 100, D[d.k].upgrade ? '已經滿級' : '不能升級', '#fff', 16); return; }
+    S.confirm = { d }; sfx('click'); return;
+  }
+  // 沒選工具時點夥伴 = 查看能力
+  if (d && hadInfo !== d) { S.info = d; sfx('click'); }
+});
+addEventListener('keydown', ev => {
+  if (screen !== 'game' || !S || S.over) return;
+  if (ev.key === 'Escape' || ev.key === ' ') { ev.preventDefault(); if (S.confirm || S.info) { S.confirm = null; S.info = null; } else if (S.sel !== null || S.tool) { S.sel = null; S.tool = null; } else pause(!S.paused); return; }
+  if (S.paused) return;
+  const n = parseInt(ev.key, 10);
+  if (n >= 1 && n <= S.cards.length) { const c = S.cards[n - 1]; if (c.cd <= 0 && S.bubbles >= D[c.k].cost) { S.sel = n - 1; S.tool = null; } else sfx('bad'); }
+  if (ev.key === 'u' || ev.key === 'U') { S.tool = S.tool === 'up' ? null : 'up'; S.sel = null; }
+  if (ev.key === 's' || ev.key === 'S') { S.tool = S.tool === 'shovel' ? null : 'shovel'; S.sel = null; }
+  if (ev.key === 'f' || ev.key === 'F') S.speed = S.speed === 1 ? 2 : 1;
+});
+document.addEventListener('pointerdown', () => { ac(); if (bgmKey && BGM[bgmKey] && BGM[bgmKey].paused && !(S && S.paused) && !(S && S.over)) BGM[bgmKey].play().catch(() => {}); }, { capture: true });
+
+// ======================================================================
+//  繪圖：工具
+// ======================================================================
+function rr(c, x, y, w, h, r) { c.beginPath(); c.moveTo(x + r, y); c.arcTo(x + w, y, x + w, y + h, r); c.arcTo(x + w, y + h, x, y + h, r); c.arcTo(x, y + h, x, y, r); c.arcTo(x, y, x + w, y, r); c.closePath(); }
+function txt(c, t, x, y, size, fill = '#fff', stroke = '#4a2c1a', align = 'center', lw) {
+  c.font = `900 ${size}px "Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif`;
+  c.textAlign = align; c.textBaseline = 'middle'; c.lineJoin = 'round';
+  if (stroke) { c.strokeStyle = stroke; c.lineWidth = lw || Math.max(3, size / 5); c.strokeText(t, x, y); }
+  c.fillStyle = fill; c.fillText(t, x, y);
+}
+function eyes(c, x, y, sp, r, look = -1, angry = false) {
+  for (const s of [-1, 1]) {
+    c.fillStyle = '#fff'; c.beginPath(); c.ellipse(x + s * sp, y, r, r * 1.15, 0, 0, Math.PI * 2); c.fill();
+    c.strokeStyle = '#3a2416'; c.lineWidth = 1.5; c.stroke();
+    c.fillStyle = '#2a1a10'; c.beginPath(); c.arc(x + s * sp + look * r * 0.35, y + r * 0.15, r * 0.5, 0, Math.PI * 2); c.fill();
+    c.fillStyle = '#fff'; c.beginPath(); c.arc(x + s * sp + look * r * 0.35 - r * 0.15, y - r * 0.1, r * 0.17, 0, Math.PI * 2); c.fill();
+  }
+  if (angry) { c.strokeStyle = '#3a2416'; c.lineWidth = 3; c.beginPath(); c.moveTo(x - sp - r, y - r * 1.4); c.lineTo(x - sp + r, y - r * 0.9); c.moveTo(x + sp + r, y - r * 1.4); c.lineTo(x + sp - r, y - r * 0.9); c.stroke(); }
+}
+function mouth(c, x, y, w, open) {
+  c.fillStyle = '#7a2a2a'; c.strokeStyle = '#3a2416'; c.lineWidth = 2;
+  c.beginPath(); c.ellipse(x, y, w, 2 + open * w * 0.8, 0, 0, Math.PI * 2); c.fill(); c.stroke();
+  if (open > 0.3) { c.fillStyle = '#fff'; c.fillRect(x - w * 0.5, y - 2 - open * w * 0.6, w * 0.35, 4); c.fillRect(x + w * 0.1, y - 2 - open * w * 0.6, w * 0.35, 4); }
+}
+function legs(c, ph, y, sp, col = '#6b3b1f') {
+  c.fillStyle = col;
+  for (const s of [-1, 1]) { const o = Math.sin(ph * 8 + (s > 0 ? Math.PI : 0)) * 4; rr(c, s * sp - 6 + o, y - 6, 12, 10, 5); c.fill(); }
+}
+function arms(c, ph, y, x0, col) {
+  c.strokeStyle = col; c.lineWidth = 6; c.lineCap = 'round';
+  const o = Math.sin(ph * 6) * 3;
+  c.beginPath(); c.moveTo(x0, y); c.lineTo(x0 - 18, y - 4 + o); c.stroke();
+  c.beginPath(); c.moveTo(x0 + 2, y + 10); c.lineTo(x0 - 16, y + 8 - o); c.stroke();
+}
+
+// ======================================================================
+//  繪圖：甜點
+// ======================================================================
+// 原點在腳底中央
+function drawEnemyShape(c, e, t) {
+  const ph = e.phase, eat = e.eating ? (Math.sin(t * 14) * 0.5 + 0.5) : 0.1;
+  const walkB = e.eating || e.state === 'fuse' ? 0 : Math.abs(Math.sin(ph * 4)) * 3;
+  c.save(); c.translate(0, -walkB);
+  switch (e.k) {
+    case 'cupcake': case 'macaron': case 'chocolate': {
+      legs(c, ph, 0, 11);
+      // 杯子
+      c.fillStyle = '#c99be0'; c.beginPath(); c.moveTo(-20, -6); c.lineTo(20, -6); c.lineTo(27, -44); c.lineTo(-27, -44); c.closePath(); c.fill();
+      c.strokeStyle = '#a774c4'; c.lineWidth = 3; for (let i = -2; i <= 2; i++) { c.beginPath(); c.moveTo(i * 8, -8); c.lineTo(i * 10.5, -42); c.stroke(); }
+      arms(c, ph, -30, -22, '#c99be0');
+      // 奶油
+      c.fillStyle = '#ffc2d6';
+      [[-20, -50, 13], [0, -54, 16], [20, -50, 13], [-10, -66, 13], [10, -66, 13], [0, -78, 11]].forEach(([x, y, r]) => { c.beginPath(); c.arc(x, y, r, 0, Math.PI * 2); c.fill(); });
+      c.fillStyle = 'rgba(255,255,255,.6)'; c.beginPath(); c.arc(-6, -70, 5, 0, Math.PI * 2); c.fill();
+      // 臉
+      eyes(c, -2, -56, 9, 6.5);
+      mouth(c, -2, -28, 7, eat);
+      if (e.k === 'cupcake' || e.armor <= 0) { c.fillStyle = '#e8364f'; c.beginPath(); c.arc(2, -92, 7, 0, Math.PI * 2); c.fill(); c.strokeStyle = '#4b8a2f'; c.lineWidth = 2; c.beginPath(); c.moveTo(3, -98); c.quadraticCurveTo(8, -108, 13, -106); c.stroke(); }
+      if (e.k === 'macaron' && e.armor > 0) {
+        const cr = e.armor / e.maxArmor;
+        c.fillStyle = '#8fe0c4'; rr(c, -24, -110, 48, 14, 7); c.fill(); rr(c, -24, -90, 48, 14, 7); c.fill();
+        c.fillStyle = '#fff6e6'; c.fillRect(-21, -97, 42, 8);
+        if (cr < 0.5) { c.strokeStyle = '#4a8f74'; c.lineWidth = 2; c.beginPath(); c.moveTo(-8, -110); c.lineTo(-2, -102); c.lineTo(-10, -96); c.stroke(); }
+      }
+      if (e.k === 'chocolate' && e.armor > 0) {
+        const cr = e.armor / e.maxArmor;
+        c.fillStyle = '#6b3b1f'; c.beginPath(); c.moveTo(-26, -84); c.lineTo(26, -84); c.lineTo(22, -124); c.lineTo(-22, -124); c.closePath(); c.fill();
+        c.strokeStyle = '#4a2511'; c.lineWidth = 3; c.beginPath(); c.moveTo(-24, -104); c.lineTo(24, -104); c.moveTo(0, -84); c.lineTo(0, -124); c.stroke();
+        c.fillStyle = '#8a5530'; c.fillRect(-28, -88, 56, 6);
+        if (cr < 0.66) { c.strokeStyle = '#2d150a'; c.lineWidth = 2; c.beginPath(); c.moveTo(10, -124); c.lineTo(6, -112); c.lineTo(14, -104); c.stroke(); }
+        if (cr < 0.33) { c.beginPath(); c.moveTo(-14, -84); c.lineTo(-8, -96); c.lineTo(-16, -110); c.stroke(); }
+      }
+      break;
+    }
+    case 'donut': {
+      if (!e.rolling) legs(c, ph, 0, 12, '#b5733d');
+      c.save(); c.translate(0, -38); if (e.rolling) c.rotate(e.ang);
+      c.fillStyle = '#d99a5b'; c.beginPath(); c.arc(0, 0, 34, 0, Math.PI * 2); c.fill();
+      c.fillStyle = '#ff9cc6'; c.beginPath();
+      for (let i = 0; i <= 24; i++) { const a = i / 24 * Math.PI * 2, rr2 = 29 + (i % 2 ? 3 : 0); c.lineTo(Math.cos(a) * rr2, Math.sin(a) * rr2); }
+      c.fill();
+      const sp = ['#fff', '#7fd4ff', '#ffe14d', '#7be08a'];
+      for (let i = 0; i < 14; i++) { const a = i * 2.4, rd = 17 + (i % 3) * 4; c.save(); c.translate(Math.cos(a) * rd, Math.sin(a) * rd); c.rotate(a); c.fillStyle = sp[i % 4]; c.fillRect(-3, -1.5, 6, 3); c.restore(); }
+      c.fillStyle = '#5a3a26'; c.beginPath(); c.arc(0, 0, 9, 0, Math.PI * 2); c.fill();
+      c.restore();
+      eyes(c, -4, -46, 11, 6.5, -1);
+      mouth(c, -4, -24, 6, eat);
+      if (e.dizzy > 0) for (let i = 0; i < 3; i++) { const a = t * 5 + i * 2.1; txt(c, '★', Math.cos(a) * 22, -82 + Math.sin(a) * 6, 14, '#ffe14d', '#b8841a'); }
+      break;
+    }
+    case 'lollipop': {
+      legs(c, ph * 1.5, 0, 9, '#e9e1d4');
+      c.fillStyle = '#f2ece2'; c.fillRect(-4, -60, 8, 56);
+      arms(c, ph, -42, -4, '#f2ece2');
+      if (!e.jumped) { c.strokeStyle = '#e8364f'; c.lineWidth = 7; c.lineCap = 'round'; c.beginPath(); c.moveTo(-60, -40); c.lineTo(36, -40); c.stroke(); c.strokeStyle = '#fff'; c.setLineDash([8, 8]); c.stroke(); c.setLineDash([]); }
+      c.save(); c.translate(0, -84);
+      c.fillStyle = '#ff7aa8'; c.beginPath(); c.arc(0, 0, 28, 0, Math.PI * 2); c.fill();
+      c.strokeStyle = '#fff'; c.lineWidth = 5; c.beginPath();
+      for (let a = 0; a < 12; a += 0.2) { const rd = a * 2.2; c.lineTo(Math.cos(a + t) * rd, Math.sin(a + t) * rd); } c.stroke();
+      c.restore();
+      eyes(c, -2, -90, 10, 7);
+      mouth(c, -2, -70, 6, eat);
+      break;
+    }
+    case 'pudding': {
+      const sc = e.mini ? 0.6 : 1, jig = 1 + Math.sin(t * 9 + ph) * 0.05;
+      c.scale(sc * (2 - jig), sc * jig);
+      c.fillStyle = '#ffffff'; c.beginPath(); c.ellipse(0, -4, 40, 8, 0, 0, Math.PI * 2); c.fill();
+      c.fillStyle = '#ffd86b'; c.beginPath(); c.moveTo(-34, -8); c.quadraticCurveTo(-30, -70, -20, -74); c.lineTo(20, -74); c.quadraticCurveTo(30, -70, 34, -8); c.closePath(); c.fill();
+      c.fillStyle = '#8a4a1c'; c.beginPath(); c.moveTo(-20, -74); c.lineTo(20, -74); c.quadraticCurveTo(26, -62, 22, -58); c.quadraticCurveTo(14, -52, 8, -60); c.quadraticCurveTo(0, -50, -8, -60); c.quadraticCurveTo(-16, -52, -24, -60); c.closePath(); c.fill();
+      c.fillStyle = 'rgba(255,255,255,.5)'; c.beginPath(); c.ellipse(-16, -40, 4, 12, 0.2, 0, Math.PI * 2); c.fill();
+      eyes(c, -2, -40, 10, 6.5); mouth(c, -2, -20, 6, eat);
+      break;
+    }
+    case 'icecream': {
+      legs(c, ph, 0, 10, '#c8915a');
+      c.fillStyle = '#e8b878'; c.beginPath(); c.moveTo(-22, -46); c.lineTo(22, -46); c.lineTo(0, -4); c.closePath(); c.fill();
+      c.strokeStyle = '#c8915a'; c.lineWidth = 2; for (let i = -2; i <= 2; i++) { c.beginPath(); c.moveTo(i * 9 - 8, -46); c.lineTo(i * 9 + 6, -20); c.stroke(); }
+      arms(c, ph, -40, -20, '#e8b878');
+      c.fillStyle = '#ffd1e3'; c.beginPath(); c.arc(0, -62, 25, 0, Math.PI * 2); c.fill();
+      c.beginPath(); c.arc(-14, -46, 10, 0, Math.PI * 2); c.arc(14, -46, 10, 0, Math.PI * 2); c.fill();
+      c.fillStyle = '#c8f1ff'; c.beginPath(); c.arc(0, -94, 19, 0, Math.PI * 2); c.fill();
+      c.fillStyle = '#e8364f'; c.beginPath(); c.arc(4, -114, 6, 0, Math.PI * 2); c.fill();
+      eyes(c, -2, -66, 9, 6.5); mouth(c, -2, -48, 6, eat);
+      c.fillStyle = 'rgba(200,240,255,.7)';
+      for (let i = 0; i < 4; i++) { const a = t * 1.5 + i * 1.6; c.beginPath(); c.arc(Math.cos(a) * 40, -60 + Math.sin(a * 1.3) * 30, 3, 0, Math.PI * 2); c.fill(); }
+      break;
+    }
+    case 'popcorn': {
+      const fuse = e.state === 'fuse', sw = fuse ? 1 + (1 - e.ft / E.popcorn.fuse) * 0.25 : 1;
+      c.scale(sw, sw);
+      legs(c, ph, 0, 12, '#b02a2a');
+      c.fillStyle = '#fff'; c.beginPath(); c.moveTo(-24, -6); c.lineTo(24, -6); c.lineTo(30, -64); c.lineTo(-30, -64); c.closePath(); c.fill();
+      c.fillStyle = '#e8364f'; for (let i = -2; i <= 2; i += 2) { c.beginPath(); c.moveTo(i * 9 - 4, -6); c.lineTo(i * 9 + 4, -6); c.lineTo(i * 11.5 + 5, -64); c.lineTo(i * 11.5 - 5, -64); c.closePath(); c.fill(); }
+      c.fillStyle = '#fff6cc';
+      [[-24, -68], [-10, -76], [6, -74], [20, -68], [-16, -86], [2, -90], [16, -84], [-4, -100]].forEach(([x, y]) => { c.beginPath(); c.arc(x, y, 10, 0, Math.PI * 2); c.fill(); });
+      c.fillStyle = '#ffdf7a'; c.beginPath(); c.arc(-4, -80, 4, 0, Math.PI * 2); c.arc(12, -72, 3, 0, Math.PI * 2); c.fill();
+      eyes(c, -2, -42, 10, 6.5, -1, fuse); mouth(c, -2, -22, 6, fuse ? 0.8 : eat);
+      if (fuse && Math.sin(t * 30) > 0) { c.fillStyle = 'rgba(255,60,60,.35)'; c.beginPath(); c.arc(0, -50, 46, 0, Math.PI * 2); c.fill(); }
+      break;
+    }
+    case 'cake': {
+      const layers = Math.max(1, Math.ceil(e.hp / e.max * 3));
+      legs(c, ph * 0.6, 0, 22, '#8a5530');
+      const tiers = [[48, 34, '#fff1d6'], [38, 30, '#ffd1e3'], [28, 28, '#fff1d6']];
+      let y = -6;
+      arms(c, ph * 0.6, -30, -48, '#f4dcb8');
+      for (let i = 0; i < layers; i++) {
+        const [w, h, col] = tiers[i];
+        c.fillStyle = col; rr(c, -w, y - h, w * 2, h, 6); c.fill();
+        c.fillStyle = '#fff'; c.beginPath(); c.moveTo(-w, y - h + 6);
+        for (let x = -w; x <= w; x += 10) c.quadraticCurveTo(x + 5, y - h + 14 + (x / 10 % 2 ? 4 : 0), x + 10, y - h + 6);
+        c.lineTo(w, y - h); c.lineTo(-w, y - h); c.closePath(); c.fill();
+        c.fillStyle = '#e8364f'; for (let x = -w + 12; x < w; x += 22) { c.beginPath(); c.arc(x, y - h / 2 + 4, 3.5, 0, Math.PI * 2); c.fill(); }
+        y -= h;
+      }
+      for (const s of [-8, 8]) { c.fillStyle = '#7fd4ff'; c.fillRect(s - 2, y - 18, 5, 18); c.fillStyle = '#ffb347'; c.beginPath(); c.ellipse(s + 0.5, y - 22, 3, 5 + Math.sin(t * 12 + s) * 1.5, 0, 0, Math.PI * 2); c.fill(); }
+      eyes(c, -4, -24, 14, 8, -1, true); mouth(c, -4, -12, 9, eat);
+      break;
+    }
+  }
+  c.restore();
+}
+function drawEnemy(e, t) {
+  const x = e.x, y = rowBottom(e.r);
+  ctx.save();
+  ctx.fillStyle = 'rgba(0,0,0,.18)'; ctx.beginPath(); ctx.ellipse(x, y, 30, 7, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.translate(x, y - e.hop);
+  if (e.state === 'jump') ctx.rotate(-Math.sin(Math.PI * Math.min(1, e.jt / 0.9)) * 0.5);
+  if (e.dead) { const k = Math.max(0, e.deadT / 0.6); ctx.globalAlpha = k; ctx.scale(1 + (1 - k) * 0.3, k); }
+  drawEnemyShape(ctx, e, t);
+  if (e.flash > 0 && !e.dead) { ctx.globalCompositeOperation = 'source-atop'; }
+  ctx.restore();
+  if (!e.dead) {
+    if (e.flash > 0) { ctx.save(); ctx.globalAlpha = 0.35; ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.ellipse(x, y - 50 - e.hop, 32, 50, 0, 0, Math.PI * 2); ctx.fill(); ctx.restore(); }
+    if (e.slowT > 0) { ctx.save(); ctx.globalAlpha = 0.28; ctx.fillStyle = '#5fc8ff'; ctx.beginPath(); ctx.ellipse(x, y - 50 - e.hop, 32, 52, 0, 0, Math.PI * 2); ctx.fill(); ctx.restore(); }
+    if (e.hp < e.max || e.armor < e.maxArmor) {
+      const bw = 44, bx = x - bw / 2, by = Math.max(122, y - 128 - e.hop);
+      ctx.fillStyle = 'rgba(0,0,0,.45)'; rr(ctx, bx - 1, by - 1, bw + 2, 7, 3); ctx.fill();
+      ctx.fillStyle = '#ff5a7a'; rr(ctx, bx, by, bw * Math.max(0, e.hp / e.max), 5, 2.5); ctx.fill();
+      if (e.maxArmor && e.armor > 0) { ctx.fillStyle = '#b0b8c8'; rr(ctx, bx, by - 6, bw * e.armor / e.maxArmor, 4, 2); ctx.fill(); }
+    }
+  }
+}
+function drawBossShape(c, x, y, t, hpK, angry, roar = 0) {
+  c.save(); c.translate(x, y);
+  const tiers = [[150, 120, '#fff6e6'], [120, 110, '#ffd1e3'], [92, 100, '#fff6e6'], [64, 90, '#ffd1e3']];
+  let yy = 0;
+  tiers.forEach(([w, h, col], i) => {
+    c.fillStyle = col; rr(c, -w, yy - h, w * 2, h, 14); c.fill();
+    c.strokeStyle = 'rgba(160,100,80,.25)'; c.lineWidth = 3; c.stroke();
+    c.fillStyle = '#fff'; c.beginPath(); c.moveTo(-w, yy - h + 10);
+    for (let xx = -w; xx < w; xx += 24) c.quadraticCurveTo(xx + 12, yy - h + 34, xx + 24, yy - h + 10);
+    c.lineTo(w, yy - h); c.lineTo(-w, yy - h); c.closePath(); c.fill();
+    c.fillStyle = i % 2 ? '#ff7aa8' : '#ffcf4a';
+    for (let xx = -w + 20; xx < w - 10; xx += 30) { c.beginPath(); c.arc(xx, yy - 16, 7, 0, Math.PI * 2); c.fill(); }
+    yy -= h;
+  });
+  // 頂端新人
+  c.fillStyle = '#ff5a7a'; c.beginPath(); c.moveTo(0, yy - 6); c.bezierCurveTo(-30, yy - 40, -10, yy - 60, 0, yy - 40); c.bezierCurveTo(10, yy - 60, 30, yy - 40, 0, yy - 6); c.fill();
+  // 臉
+  const fy = -170;
+  const s = 2.3;
+  c.save(); c.translate(-30, fy); c.scale(s, s);
+  eyes(c, 0, 0, 13, 9, -1, true);
+  c.restore();
+  c.fillStyle = '#7a2a2a'; c.beginPath(); c.ellipse(-30, fy + 70, 40, 10 + roar * 30 + (angry ? 8 : 0), 0, 0, Math.PI * 2); c.fill();
+  c.fillStyle = '#fff'; for (let i = -3; i <= 3; i++) { c.beginPath(); c.moveTo(-30 + i * 11 - 5, fy + 62 - roar * 20); c.lineTo(-30 + i * 11 + 5, fy + 62 - roar * 20); c.lineTo(-30 + i * 11, fy + 72 - roar * 10); c.fill(); }
+  if (angry) { c.fillStyle = 'rgba(255,60,60,.18)'; c.beginPath(); c.arc(-30, fy, 140, 0, Math.PI * 2); c.fill(); }
+  c.restore();
+}
+
+// ======================================================================
+//  繪圖：吉祥物
+// ======================================================================
+function drawDef(d, t) {
+  const img = IMG[d.k]; const x = d.x, y = d.y;
+  ctx.save();
+  ctx.fillStyle = 'rgba(0,0,0,.2)'; ctx.beginPath(); ctx.ellipse(x, y, 34, 8, 0, 0, Math.PI * 2); ctx.fill();
+  if (d.lv === 3) { ctx.strokeStyle = `rgba(255,207,74,${0.5 + Math.sin(t * 4) * 0.3})`; ctx.lineWidth = 4; ctx.beginPath(); ctx.ellipse(x, y, 40, 11, 0, 0, Math.PI * 2); ctx.stroke(); }
+  let h = 88, sx = 1, sy = 1 + Math.sin(t * 3 + d.phase) * 0.025, ox = 0;
+  if (d.anim > 0) { const k = d.anim; sx = 1 + k * 0.4; sy = 1 - k * 0.3; ox = -k * 12; }
+  if (d.k === 'cookie' && d.chew > 0) { sy = 1 + Math.sin(t * 9) * 0.09; sx = 1.08 - Math.sin(t * 9) * 0.07; }
+  const hungry = d.k === 'cookie' && d.chew <= 0 && ((t + d.phase) % 6) < 1.6;
+  if (hungry) { ctx.save(); ctx.globalAlpha = 0.45 + Math.sin(t * 5) * 0.25; ctx.fillStyle = '#7be08a'; ctx.beginPath(); ctx.ellipse(x, y, 44, 12, 0, 0, Math.PI * 2); ctx.fill(); ctx.restore(); }
+  if (d.k === 'kwuji') { const k = 1 - Math.max(0, d.fuse) / D.kwuji.fuse; sx = sy = 1 + k * 0.35; }
+  if (d.k === 'laoda') h = 98;
+  if (d.k === 'cookie') h = 82;
+  ctx.translate(x + ox, y);
+  if (d.k === 'rabbit' && !d.armed) {
+    ctx.save(); ctx.beginPath(); ctx.rect(-60, -200, 120, 168); ctx.clip();
+    if (imgOk(img)) { const w = h * img.naturalWidth / img.naturalHeight; ctx.drawImage(img, -w / 2, -h + 50, w, h); }
+    ctx.restore();
+    ctx.fillStyle = '#8a5a34'; ctx.beginPath(); ctx.ellipse(0, -30, 36, 10, 0, 0, Math.PI * 2); ctx.fill();
+    const k = 1 - d.armT / (D.rabbit.arm / lvMult(d));
+    ctx.strokeStyle = '#fff'; ctx.lineWidth = 4; ctx.beginPath(); ctx.arc(30, -70, 9, -Math.PI / 2, -Math.PI / 2 + k * Math.PI * 2); ctx.stroke();
+  } else {
+    ctx.scale(sx, sy);
+    if (imgOk(img)) { const w = h * img.naturalWidth / img.naturalHeight; ctx.drawImage(img, -w / 2, -h, w, h); }
+    else { ctx.fillStyle = '#ccc'; ctx.beginPath(); ctx.arc(0, -40, 35, 0, Math.PI * 2); ctx.fill(); }
+    if (d.k === 'kwuji' && Math.sin(t * 25) > 0) { ctx.fillStyle = 'rgba(255,60,30,.35)'; ctx.beginPath(); ctx.arc(0, -45, 48, 0, Math.PI * 2); ctx.fill(); }
+  }
+  ctx.restore();
+  if (d.k === 'rabbit' && d.armed) { const bl = Math.sin(t * 8) > 0; ctx.fillStyle = bl ? '#ff3b3b' : '#ffd0d0'; ctx.beginPath(); ctx.arc(x + 28, y - 80, 7, 0, Math.PI * 2); ctx.fill(); }
+  if (d.frost) { ctx.save(); ctx.globalAlpha = 0.35; ctx.fillStyle = '#9fe0ff'; ctx.beginPath(); ctx.ellipse(x, y - 44, 40, 48, 0, 0, Math.PI * 2); ctx.fill(); ctx.restore(); txt(ctx, '❄', x - 30, y - 88, 16, '#dff6ff', '#3a8ab8'); }
+  if (d.k === 'cookie') {
+    if (d.chew > 0) {
+      // 消化中：咖啡色進度圈＋「嚼嚼…」對話框，畫面變暗一點
+      ctx.save(); ctx.globalAlpha = 0.25; ctx.fillStyle = '#3a2416'; ctx.beginPath(); ctx.ellipse(x, y - 42, 42, 44, 0, 0, Math.PI * 2); ctx.fill(); ctx.restore();
+      const k = 1 - d.chew / (d.chewMax || 1), cx = x + 30, cy = y - 96;
+      ctx.fillStyle = 'rgba(255,255,255,.9)'; ctx.beginPath(); ctx.arc(cx, cy, 15, 0, Math.PI * 2); ctx.fill();
+      ctx.strokeStyle = '#c68b4e'; ctx.lineWidth = 5; ctx.beginPath(); ctx.arc(cx, cy, 12, -Math.PI / 2, -Math.PI / 2 + k * Math.PI * 2); ctx.stroke();
+      txt(ctx, Math.ceil(d.chew), cx, cy + 1, 12, '#8a5530', null);
+      const by = y - 112 + Math.sin(t * 6) * 3;
+      ctx.fillStyle = '#fff'; rr(ctx, x - 52, by - 13, 58, 24, 10); ctx.fill(); ctx.strokeStyle = '#c68b4e'; ctx.lineWidth = 2; ctx.stroke();
+      txt(ctx, Math.floor(t * 3) % 2 ? '嚼嚼…' : '咕嚕…', x - 23, by - 1, 13, '#8a5530', null);
+    } else if (hungry) {
+      const by = y - 104 + Math.abs(Math.sin(t * 4)) * -6;
+      ctx.fillStyle = '#7be08a'; rr(ctx, x - 26, by - 12, 52, 22, 10); ctx.fill(); ctx.strokeStyle = '#fff'; ctx.lineWidth = 2; ctx.stroke();
+      txt(ctx, '好餓！', x, by - 1, 13, '#fff', '#3d8a52', 'center', 3);
+    }
+  }
+  if (d.lv > 1) txt(ctx, '★'.repeat(d.lv - 1), x - 34, y - 8, 16, '#ffcf4a', '#8a5530', 'left');
+  if (d.hp < d.max && d.k !== 'kwuji') {
+    const bw = 50, bx = x - bw / 2, by = y - 104;
+    ctx.fillStyle = 'rgba(0,0,0,.4)'; rr(ctx, bx - 1, by - 1, bw + 2, 7, 3); ctx.fill();
+    ctx.fillStyle = d.hp / d.max > 0.4 ? '#4fd17a' : '#ff9a3c'; rr(ctx, bx, by, bw * Math.max(0, d.hp / d.max), 5, 2.5); ctx.fill();
+  }
+}
+
+// ======================================================================
+//  繪圖：背景（預先畫好）
+// ======================================================================
+const BG = [];
+function makeBg(si) {
+  const c = document.createElement('canvas'); c.width = W; c.height = H; const g = c.getContext('2d');
+  const pal = [
+    { wall: '#f7d9b0', wall2: '#efc796', a: '#a8d878', b: '#98cc68', side: '#d4a373', side2: '#c49363' },
+    { wall: '#2f3566', wall2: '#262b55', a: '#5a62a6', b: '#4f5799', side: '#3b3f6e', side2: '#33375f' },
+    { wall: '#fff2dc', wall2: '#f7e4c4', a: '#fff8ee', b: '#f3e3cc', side: '#d9c4a5', side2: '#ccb592' },
+  ][si];
+  g.fillStyle = pal.wall; g.fillRect(0, 0, W, H);
+  // 右側走道
+  g.fillStyle = pal.side; g.fillRect(BR, BY - 10, W - BR, H - BY + 10);
+  for (let r = 0; r < ROWS; r++) { g.fillStyle = r % 2 ? pal.side : pal.side2; g.fillRect(BR, BY + r * CH, W - BR, CH); }
+  // 格子
+  for (let r = 0; r < ROWS; r++) for (let col = 0; col < COLS; col++) {
+    g.fillStyle = (r + col) % 2 ? pal.a : pal.b; g.fillRect(BX + col * CW, BY + r * CH, CW, CH);
+  }
+  if (si === 2) { g.strokeStyle = 'rgba(180,150,110,.25)'; g.lineWidth = 2; for (let r = 0; r <= ROWS; r++) { g.beginPath(); g.moveTo(BX, BY + r * CH); g.lineTo(BR, BY + r * CH); g.stroke(); } for (let col = 0; col <= COLS; col++) { g.beginPath(); g.moveTo(BX + col * CW, BY); g.lineTo(BX + col * CW, BY + ROWS * CH); g.stroke(); } }
+  if (si === 0) { // 地毯邊
+    g.strokeStyle = '#e88a5a'; g.lineWidth = 6; g.strokeRect(BX + 3, BY + 3, CW * COLS - 6, CH * ROWS - 6);
+  }
+  if (si === 1) { // 窗外星空
+    g.fillStyle = '#141838'; rr(g, 1160, 150, 100, 130, 10); g.fill();
+    g.fillStyle = '#ffe9a0'; g.beginPath(); g.arc(1220, 190, 18, 0, Math.PI * 2); g.fill(); g.fillStyle = '#141838'; g.beginPath(); g.arc(1228, 184, 16, 0, Math.PI * 2); g.fill();
+    g.fillStyle = '#fff'; for (let i = 0; i < 12; i++) g.fillRect(1168 + (i * 37) % 86, 160 + (i * 53) % 110, 2, 2);
+    g.fillStyle = 'rgba(10,12,40,.25)'; g.fillRect(BX, BY, CW * COLS, CH * ROWS);
+  }
+  if (si === 2) { // 流理台
+    g.fillStyle = '#b8a07e'; g.fillRect(BR + 8, BY - 10, W - BR - 8, 26);
+  }
+  // 左邊的家
+  g.fillStyle = si === 1 ? '#4a3a6a' : '#e6a26a'; g.fillRect(0, BY - 10, BX - 60, H);
+  g.fillStyle = si === 1 ? '#3a2d55' : '#cf8a52'; for (let y = BY; y < H; y += 26) g.fillRect(0, y, BX - 60, 3);
+  g.fillStyle = si === 1 ? '#6b5a90' : '#8a5530'; rr(g, 14, 330, 58, 110, 10); g.fill();
+  g.fillStyle = '#ffcf4a'; g.beginPath(); g.arc(60, 388, 5, 0, Math.PI * 2); g.fill();
+  g.fillStyle = '#ff6f91'; g.beginPath(); g.moveTo(43, 300); g.bezierCurveTo(23, 280, 33, 262, 43, 276); g.bezierCurveTo(53, 262, 63, 280, 43, 300); g.fill();
+  txt(g, '家', 43, 470, 26, '#fff', '#8a5530');
+  // HUD 底
+  g.fillStyle = '#b97a46'; g.fillRect(0, 0, W, 114);
+  g.fillStyle = '#a56a3b'; for (let y = 8; y < 114; y += 18) g.fillRect(0, y, W, 2);
+  g.fillStyle = '#8a5530'; g.fillRect(0, 110, W, 6);
+  return c;
+}
+
+// ======================================================================
+//  繪圖：主畫面
+// ======================================================================
+function drawBubble(x, y, r, v, alpha = 1) {
+  ctx.save(); ctx.globalAlpha = alpha;
+  const gr = ctx.createRadialGradient(x - r * 0.3, y - r * 0.3, r * 0.1, x, y, r);
+  gr.addColorStop(0, 'rgba(255,255,255,.95)'); gr.addColorStop(0.5, 'rgba(180,230,255,.55)'); gr.addColorStop(0.85, 'rgba(255,170,220,.6)'); gr.addColorStop(1, 'rgba(160,140,255,.8)');
+  ctx.fillStyle = gr; ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fill();
+  ctx.strokeStyle = 'rgba(255,255,255,.9)'; ctx.lineWidth = 2; ctx.stroke();
+  ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.ellipse(x - r * 0.4, y - r * 0.45, r * 0.22, r * 0.12, -0.6, 0, Math.PI * 2); ctx.fill();
+  if (v) txt(ctx, v, x, y + 2, r * 0.55, '#5a3a9a', '#fff');
+  ctx.restore();
+}
+const PS = 1.9; // 子彈放大倍率
+function drawProj(p, t) {
+  if (p.delay > 0) return;
+  ctx.save(); ctx.translate(p.x, p.y);
+  if (p.kind === 'plane' || p.kind === 'mini') {
+    const s = PS * (p.kind === 'mini' ? 0.8 : 1 + (p.lv - 1) * 0.15);
+    ctx.scale(s, s); ctx.rotate(Math.sin(t * 10 + p.x * 0.05) * 0.08);
+    const col = p.kind === 'mini' ? ['#d6f0ff', '#a9e0ff', '#ffe27a'][p.lv - 1] : ['#ffffff', '#fff3b0', '#ffcf4a'][p.lv - 1];
+    ctx.fillStyle = col; ctx.strokeStyle = '#6b7a99'; ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.moveTo(18, 0); ctx.lineTo(-14, -10); ctx.lineTo(-8, 0); ctx.lineTo(-14, 10); ctx.closePath(); ctx.fill(); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(18, 0); ctx.lineTo(-8, 0); ctx.stroke();
+  } else if (p.kind === 'ice') {
+    const s = PS * (1 + (p.lv - 1) * 0.15); ctx.scale(s, s);
+    ctx.shadowColor = '#8fe0ff'; ctx.shadowBlur = 10;
+    ctx.fillStyle = '#c8f1ff'; ctx.beginPath(); ctx.moveTo(14, 0); ctx.lineTo(0, -9); ctx.lineTo(-12, 0); ctx.lineTo(0, 9); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.moveTo(6, 0); ctx.lineTo(0, -4); ctx.lineTo(-4, 0); ctx.lineTo(0, 4); ctx.fill();
+  } else if (p.kind === 'snow') {
+    const r = (9 + (p.lv - 1) * 1.5) * PS;
+    ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(0, 0, r, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#d6e4f0'; ctx.beginPath(); ctx.arc(3, 3, r * 0.55, 0, Math.PI * 2); ctx.fill();
+  } else if (p.kind === 'onigiri') {
+    const s = PS * (1 + (p.lv - 1) * 0.15); ctx.scale(s, s); ctx.rotate(p.rot);
+    ctx.fillStyle = '#fff'; ctx.strokeStyle = '#ccc'; ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.moveTo(0, -14); ctx.quadraticCurveTo(15, 10, 12, 12); ctx.lineTo(-12, 12); ctx.quadraticCurveTo(-15, 10, 0, -14); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = '#1f3a2a'; ctx.fillRect(-7, 3, 14, 9);
+    if (p.lv === 3) { ctx.fillStyle = '#ffcf4a'; ctx.beginPath(); ctx.arc(0, -2, 3, 0, Math.PI * 2); ctx.fill(); }
+  }
+  ctx.restore();
+}
+function drawFlame(f, t) {
+  const y = rowBottom(f.r) - 50, k = f.t / 0.4;
+  ctx.save(); ctx.globalAlpha = Math.min(1, k * 1.6);
+  for (let i = 0; i < 16; i++) {
+    const p = i / 15, x = f.x + p * f.len, r = 10 + p * 18 + Math.sin(t * 30 + i) * 4;
+    ctx.fillStyle = i % 3 === 0 ? '#ffe14d' : i % 3 === 1 ? '#ff8a2a' : '#ff4a2a';
+    if (f.lv === 3 && i % 3 === 2) ctx.fillStyle = '#b44aff';
+    ctx.beginPath(); ctx.arc(x, y + Math.sin(i * 1.7 + t * 20) * 8, r, 0, Math.PI * 2); ctx.fill();
+  }
+  ctx.restore();
+}
+function drawMower(m) {
+  if (m.st === 'gone') return;
+  const x = m.x, y = rowBottom(m.r);
+  ctx.save(); ctx.translate(x, y);
+  ctx.fillStyle = 'rgba(0,0,0,.2)'; ctx.beginPath(); ctx.ellipse(0, 0, 26, 6, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = '#ff6f91'; rr(ctx, -24, -34, 44, 30, 12); ctx.fill();
+  ctx.fillStyle = '#ffd1e3'; rr(ctx, -18, -30, 20, 12, 5); ctx.fill();
+  ctx.fillStyle = '#555'; rr(ctx, 14, -12, 16, 10, 4); ctx.fill();
+  ctx.strokeStyle = '#8a5530'; ctx.lineWidth = 4; ctx.beginPath(); ctx.moveTo(-18, -32); ctx.lineTo(-30, -62); ctx.stroke();
+  ctx.fillStyle = '#333'; ctx.beginPath(); ctx.arc(-14, -4, 5, 0, Math.PI * 2); ctx.arc(10, -4, 5, 0, Math.PI * 2); ctx.fill();
+  if (m.st === 'run') { ctx.fillStyle = 'rgba(255,255,255,.6)'; for (let i = 0; i < 3; i++) { ctx.beginPath(); ctx.arc(-34 - i * 12, -18 + Math.sin(i + x) * 6, 5 - i, 0, Math.PI * 2); ctx.fill(); } }
+  ctx.restore();
+}
+function drawHUD(t) {
+  // 泡泡數
+  ctx.fillStyle = '#fff3dd'; rr(ctx, 10, 10, 104, 94, 16); ctx.fill();
+  ctx.strokeStyle = '#8a5530'; ctx.lineWidth = 3; ctx.stroke();
+  drawBubble(58, 46, 26);
+  txt(ctx, String(S.bubbles), 62, 88, 24, '#4a2c1a', '#fff');
+  // 卡片
+  S.cards.forEach((c, i) => {
+    const r = cardRect(i), b = D[c.k], ok = c.cd <= 0 && S.bubbles >= b.cost, sel = S.sel === i;
+    const yy = r.y + (sel ? -4 : 0);
+    ctx.fillStyle = sel ? '#fff7c2' : '#fff3dd'; rr(ctx, r.x, yy, r.w, r.h, 12); ctx.fill();
+    ctx.strokeStyle = sel ? '#ffb000' : '#8a5530'; ctx.lineWidth = sel ? 4 : 3; ctx.stroke();
+    const img = IMG[c.k];
+    if (imgOk(img)) { const h = 58, w = Math.min(70, h * img.naturalWidth / img.naturalHeight); ctx.drawImage(img, r.x + r.w / 2 - w / 2, yy + 6, w, h); }
+    ctx.fillStyle = '#59c2ff'; rr(ctx, r.x + 8, yy + r.h - 26, r.w - 16, 20, 8); ctx.fill();
+    txt(ctx, String(b.cost), r.x + r.w / 2, yy + r.h - 16, 15, '#fff', '#2a7ab0', 'center', 3);
+    txt(ctx, String(i + 1), r.x + 10, yy + 12, 11, '#8a5530', null);
+    if (!ok) { ctx.fillStyle = 'rgba(60,40,30,.45)'; rr(ctx, r.x, yy, r.w, r.h, 12); ctx.fill(); }
+    if (c.cd > 0) { const k = c.cd / b.cooldown; ctx.fillStyle = 'rgba(30,20,15,.45)'; ctx.fillRect(r.x + 2, yy + 2, r.w - 4, (r.h - 4) * k); }
+  });
+  // 升級與鏟子
+  const drawBtn = (bt, label, icon, on) => {
+    ctx.fillStyle = on ? '#fff7c2' : '#fff3dd'; rr(ctx, bt.x, bt.y, bt.w, bt.h, 12); ctx.fill();
+    ctx.strokeStyle = on ? '#ffb000' : '#8a5530'; ctx.lineWidth = on ? 4 : 3; ctx.stroke();
+    icon(bt.x + bt.w / 2, bt.y + 36);
+    txt(ctx, label, bt.x + bt.w / 2, bt.y + bt.h - 16, 16, '#4a2c1a', null);
+  };
+  drawBtn(BTN.up, '升級', (x, y) => { ctx.fillStyle = '#ffcf4a'; ctx.beginPath(); ctx.moveTo(x, y - 22); ctx.lineTo(x + 18, y); ctx.lineTo(x + 8, y); ctx.lineTo(x + 8, y + 16); ctx.lineTo(x - 8, y + 16); ctx.lineTo(x - 8, y); ctx.lineTo(x - 18, y); ctx.closePath(); ctx.fill(); ctx.strokeStyle = '#b8841a'; ctx.lineWidth = 2; ctx.stroke(); }, S.tool === 'up');
+  drawBtn(BTN.shovel, '鏟子', (x, y) => { ctx.save(); ctx.translate(x, y); ctx.rotate(0.6); ctx.fillStyle = '#8a5530'; ctx.fillRect(-3, -24, 6, 26); ctx.fillStyle = '#aab4c4'; ctx.beginPath(); ctx.moveTo(-11, 0); ctx.lineTo(11, 0); ctx.lineTo(8, 16); ctx.lineTo(0, 22); ctx.lineTo(-8, 16); ctx.closePath(); ctx.fill(); ctx.restore(); }, S.tool === 'shovel');
+  // 關卡名與進度
+  const L = S.L;
+  txt(ctx, L.endless ? `無盡模式・第 ${Math.max(1, S.wave)} 波` : levelName(L), 1065, 30, 18, '#fff', '#4a2c1a', 'center');
+  if (!L.boss) {
+    const px = 995, pw = 140, py = 56;
+    ctx.fillStyle = '#5a3a26'; rr(ctx, px, py, pw, 16, 8); ctx.fill();
+    const k = L.endless ? ((S.wave % L.bigEvery) / L.bigEvery) : Math.min(1, S.wave / S.totalWaves);
+    ctx.fillStyle = '#7be08a'; rr(ctx, px + pw - pw * k, py + 2, pw * k, 12, 6); ctx.fill();
+    if (!L.endless) for (const bi of S.bigWaves) { const fx = px + pw - pw * (bi + 1) / S.totalWaves; ctx.fillStyle = '#fff'; ctx.fillRect(fx, py - 12, 2, 20); ctx.fillStyle = S.wave > bi ? '#aaa' : '#ff5a7a'; ctx.fillRect(fx + 2, py - 12, 12, 8); }
+    txt(ctx, '甜點進度', 1065, 92, 13, '#fff3dd', null);
+  } else if (S.boss) {
+    const px = 995, pw = 140, py = 56;
+    ctx.fillStyle = '#5a3a26'; rr(ctx, px, py, pw, 16, 8); ctx.fill();
+    ctx.fillStyle = '#ff5a7a'; rr(ctx, px + 2, py + 2, (pw - 4) * S.boss.hp / S.boss.max, 12, 6); ctx.fill();
+    txt(ctx, `Boss ${Math.ceil(S.boss.hp)}`, 1065, 92, 13, '#fff3dd', null);
+  }
+  // 速度、暫停
+  for (const [bt, lab] of [[BTN.speed, S.speed === 2 ? '×2' : '×1'], [BTN.pause, 'II']]) {
+    ctx.fillStyle = bt === BTN.speed && S.speed === 2 ? '#ffe07a' : '#fff3dd'; rr(ctx, bt.x, bt.y, bt.w, bt.h, 12); ctx.fill();
+    ctx.strokeStyle = '#8a5530'; ctx.lineWidth = 3; ctx.stroke();
+    txt(ctx, lab, bt.x + bt.w / 2, bt.y + bt.h / 2 + 1, 20, '#4a2c1a', null);
+  }
+}
+const STAT_UNIT = { atk: '', produce: ' 泡泡', hp: '', heal: '', chew: ' 秒', arm: ' 秒' };
+const STAT_LABEL = { atk: '攻擊力', produce: '每次產泡泡', hp: '血量', heal: '回血量', chew: '嚼食時間', arm: '準備時間' };
+function mainStat(k) { const b = D[k]; if (b.upgrade) return b.upgrade.stat; if (b.atk) return 'atk'; return 'hp'; }
+function statAt(k, key, lv) {
+  const b = D[k], m = b.upgrade && b.upgrade.stat === key ? G.upgradeMult[lv - 1] : 1;
+  if (key === 'produce') return Math.round(b.produce * m / 5) * 5;
+  if (key === 'chew' || key === 'arm') return +(b[key] / m).toFixed(1);
+  return Math.round(b[key] * m);
+}
+function defInfoLines(d) {
+  const b = D[d.k], key = mainStat(d.k), lab = STAT_LABEL[key], u = STAT_UNIT[key];
+  const cost = upgradeCost(d), lines = [];
+  lines.push([`${b.name}　Lv${d.lv}`, '#ffe07a', 17]);
+  if (b.upgrade && cost !== null) {
+    lines.push([`${lab}：${statAt(d.k, key, d.lv)}${u} → ${statAt(d.k, key, d.lv + 1)}${u}`, '#fff', 15]);
+    lines.push([`升到 Lv${d.lv + 1} 需要 ${cost} 泡泡`, S.bubbles >= cost ? '#9ff0b0' : '#ff9a9a', 14]);
+  } else {
+    lines.push([`${lab}：${statAt(d.k, key, d.lv)}${u}`, '#fff', 15]);
+    lines.push([b.upgrade ? '已經升到最高級了' : '這位夥伴不能升級', '#ccc', 14]);
+  }
+  if (b.rate && b.atk) lines.push([`攻擊頻率 ${b.rate} 秒　射程 ${b.range} 格`, '#e8d8c8', 13]);
+  return lines;
+}
+function drawPanel(lines, ax, ay) {
+  let tw = 0; for (const [tx, , sz] of lines) { ctx.font = `900 ${sz}px sans-serif`; tw = Math.max(tw, ctx.measureText(tx).width); }
+  tw += 24; const th = lines.reduce((a, l) => a + l[2] + 9, 12);
+  const bx = clamp(ax - tw / 2, 4, W - tw - 4), by = clamp(ay - th, 118, H - th - 4);
+  ctx.fillStyle = 'rgba(74,44,26,.92)'; rr(ctx, bx, by, tw, th, 10); ctx.fill();
+  let yy = by + 8; for (const [tx, c, sz] of lines) { yy += (sz + 9) / 2; txt(ctx, tx, bx + tw / 2, yy, sz, c, null); yy += (sz + 9) / 2; }
+}
+const CF = { box: { x: 410, y: 270, w: 460, h: 190 }, ok: { x: 460, y: 390, w: 160, h: 50 }, no: { x: 660, y: 390, w: 160, h: 50 } };
+function drawConfirm() {
+  const d = S.confirm.d; if (d.gone) { S.confirm = null; return; }
+  const b = D[d.k], key = mainStat(d.k), u = STAT_UNIT[key], cost = upgradeCost(d), ok = cost !== null && S.bubbles >= cost;
+  ctx.fillStyle = 'rgba(40,20,10,.35)'; ctx.fillRect(0, 0, W, H);
+  ctx.strokeStyle = '#ffe07a'; ctx.lineWidth = 4; rr(ctx, BX + d.c * CW + 3, BY + d.r * CH + 3, CW - 6, CH - 6, 12); ctx.stroke();
+  const B = CF.box; ctx.save(); ctx.shadowColor = 'rgba(0,0,0,.35)'; ctx.shadowBlur = 18; ctx.fillStyle = '#fff6e6'; rr(ctx, B.x, B.y, B.w, B.h, 22); ctx.fill(); ctx.restore();
+  ctx.strokeStyle = '#ffcf4a'; ctx.lineWidth = 4; rr(ctx, B.x, B.y, B.w, B.h, 22); ctx.stroke();
+  const img = IMG[d.k]; if (imgOk(img)) { const h = 90, w = h * img.naturalWidth / img.naturalHeight; ctx.drawImage(img, B.x + 20, B.y + 18, w, h); }
+  txt(ctx, `要把${b.name}升到 Lv${d.lv + 1} 嗎？`, B.x + 125, B.y + 34, 21, '#4a2c1a', null, 'left');
+  txt(ctx, `${STAT_LABEL[key]}：${statAt(d.k, key, d.lv)}${u} → ${statAt(d.k, key, d.lv + 1)}${u}`, B.x + 125, B.y + 68, 17, '#4a2c1a', null, 'left');
+  txt(ctx, ok ? `花費 ${cost} 泡泡` : `需要 ${cost} 泡泡（還不夠喔）`, B.x + 125, B.y + 96, 16, ok ? '#2a8a69' : '#d84a4a', null, 'left');
+  for (const [R, lab, col, sh] of [[CF.ok, '升級！', ok ? '#ff8fb1' : '#c8b8b0', ok ? '#c0507a' : '#8a7a70'], [CF.no, '取消', '#8fe0c4', '#2a8a69']]) {
+    ctx.fillStyle = col; rr(ctx, R.x, R.y, R.w, R.h, 16); ctx.fill(); ctx.strokeStyle = '#fff'; ctx.lineWidth = 3; ctx.stroke();
+    txt(ctx, lab, R.x + R.w / 2, R.y + R.h / 2 + 1, 20, '#fff', sh);
+  }
+}
+function drawCursor(t) {
+  const x = S.mx, y = S.my; if (x < 0) return;
+  const cell = cellAt(x, y);
+  if (S.sel !== null) {
+    const k = S.cards[S.sel].k, img = IMG[k];
+    if (cell) {
+      const [r, c] = cell, free = !S.grid[r][c];
+      ctx.fillStyle = free ? 'rgba(255,255,255,.25)' : 'rgba(255,60,60,.25)'; ctx.fillRect(BX + c * CW, BY + r * CH, CW, CH);
+      if (free && imgOk(img)) { ctx.globalAlpha = 0.45; const h = 88, w = h * img.naturalWidth / img.naturalHeight; ctx.drawImage(img, colX(c) - w / 2, rowBottom(r) - h, w, h); ctx.globalAlpha = 1; }
+    }
+    if (imgOk(img)) { const h = 64, w = h * img.naturalWidth / img.naturalHeight; ctx.globalAlpha = 0.85; ctx.drawImage(img, x - w / 2, y - h / 2, w, h); ctx.globalAlpha = 1; }
+  } else if (S.tool === 'shovel') {
+    if (cell && S.grid[cell[0]][cell[1]]) { ctx.fillStyle = 'rgba(255,60,60,.25)'; ctx.fillRect(BX + cell[1] * CW, BY + cell[0] * CH, CW, CH); }
+    ctx.save(); ctx.translate(x + 10, y - 10); ctx.rotate(0.6); ctx.fillStyle = '#8a5530'; ctx.fillRect(-3, -28, 6, 28); ctx.fillStyle = '#aab4c4'; ctx.beginPath(); ctx.moveTo(-12, 0); ctx.lineTo(12, 0); ctx.lineTo(9, 18); ctx.lineTo(0, 24); ctx.lineTo(-9, 18); ctx.closePath(); ctx.fill(); ctx.restore();
+  } else if (S.tool === 'up') {
+    if (cell) {
+      const d = S.grid[cell[0]][cell[1]];
+      if (d) {
+        const cost = upgradeCost(d), ok = cost !== null && S.bubbles >= cost;
+        ctx.fillStyle = cost === null ? 'rgba(150,150,150,.25)' : ok ? 'rgba(255,220,80,.3)' : 'rgba(255,60,60,.22)'; ctx.fillRect(BX + cell[1] * CW, BY + cell[0] * CH, CW, CH);
+        if (!S.confirm) drawPanel(defInfoLines(d), x, y - 20);
+      }
+    }
+    ctx.save(); ctx.translate(x + 14, y - 12); ctx.fillStyle = '#ffcf4a'; ctx.strokeStyle = '#b8841a'; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(0, -14); ctx.lineTo(12, 0); ctx.lineTo(5, 0); ctx.lineTo(5, 12); ctx.lineTo(-5, 12); ctx.lineTo(-5, 0); ctx.lineTo(-12, 0); ctx.closePath(); ctx.fill(); ctx.stroke(); ctx.restore();
+  }
+}
+function render(t) {
+  const si = S.L.scene;
+  if (!BG[si]) BG[si] = makeBg(si);
+  ctx.save();
+  if (S.shake > 0) ctx.translate(rand(-5, 5), rand(-4, 4));
+  ctx.drawImage(BG[si], 0, 0);
+  // 奶油痕跡、危險預告
+  for (const p of S.parts) if (p.splat) { ctx.save(); ctx.globalAlpha = Math.min(1, p.life) * 0.8; ctx.fillStyle = p.c; ctx.beginPath(); ctx.ellipse(p.x, p.y, 40, 14, 0, 0, Math.PI * 2); ctx.fill(); ctx.restore(); }
+  for (const h of S.hazards) {
+    const k = 1 - h.t / h.max, x = colX(h.c), y = rowY(h.r);
+    ctx.fillStyle = `rgba(255,60,60,${0.15 + k * 0.25})`; ctx.beginPath(); ctx.ellipse(x, y + 30, 46 * (0.5 + k * 0.5), 16 * (0.5 + k * 0.5), 0, 0, Math.PI * 2); ctx.fill();
+  }
+  for (const m of S.mowers) drawMower(m);
+  if (S.boss) {
+    const b = S.boss;
+    ctx.save();
+    if (b.dead) { ctx.globalAlpha = Math.max(0, 1 - b.deadT / 2); }
+    ctx.translate(1222, 712 + (b.dead ? b.deadT * 120 : Math.sin(b.anim * 2) * 4)); ctx.scale(0.78, 0.92);
+    drawBossShape(ctx, 0, 0, b.anim, b.hp / b.max, b.enraged, Math.max(0, b.roar || 0));
+    if (b.flash > 0) { ctx.globalAlpha = 0.25; ctx.fillStyle = '#fff'; ctx.fillRect(-150, -460, 300, 460); }
+    ctx.restore();
+  }
+  for (let r = 0; r < ROWS; r++) {
+    for (const d of S.defs) if (d.r === r) drawDef(d, t);
+    const es = S.enemies.filter(e => e.r === r).sort((a, b) => b.x - a.x);
+    for (const e of es) drawEnemy(e, t);
+    for (const f of S.flames) if (f.r === r) drawFlame(f, t);
+  }
+  for (const p of S.projs) drawProj(p, t);
+  // 奶油砲彈飛行
+  for (const h of S.hazards) {
+    const k = 1 - h.t / h.max, sx = 1150, sy = 300, tx = colX(h.c), ty = rowY(h.r) + 20;
+    const x = lerp(sx, tx, k), y = lerp(sy, ty, k) - Math.sin(Math.PI * k) * 220;
+    ctx.fillStyle = '#fffaf0'; ctx.strokeStyle = '#e6d6bd'; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(x, y, 18, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = '#e8364f'; ctx.beginPath(); ctx.arc(x + 4, y - 14, 5, 0, Math.PI * 2); ctx.fill();
+  }
+  for (const p of S.parts) {
+    if (p.splat) continue;
+    const a = Math.max(0, p.life / p.max);
+    ctx.globalAlpha = a;
+    if (p.ring) { ctx.strokeStyle = p.c; ctx.lineWidth = 10 * a; ctx.beginPath(); ctx.arc(p.x, p.y, p.ring * (1 - a) + 10, 0, Math.PI * 2); ctx.stroke(); }
+    else if (p.heart) txt(ctx, '♥', p.x, p.y, p.s, p.c, '#fff', 'center', 3);
+    else { ctx.fillStyle = p.c; ctx.beginPath(); ctx.arc(p.x, p.y, p.s, 0, Math.PI * 2); ctx.fill(); }
+    ctx.globalAlpha = 1;
+  }
+  ctx.restore();
+  drawHUD(t);
+  for (const b of S.skyB) {
+    const a = b.kind === 'rest' && b.life < 3 ? (Math.sin(t * 12) > 0 ? 0.4 : 1) : 1;
+    drawBubble(b.x, b.y + Math.sin(t * 3 + b.x) * 3, b.v > 25 ? 34 : 30, b.v, a);
+  }
+  for (const tx of S.texts) { ctx.globalAlpha = Math.min(1, tx.life * 2); txt(ctx, tx.t, tx.x, tx.y, tx.s, tx.c, '#4a2c1a'); ctx.globalAlpha = 1; }
+  if (S.info && !S.info.gone && !S.confirm) { const d = S.info; ctx.strokeStyle = '#ffe07a'; ctx.lineWidth = 3; rr(ctx, BX + d.c * CW + 3, BY + d.r * CH + 3, CW - 6, CH - 6, 12); ctx.stroke(); drawPanel(defInfoLines(d), d.x, d.y - 100); }
+  if (S.confirm) drawConfirm(); else drawCursor(t);
+  if (S.tut) drawTut(t);
+  if (S.intro > 0) {
+    const w = ['準備……', '佈陣……', '開打！'][Math.min(2, Math.floor((2.4 - S.intro) / 0.8))];
+    txt(ctx, w, W / 2, H / 2, 72, '#fff', '#e0628c', 'center', 12);
+  }
+  if (S.banner) {
+    const k = S.banner.t / S.banner.max, s = 1 + Math.max(0, k - 0.85) * 3;
+    ctx.save(); ctx.globalAlpha = Math.min(1, S.banner.t * 2); ctx.translate(W / 2, H / 2); ctx.scale(s, s);
+    txt(ctx, S.banner.text, 0, 0, 56, S.banner.color, '#fff', 'center', 12); ctx.restore();
+  }
+}
+
+// ======================================================================
+//  教學（第一關）
+// ======================================================================
+const TUT_PANEL = { x: 330, y: 588, w: 640, h: 118 };
+const TUT_SKIP = { x: 862, y: 556, w: 108, h: 32 };
+const TUT_BTN = { x: 850, y: 650, w: 108, h: 44 };
+const hasDef = k => S.defs.some(d => d.k === k);
+const cardIdx = k => S.cards.findIndex(c => c.k === k);
+const TUT = [
+  { text: '嗨～我是略略！甜點大軍要來吃掉我們的家了，快跟我一起佈陣吧！', btn: '好！' },
+  { text: '先點我的卡片，選擇「大長今略略」～', target: () => cardIdx('lala') >= 0 && cardRect(cardIdx('lala')), done: () => hasDef('lala') || (S.sel !== null && S.cards[S.sel].k === 'lala') },
+  { text: '點左邊的格子把我放下去！我會一直吹泡泡給大家用喔♪', target: () => ({ x: BX, y: BY, w: CW, h: CH * ROWS }), done: () => hasDef('lala') },
+  { text: '接著選「烏雞」，放在略略的右邊！烏雞會射紙飛機打甜點～', target: () => hasDef('wuji') || (S.sel !== null && S.cards[S.sel].k === 'wuji') ? { x: BX + CW, y: BY, w: CW * 3, h: CH * ROWS } : cardIdx('wuji') >= 0 && cardRect(cardIdx('wuji')), done: () => hasDef('wuji') },
+  { text: '看到泡泡了嗎？天上和略略都會冒出泡泡，點一下就能收下來！', enter: () => { S.skyT = Math.min(S.skyT, 1); }, done: () => S.collected > 0 },
+  { text: '左上角是你的泡泡數。泡泡夠多時，按「升級」再點夥伴，就能讓他變強喔！最高 Lv3～', target: () => BTN.up, btn: '知道了' },
+  { text: '甜點會從右邊的每一條線走過來，每條線都要有人守！真的守不住時，左邊的吸塵器會幫忙一次。', target: () => ({ x: BX - 70, y: BY, w: 60, h: CH * ROWS }), btn: '下一步' },
+  { text: '準備好了嗎？甜點大軍要來囉，加油！', btn: '開始！' },
+];
+function tutEnd() { S.tut = null; save.tutorialDone = true; persist(); S.waveT = Math.min(S.waveT, 20); }
+function tutNext() {
+  S.tut.step++; S.tut.t = 0;
+  if (S.tut.step >= TUT.length) { tutEnd(); return; }
+  const st = TUT[S.tut.step]; if (st.enter) st.enter();
+  sfx('click');
+}
+function tutUpdate(dt) {
+  S.tut.t += dt;
+  const st = TUT[S.tut.step];
+  while (S.tut && !TUT[S.tut.step].btn && TUT[S.tut.step].done && TUT[S.tut.step].done()) { tutNext(); }
+}
+function tutClick(x, y) {
+  if (inRect(x, y, TUT_SKIP)) { tutEnd(); sfx('click'); return true; }
+  const st = TUT[S.tut.step];
+  if (st.btn && inRect(x, y, TUT_BTN)) { tutNext(); return true; }
+  return inRect(x, y, TUT_PANEL);
+}
+function wrapLines(text, maxW, size) {
+  ctx.font = `900 ${size}px "Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif`;
+  const lines = []; let cur = '';
+  for (const ch of text) { if (ctx.measureText(cur + ch).width > maxW) { lines.push(cur); cur = ch; } else cur += ch; }
+  if (cur) lines.push(cur); return lines;
+}
+function drawTut(t) {
+  const st = TUT[S.tut.step];
+  const tg = st.target && st.target();
+  if (tg) {
+    const pad = 6 + Math.sin(t * 6) * 3;
+    ctx.save(); ctx.strokeStyle = '#ffe14d'; ctx.lineWidth = 5; ctx.shadowColor = '#ffb000'; ctx.shadowBlur = 14;
+    rr(ctx, tg.x - pad, tg.y - pad, tg.w + pad * 2, tg.h + pad * 2, 14); ctx.stroke(); ctx.restore();
+    const ax = tg.x + tg.w / 2, below = tg.y < 200, ay = below ? tg.y + tg.h + 30 + Math.sin(t * 6) * 6 : tg.y - 24 + Math.sin(t * 6) * 6;
+    ctx.save(); ctx.translate(ax, ay); if (below) ctx.rotate(Math.PI);
+    ctx.fillStyle = '#ffe14d'; ctx.strokeStyle = '#b8841a'; ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.moveTo(0, 16); ctx.lineTo(-16, -4); ctx.lineTo(-6, -4); ctx.lineTo(-6, -20); ctx.lineTo(6, -20); ctx.lineTo(6, -4); ctx.lineTo(16, -4); ctx.closePath(); ctx.fill(); ctx.stroke();
+    ctx.restore();
+  }
+  const P = TUT_PANEL;
+  ctx.save(); ctx.shadowColor = 'rgba(0,0,0,.35)'; ctx.shadowBlur = 16;
+  ctx.fillStyle = '#fff6e6'; rr(ctx, P.x, P.y, P.w, P.h, 22); ctx.fill(); ctx.restore();
+  ctx.strokeStyle = '#ff8fb1'; ctx.lineWidth = 4; rr(ctx, P.x, P.y, P.w, P.h, 22); ctx.stroke();
+  const img = IMG.lala;
+  if (imgOk(img)) { const h = 120, w = h * img.naturalWidth / img.naturalHeight; ctx.drawImage(img, P.x - 20, P.y - 30 + Math.sin(t * 4) * 3, w, h); }
+  const lines = wrapLines(st.text, st.btn ? 380 : 500, 20);
+  lines.forEach((ln, i) => txt(ctx, ln, P.x + 112, P.y + 30 + i * 28 - (lines.length > 3 ? 8 : 0), 20, '#4a2c1a', null, 'left'));
+  txt(ctx, `${S.tut.step + 1}／${TUT.length}`, P.x + 112, P.y + P.h - 14, 13, '#c08a6a', null, 'left');
+  if (st.btn) {
+    const B = TUT_BTN; ctx.fillStyle = '#ff8fb1'; rr(ctx, B.x, B.y, B.w, B.h, 16); ctx.fill(); ctx.strokeStyle = '#fff'; ctx.lineWidth = 3; ctx.stroke();
+    txt(ctx, st.btn, B.x + B.w / 2, B.y + B.h / 2 + 1, 19, '#fff', '#c0507a');
+  }
+  const K = TUT_SKIP; ctx.fillStyle = 'rgba(74,44,26,.75)'; rr(ctx, K.x, K.y, K.w, K.h, 12); ctx.fill();
+  txt(ctx, '跳過教學 ▶', K.x + K.w / 2, K.y + K.h / 2 + 1, 14, '#fff', null);
+}
+
+// ======================================================================
+//  主迴圈
+// ======================================================================
+let lastT = performance.now();
+function loop(now) {
+  const dt = Math.min(0.05, (now - lastT) / 1000); lastT = now;
+  if (screen === 'game' && S) {
+    if (!S.paused && !S.over) for (let i = 0; i < S.speed; i++) update(dt);
+    else if (S.over) updateFx(dt);
+    render(now / 1000);
+  } else {
+    ctx.clearRect(0, 0, W, H);
+  }
+  requestAnimationFrame(loop);
+}
+requestAnimationFrame(loop);
+show('title');
+</script>
+</body>
+</html>

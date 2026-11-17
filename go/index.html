@@ -1,0 +1,424 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>圍棋道場</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=LXGW+WenKai+TC:wght@400;700&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg1:#1d1712; --bg2:#3a2c20; --paper:#f6ecd8; --ink:#2b2118; --muted:#a8957c;
+  --wood1:#e2b874; --wood2:#cf9e55; --line:#3b2a17;
+  --accent:#b8412f; --good:#3f8a4f; --ok:#c48a1d; --bad:#b8412f;
+  --panel:#2a2119; --panel2:#352a20; --border:#5a4632;
+  --brush:'LXGW WenKai TC','KaiTi','STKaiti','BiauKai','DFKai-SB',serif;
+  --sans:'Noto Sans TC','Microsoft JhengHei','PingFang TC',sans-serif;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;overflow:hidden}
+body{background:radial-gradient(ellipse at 50% 20%,var(--bg2),var(--bg1) 75%);color:var(--paper);font-family:var(--sans);user-select:none;-webkit-user-select:none}
+button{font-family:var(--sans);cursor:pointer}
+.screen{position:fixed;inset:0;display:none;flex-direction:column;align-items:center;justify-content:center;padding:16px}
+.screen.on{display:flex}
+h1,h2,h3{font-family:var(--brush);font-weight:700;margin:0}
+.btn{display:block;width:min(240px,72vw);margin:6px auto;padding:9px 0;font-size:16px;font-weight:700;letter-spacing:.15em;color:var(--ink);background:linear-gradient(#f8eedb,#e3cfa6);border:2px solid #7a5a36;border-radius:10px;box-shadow:0 3px 0 #6a4a2a,0 5px 10px #0006;transition:transform .08s}
+.btn:active{transform:translateY(3px);box-shadow:0 1px 0 #6a4a2a}
+.btn.dark{background:linear-gradient(#4a3a2b,#382b20);color:var(--paper);border-color:#7a5a36}
+.btn.small{display:inline-block;width:auto;padding:6px 14px;margin:3px;font-size:14px;letter-spacing:.05em}
+.btn:disabled{opacity:.45;cursor:default;transform:none}
+.iconbtn{background:#0000;border:1px solid var(--border);color:var(--paper);border-radius:8px;padding:6px 10px;font-size:15px}
+.iconbtn:hover{background:#ffffff12}
+/* 主選單 */
+#menu h1{font-size:clamp(52px,12vw,96px);letter-spacing:.12em;color:var(--paper);text-shadow:3px 3px 0 #000a}
+#menu .sub{margin:6px 0 26px;color:var(--muted);letter-spacing:.3em;font-size:14px}
+#menu .stones{display:flex;gap:10px;margin-bottom:12px}
+#menu .stones i{width:26px;height:26px;border-radius:50%;display:block}
+.st-b{background:radial-gradient(circle at 35% 30%,#6a6a6a,#111 60%,#000)}
+.st-w{background:radial-gradient(circle at 35% 30%,#fff,#e8e4dc 55%,#b9b2a6)}
+/* 共用面板 */
+.card{background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:18px;width:min(560px,100%);max-height:calc(100vh - 32px);overflow:auto;box-shadow:0 10px 30px #0008}
+.card h2{font-size:28px;margin-bottom:12px;text-align:center}
+.row{display:flex;align-items:center;gap:10px;margin:10px 0;flex-wrap:wrap}
+.row label{min-width:84px;color:var(--muted);font-size:14px}
+.seg{display:flex;border:1px solid var(--border);border-radius:9px;overflow:hidden;flex-wrap:wrap}
+.seg button{background:#0000;border:0;color:var(--paper);padding:7px 13px;font-size:14px;border-right:1px solid var(--border)}
+.seg button:last-child{border-right:0}
+.seg button.on{background:var(--wood2);color:var(--ink);font-weight:700}
+input[type=range]{flex:1;min-width:120px;accent-color:var(--wood2)}
+.note{color:var(--muted);font-size:13px;line-height:1.6}
+/* 遊戲畫面 */
+#game,#lesson{flex-direction:row;gap:16px;padding:12px}
+.boardwrap{position:relative;flex:0 0 auto;display:flex;align-items:center;justify-content:center}
+canvas.board{display:block;border-radius:6px;box-shadow:0 8px 24px #000a;cursor:pointer;touch-action:manipulation}
+.side{width:min(380px,100%);display:flex;flex-direction:column;gap:10px;max-height:100%;overflow:auto}
+.panel{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:12px 14px}
+.topbar{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.topbar .title{font-family:var(--brush);font-size:22px}
+.players{display:flex;gap:8px}
+.pl{flex:1;display:flex;align-items:center;gap:8px;padding:8px;border-radius:10px;border:2px solid transparent;background:var(--panel2)}
+.pl.turn{border-color:var(--wood1)}
+.pl i{width:22px;height:22px;border-radius:50%;flex:0 0 auto}
+.pl .nm{font-weight:700;font-size:14px}
+.pl .cp{font-size:12px;color:var(--muted)}
+.status{font-size:14px;min-height:22px;color:var(--paper)}
+.progress{height:4px;background:#0005;border-radius:2px;overflow:hidden;margin-top:6px;visibility:hidden}
+.progress>div{height:100%;width:0;background:var(--wood1);transition:width .1s}
+.btngrid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.btngrid .btn{width:100%;margin:0;font-size:14px;letter-spacing:.05em;padding:8px 0}
+.hintbox{font-size:14px;line-height:1.7;display:none}
+.hintbox.on{display:block}
+.hintbox h4{margin:0 0 4px;font-size:15px;color:var(--wood1)}
+.hintbox ul{margin:4px 0;padding-left:18px}
+.hintbox .tag{display:inline-block;font-size:11px;padding:0 6px;border-radius:6px;background:#ffffff18;color:var(--muted);margin-left:4px;cursor:pointer}
+.cands{display:flex;gap:6px;flex-wrap:wrap;margin:6px 0}
+.cands span{font-size:13px;background:var(--panel2);padding:3px 8px;border-radius:8px;border:1px solid var(--border);cursor:pointer}
+.cands span.on{border-color:var(--wood1)}
+/* 教學 */
+.ulist{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px;width:min(900px,100%);max-height:calc(100vh - 150px);overflow:auto;padding:4px}
+.ucard{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:12px 14px;cursor:pointer;transition:transform .1s,border-color .1s;text-align:left;color:var(--paper)}
+.ucard:hover{transform:translateY(-2px);border-color:var(--wood1)}
+.ucard .ut{font-family:var(--brush);font-size:20px}
+.ucard .up{font-size:13px;color:var(--muted);margin-top:4px}
+.ucard .dots{margin-top:8px;display:flex;gap:4px;flex-wrap:wrap}
+.ucard .dots i{width:12px;height:12px;border-radius:50%;background:#0006;border:1px solid var(--border)}
+.ucard .dots i.ok{background:var(--good)}
+.ucard .dots i.done{background:var(--ok)}
+.qtext{font-size:17px;line-height:1.6;font-weight:500}
+.opts{display:flex;flex-direction:column;gap:6px}
+.opt{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:10px;border:2px solid var(--border);background:var(--panel2);color:var(--paper);font-size:15px;text-align:left}
+.opt:hover{border-color:var(--wood1)}
+.opt .lt{width:28px;height:28px;border-radius:50%;background:var(--wood1);color:var(--ink);display:flex;align-items:center;justify-content:center;font-weight:700;flex:0 0 auto}
+.opt.best{border-color:var(--good)} .opt.ok{border-color:var(--ok)} .opt.bad{border-color:var(--bad)}
+.opt.best .lt{background:var(--good);color:#fff} .opt.ok .lt{background:var(--ok);color:#fff} .opt.bad .lt{background:var(--bad);color:#fff}
+.opt .gr{margin-left:auto;font-size:12px;opacity:.9}
+.opt.viewing{box-shadow:0 0 0 2px var(--wood1) inset}
+.verdict{font-family:var(--brush);font-size:24px}
+.verdict.best{color:#7fd08e}.verdict.ok{color:#f0c060}.verdict.bad{color:#f08070}
+.explain{font-size:15px;line-height:1.75}
+.stepnote{font-size:14px;background:#0004;border-radius:8px;padding:8px 10px;min-height:38px;line-height:1.6;margin-top:8px}
+.stepctl{display:flex;gap:6px;align-items:center;margin-top:6px}
+.stepctl .cnt{font-size:12px;color:var(--muted);margin-left:auto}
+.pcard{background:linear-gradient(#f6ecd8,#eadbbd);color:var(--ink);border-radius:12px;padding:14px 16px;border:2px solid #8a6a44}
+.pcard h3{font-size:22px;margin-bottom:6px;color:#6a2a1a}
+.pcard dl{margin:0;font-size:14px;line-height:1.7}
+.pcard dt{font-weight:700;margin-top:6px;color:#5a3a20}
+.pcard dd{margin:0}
+/* 覆蓋層 */
+.overlay{position:fixed;inset:0;background:#0009;display:none;align-items:center;justify-content:center;z-index:50;padding:16px}
+.overlay.on{display:flex}
+.help h3{font-size:20px;margin:14px 0 6px;color:var(--wood1)}
+.help p,.help li{font-size:14px;line-height:1.75}
+.help ul{padding-left:20px;margin:4px 0}
+.toast{position:fixed;left:50%;top:18px;transform:translateX(-50%);background:#000c;color:#fff;padding:8px 16px;border-radius:20px;font-size:14px;z-index:80;opacity:0;transition:opacity .25s;pointer-events:none}
+.toast.on{opacity:1}
+.result-big{font-family:var(--brush);font-size:34px;text-align:center;margin:6px 0 10px}
+table.score{width:100%;border-collapse:collapse;font-size:15px}
+table.score td,table.score th{padding:6px;border-bottom:1px solid var(--border);text-align:center}
+#joseki,#review{flex-direction:row;gap:16px;padding:12px}
+.rbadge{display:inline-block;font-size:12px;color:#fff;padding:1px 8px;border-radius:8px;margin-left:4px;vertical-align:2px}
+#rBody{font-size:14px;line-height:1.75}
+#rBody h4{margin:0 0 4px;font-size:16px;color:var(--wood1)}
+#rBody ul{margin:2px 0 6px;padding-left:18px}
+#rBody .rsec{margin:6px 0}
+#rBody p{margin:4px 0}
+.rjump{color:var(--wood1);text-decoration:underline;cursor:pointer}
+.rcmp{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:6px 0}
+.rcol{border:2px solid var(--border);border-radius:10px;padding:8px 10px;background:var(--panel2)}
+.rcol.mine{border-color:#c48a1d}
+.rcol.ai{border-color:#3f8a4f}
+.rcol b{display:block;margin-bottom:2px}
+.rcol ul{padding-left:16px!important}
+.rdiff{background:#ffffff0d;border-radius:10px;padding:8px 10px}
+@media (max-width:520px){.rcmp{grid-template-columns:1fr}}
+.lvl{grid-column:1/-1;font-family:var(--brush);font-size:22px;color:var(--wood1);margin:8px 0 0}
+@media (max-aspect-ratio:1/1){
+  #joseki,#review{flex-direction:column;justify-content:flex-start;overflow:auto}
+  #game,#lesson{flex-direction:column;justify-content:flex-start;overflow:auto}
+  .side{width:100%;max-height:none;overflow:visible}
+}
+</style>
+</head>
+<body>
+
+<!-- 主選單 -->
+<section id="menu" class="screen on">
+  <div class="stones"><i class="st-b"></i><i class="st-w"></i></div>
+  <h1>圍棋道場</h1>
+  <div class="sub">原則練習 ・ 對弈</div>
+  <button class="btn" data-act="lessons">教學練習</button>
+  <button class="btn" data-act="josekiList">定石練習</button>
+  <button class="btn" data-act="setup">對弈</button>
+  <button class="btn dark" data-act="dict">名詞辭典</button>
+  <button class="btn dark" data-act="help">說明</button>
+  <button class="btn dark" data-act="settings">設定</button>
+</section>
+
+<!-- 對弈設定 -->
+<section id="setup" class="screen">
+  <div class="card">
+    <h2>對弈設定</h2>
+    <div class="row"><label>對手</label><div class="seg" data-key="opp"><button data-v="ai" class="on">電腦</button><button data-v="pvp">雙人輪流</button></div></div>
+    <div class="row"><label>棋盤</label><div class="seg" data-key="size"><button data-v="9" class="on">9×9</button><button data-v="13">13×13</button></div></div>
+    <div class="row ai-only"><label>難度</label><div class="seg" data-key="diff"><button data-v="easy">簡單</button><button data-v="normal" class="on">普通</button><button data-v="hard">困難</button></div></div>
+    <div class="row ai-only"><label>你執</label><div class="seg" data-key="color"><button data-v="1" class="on">黑（先下）</button><button data-v="2">白</button></div></div>
+    <div class="row"><label>讓子</label><div class="seg" data-key="hcap"><button data-v="0" class="on">不讓</button><button data-v="2">2 子</button><button data-v="3">3 子</button><button data-v="4">4 子</button><button data-v="5">5 子</button></div></div>
+    <p class="note">讓子：黑棋先在星位擺好幾顆子，由白棋先下，貼目改為 0.5 目。打不贏電腦時可以讓電腦（白）讓你幾子。</p>
+    <button class="btn" data-act="start">開始</button>
+    <button class="btn dark" data-act="menu">返回</button>
+  </div>
+</section>
+
+<!-- 對弈 -->
+<section id="game" class="screen">
+  <div class="boardwrap"><canvas id="gcv" class="board"></canvas></div>
+  <div class="side">
+    <div class="panel">
+      <div class="topbar"><span class="title" id="gTitle">對弈</span><button class="iconbtn" data-act="pause" title="暫停 (Esc)">❚❚</button></div>
+      <div class="players" style="margin-top:8px">
+        <div class="pl" id="plB"><i class="st-b"></i><div><div class="nm" id="nmB">黑</div><div class="cp" id="cpB">提子 0</div></div></div>
+        <div class="pl" id="plW"><i class="st-w"></i><div><div class="nm" id="nmW">白</div><div class="cp" id="cpW">提子 0</div></div></div>
+      </div>
+      <div class="status" id="gStatus" style="margin-top:8px"></div>
+      <div class="progress" id="gProg"><div></div></div>
+    </div>
+    <div class="panel btngrid" id="gBtns">
+      <button class="btn" data-act="undo">悔棋</button>
+      <button class="btn" data-act="hint">提示</button>
+      <button class="btn" data-act="estimate">形勢判斷</button>
+      <button class="btn dark" data-act="pass">虛手</button>
+      <button class="btn dark" data-act="resign">認輸</button>
+      <button class="btn dark" data-act="pause">選單</button>
+    </div>
+    <div class="panel hintbox" id="hintBox"></div>
+    <div class="panel" id="scorePanel" style="display:none">
+      <div class="qtext">點選死子</div>
+      <p class="note">雙方都虛手，進入數子。電腦已經猜出哪些棋是死子（打 ✕ 的子）。如果猜錯，點一下那塊棋就能切換死活。確認後計算勝負。</p>
+      <div class="status" id="scoreLive"></div>
+      <button class="btn" data-act="confirmScore">確認計分</button>
+      <button class="btn dark" data-act="resumePlay">繼續下棋</button>
+    </div>
+  </div>
+</section>
+
+<!-- 教學單元列表 -->
+<section id="lessons" class="screen">
+  <h2 style="font-size:32px;margin-bottom:6px">教學練習</h2>
+  <p class="note" style="margin:0 0 12px;text-align:center">每個單元練一條原則。答完會看到每個選項「為什麼是／為什麼不是」，以及實際的後續變化。</p>
+  <div class="ulist" id="ulist"></div>
+  <div style="margin-top:12px"><button class="btn dark small" data-act="menu">返回主選單</button> <button class="btn dark small" data-act="resetProgress">清除練習紀錄</button></div>
+</section>
+
+<!-- 教學題目 -->
+<section id="lesson" class="screen">
+  <div class="boardwrap"><canvas id="lcv" class="board"></canvas></div>
+  <div class="side">
+    <div class="panel">
+      <div class="topbar"><span class="title" id="lTitle"></span><span style="display:flex;flex-shrink:0"><button class="iconbtn" data-act="dict" title="名詞小辭典" style="margin-right:6px">辭典</button><button class="iconbtn" data-act="pause" title="暫停 (Esc)">❚❚</button></span></div>
+      <div class="note" id="lCount"></div>
+      <div class="qtext" id="lQ" style="margin-top:6px"></div>
+      <div class="note" id="lHint" style="display:none;margin-top:4px"></div>
+    </div>
+    <div class="panel">
+      <div class="opts" id="lOpts"></div>
+      <div style="margin-top:8px" id="lPre"><button class="btn dark small" data-act="lhint">給我一點提示</button></div>
+    </div>
+    <div class="panel" id="lAns" style="display:none">
+      <div class="verdict" id="lVerdict"></div>
+      <div class="explain" id="lExplain"></div>
+      <div class="stepnote" id="lStep"></div>
+      <div class="stepctl">
+        <button class="iconbtn" data-act="vfirst" title="回到題目">⏮</button>
+        <button class="iconbtn" data-act="vprev" title="上一步">◀</button>
+        <button class="iconbtn" data-act="vplay" title="播放">▶ 播放</button>
+        <button class="iconbtn" data-act="vnext" title="下一步">▶|</button>
+        <span class="cnt" id="lStepCnt"></span>
+      </div>
+      <p class="note" style="margin:8px 0 0">點上面其他選項，可以看「為什麼不是那裡」。</p>
+    </div>
+    <div class="pcard" id="lPrinciple" style="display:none"></div>
+    <div class="panel" id="lNav" style="display:none">
+      <button class="btn small" data-act="lretry">再試一次</button>
+      <button class="btn small" data-act="lnext">下一題 ▶</button>
+      <button class="btn dark small" data-act="lessons">單元列表</button>
+    </div>
+  </div>
+</section>
+
+<!-- 定石列表 -->
+<section id="josekiList" class="screen">
+  <h2 style="font-size:32px;margin-bottom:6px">定石練習</h2>
+  <p class="note" style="margin:0 0 8px;text-align:center;max-width:680px;flex-shrink:0">定石是角上雙方都不吃虧的標準下法。黑白雙方的每一手都要你下：有選項的手是選擇題，會說明為什麼下這裡、其他位置為什麼比較差；書上沒有列出其他選項的手，請直接在棋盤上點出下一手。「星位、小目…」分類的定石取自《AI 圍棋定式大全》裡結果兩分的變化。</p>
+  <div class="seg" id="jCat" style="margin-bottom:6px;flex-shrink:0"><button data-v="classic">經典入門</button><button data-v="星位">星位</button><button data-v="小目">小目</button><button data-v="other">三三・目外・其他</button></div>
+  <div class="seg" id="jLv" style="margin-bottom:8px;flex-shrink:0"><button data-v="0">全部難度</button><button data-v="1">入門</button><button data-v="2">初級</button><button data-v="3">中級</button><button data-v="4">高級</button></div>
+  <div class="ulist" id="jlist"></div>
+  <div style="margin-top:12px"><button class="btn dark small" data-act="dict">名詞辭典</button> <button class="btn dark small" data-act="menu">返回主選單</button></div>
+</section>
+
+<!-- 定石練習 -->
+<section id="joseki" class="screen">
+  <div class="boardwrap"><canvas id="jcv" class="board"></canvas></div>
+  <div class="side">
+    <div class="panel">
+      <div class="topbar"><span class="title" id="jTitle"></span><span style="display:flex;flex-shrink:0"><button class="iconbtn" data-act="dict" title="名詞小辭典" style="margin-right:6px">辭典</button><button class="iconbtn" data-act="pause" title="暫停 (Esc)">❚❚</button></span></div>
+      <div class="note" id="jCount"></div>
+      <div class="note" id="jIntro" style="margin-top:6px"></div>
+      <div class="note" id="jTenuki" style="margin-top:6px;color:var(--ok)"></div>
+      <div class="qtext" id="jQ" style="margin-top:2px"></div>
+    </div>
+    <div class="panel" id="jOptPanel">
+      <div class="opts" id="jOpts"></div>
+      <div style="margin-top:8px" id="jReveal"><button class="btn dark small" data-act="jreveal">看正解</button></div>
+    </div>
+    <div class="panel" id="jAns" style="display:none">
+      <div class="verdict" id="jVerdict"></div>
+      <div class="explain" id="jExplain"></div>
+      <div class="explain" id="jMain" style="margin-top:8px"></div>
+      <div class="explain" id="jLocal" style="margin-top:8px;color:var(--muted)"></div>
+      <details id="jNoteBox" style="margin-top:8px;font-size:13px;line-height:1.7"><summary style="cursor:pointer">書上這個局面的完整說明</summary><div id="jNote" style="margin-top:4px"></div></details>
+      <div style="margin-top:10px"><button class="btn small" data-act="jnext" id="jNextBtn">下一手 ▶</button></div>
+    </div>
+    <div class="panel" id="jEnd" style="display:none">
+      <div class="verdict best">定石完成</div>
+      <div class="explain" id="jResult"></div>
+      <div class="status" id="jScore" style="margin-top:6px"></div>
+      <div style="margin-top:10px">
+        <button class="btn small" data-act="jreplay">整套重播</button>
+        <button class="btn small" data-act="jretry">再練一次</button>
+        <button class="btn dark small" data-act="jnextJ">下一個定石 ▶</button>
+        <button class="btn dark small" data-act="josekiList">定石列表</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 覆盤 -->
+<section id="review" class="screen">
+  <div class="boardwrap"><canvas id="rcv" class="board"></canvas></div>
+  <div class="side">
+    <div class="panel">
+      <div class="topbar"><span class="title">覆盤</span><span style="display:flex;flex-shrink:0"><button class="iconbtn" data-act="dict" title="名詞小辭典" style="margin-right:6px">辭典</button><button class="iconbtn" data-act="pause" title="暫停 (Esc)">❚❚</button></span></div>
+      <div class="note" id="rProg"></div>
+      <div class="progress"><div id="rBar"></div></div>
+      <div id="rGraphBox" style="margin-top:8px"></div>
+      <div class="stepctl">
+        <button class="iconbtn" data-act="rfirst" title="回到開始">⏮</button>
+        <button class="iconbtn" data-act="rprev" title="上一手 (←)">◀</button>
+        <button class="iconbtn" data-act="rnext" title="下一手 (→)">▶</button>
+        <button class="iconbtn" data-act="rlast" title="最後一手">⏭</button>
+        <span class="cnt" id="rCnt"></span>
+      </div>
+      <div style="margin-top:6px"><button class="btn small" data-act="rissue">下一個問題手 ▶▶</button></div>
+    </div>
+    <div class="panel" id="rBody"></div>
+    <div class="panel"><button class="btn small dark" data-act="rgame">回到棋局</button><button class="btn small dark" data-act="rmenu">回主選單</button></div>
+  </div>
+</section>
+
+<!-- 暫停 -->
+<div class="overlay" id="pause">
+  <div class="card" style="width:min(340px,100%)">
+    <h2>暫停</h2>
+    <button class="btn" data-act="resume">繼續</button>
+    <button class="btn" data-act="settings">設定</button>
+    <button class="btn" data-act="help">說明</button>
+    <button class="btn" data-act="dict">名詞辭典</button>
+    <button class="btn dark" data-act="quit">回主選單</button>
+  </div>
+</div>
+
+<!-- 設定 -->
+<div class="overlay" id="settings">
+  <div class="card" style="width:min(460px,100%)">
+    <h2>設定</h2>
+    <div class="row"><label>背景音樂</label><div class="seg" data-key="musicOn"><button data-v="1">開</button><button data-v="0">關</button></div></div>
+    <div class="row"><label>音樂音量</label><input type="range" id="volMusic" min="0" max="100"><span id="volMusicV" style="width:34px;text-align:right"></span></div>
+    <div class="row"><label>音效音量</label><input type="range" id="volSfx" min="0" max="100"><span id="volSfxV" style="width:34px;text-align:right"></span></div>
+    <div class="row"><label>顯示座標</label><div class="seg" data-key="coords"><button data-v="1">顯示</button><button data-v="0">隱藏</button></div></div>
+    <div class="row"><label>落子確認</label><div class="seg" data-key="confirm"><button data-v="0">點一下就下</button><button data-v="1">點兩下才下</button></div></div>
+    <div class="row"><label>演示速度</label><div class="seg" data-key="speed"><button data-v="1400">慢</button><button data-v="900">中</button><button data-v="500">快</button></div></div>
+    <p class="note">「點兩下才下」：第一下會先顯示半透明的棋子，再點同一點才確定，手機上比較不會誤觸。</p>
+    <button class="btn" data-act="closeSettings">完成</button>
+  </div>
+</div>
+
+<!-- 說明 -->
+<div class="overlay" id="help">
+  <div class="card help" style="width:min(640px,100%)">
+    <h2>說明</h2>
+    <h3>這個遊戲怎麼用</h3>
+    <ul>
+      <li><b>教學練習</b>：每個單元練一條判斷原則。每題選一個位置，答完會說明「為什麼是這裡」，並且可以點其他選項看「為什麼不是那裡」，棋盤會實際下出後續變化。最後有一張原則卡，寫著這條原則什麼時候用、什麼時候不適用。</li>
+      <li><b>定石練習</b>：角上的標準下法，分「經典入門」和取自《AI 圍棋定式大全》的星位、小目、三三等定石，依手數分入門到高級。從第一手到最後一手，黑白雙方的每一手都要你下：有選項的手用選的，沒有選項的手直接點棋盤。選錯可以再試，也可以直接看正解；最後會統計你一次就答對幾手。</li>
+      <li><b>對弈</b>：和電腦或朋友下 9×9、13×13。卡住時按「提示」，電腦會標出前三名候選位置、勝率，並用教學裡的原則解讀第一名那一手。</li>
+      <li><b>覆盤</b>：下完後在結果畫面按「覆盤」，AI 會從第一手開始逐手分析每一手的評價（AI 首選／好棋／可以／疑問手／惡手）。和 AI 下得不一樣的手，會把「你的下法」和「AI 的下法」各自往下推演，比較對方怎麼應、最後地盤差幾目、差在哪一區，兩條推演都可以在棋盤上切換來看。另有整盤的勝率曲線。按「下一個問題手」可以直接跳到自己下得不好的地方。</li>
+    </ul>
+    <h3>圍棋基本規則</h3>
+    <ul>
+      <li>黑白輪流下在線的交叉點上，黑棋先下。</li>
+      <li><b>氣</b>：棋子上下左右相鄰的空點。連在一起（上下左右相連）的同色棋子共用氣。</li>
+      <li><b>提子</b>：一塊棋的氣全部被對方堵住，就從盤上拿掉。</li>
+      <li><b>禁著點</b>：下了之後自己沒有氣、又沒有提到對方的子，就不能下（不能自殺）。</li>
+      <li><b>打劫</b>：雙方可以來回互提一子時，被提的一方不能馬上提回來，必須先下別的地方一手。</li>
+      <li><b>眼</b>：被自己的棋圍住的空點。有兩隻分開的眼的棋，對方永遠吃不掉，叫「活棋」。</li>
+      <li><b>終局</b>：雙方都覺得沒有地方可以下了，連續虛手就結束。</li>
+      <li><b>勝負（數子法）</b>：自己活著的棋子數＋自己圍住的空點數，就是你的分數。白棋因為後下，多加「貼目」（9×9、13×13 都是 7 目）。分數高的贏。</li>
+    </ul>
+    <h3>每一手的檢查順序</h3>
+    <ol style="padding-left:20px;font-size:14px;line-height:1.75;margin:4px 0">
+      <li>數氣：有沒有誰只剩一、兩口氣？（單元①）</li>
+      <li>能吃就吃、該逃就逃，逃前先數逃出去的氣（單元②③④）</li>
+      <li>征子、枷吃、雙叫吃這些手段（單元⑤⑥）</li>
+      <li>對殺比氣數，斷點要補（單元⑦⑧）</li>
+      <li>弱棋做兩隻眼（單元⑨）</li>
+      <li>都沒有急事，才去搶角、搶大場（單元⑩⑪）</li>
+    </ol>
+    <h3>看不懂的名詞</h3>
+    <ul>
+      <li>題目和說明文字裡<b>畫虛線底線</b>的字（例如「尖頂」「先手」「兩分」）都可以點，會跳出白話解釋，棋形還會附小圖。</li>
+      <li>想從頭看所有名詞，可以按主選單、定石畫面右上角或暫停畫面的「<b>名詞辭典</b>」，能依分類瀏覽或搜尋。</li>
+    </ul>
+    <h3>操作</h3>
+    <ul>
+      <li>點棋盤落子。<b>Esc</b> 暫停（暫停中可以調整設定）。</li>
+      <li>對弈中：<b>Z</b> 悔棋、<b>H</b> 提示、<b>P</b> 虛手。</li>
+      <li>教學演示：<b>←</b> <b>→</b> 一步一步看，<b>空白鍵</b> 播放。</li>
+    </ul>
+    <button class="btn" data-act="closeHelp">知道了</button>
+  </div>
+</div>
+
+<!-- 結果 -->
+<div class="overlay" id="result">
+  <div class="card" style="width:min(420px,100%)">
+    <div class="result-big" id="resBig"></div>
+    <div id="resBody"></div>
+    <button class="btn" data-act="again">再下一局</button>
+    <button class="btn" data-act="reviewStart">覆盤（AI 逐手講解）</button>
+    <button class="btn dark" data-act="review">看盤面</button>
+    <button class="btn dark" data-act="quit">回主選單</button>
+  </div>
+</div>
+
+<!-- 確認 -->
+<div class="overlay" id="ask">
+  <div class="card" style="width:min(360px,100%);text-align:center">
+    <p class="qtext" id="askMsg" style="margin:6px 0 14px"></p>
+    <button class="btn" data-act="askYes">確定</button>
+    <button class="btn dark" data-act="askNo">取消</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="config.js"></script>
+<script src="engine.js"></script>
+<script src="ai.js"></script>
+<script src="explain.js"></script>
+<script src="lessons.js"></script>
+<script src="joseki.js"></script>
+<script src="joseki_book.js"></script>
+<script src="app.js"></script>
+<script src="terms.js"></script>
+</body>
+</html>

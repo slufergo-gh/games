@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>打地鼠</title>
+<style>
+:root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);--bg:#f4f6fa;--fg:#1b2333;--blue:#3b82f6;--red:#ef4444;--btn:#1b2333;--btnfg:#fff}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#10141c;--fg:#e8ecf4;--blue:#2f6fdb;--red:#f05252;--btn:#e8ecf4;--btnfg:#10141c}}
+:root[data-theme="dark"]{--bg:#10141c;--fg:#e8ecf4;--blue:#2f6fdb;--red:#f05252;--btn:#e8ecf4;--btnfg:#10141c}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--fg);font-family:-apple-system,"PingFang TC","Noto Sans TC","Microsoft JhengHei",sans-serif;display:flex;flex-direction:column;align-items:center;padding:20px 12px}
+.stats{display:flex;gap:24px;margin-bottom:16px;font-size:18px}
+.stats b{font-size:26px;display:block;text-align:center}
+.stats span{text-align:center;display:block}
+#grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;width:min(92vw,420px);aspect-ratio:1}
+.cell{background:var(--blue);border-radius:10px;border:0;cursor:pointer;transition:background .05s;-webkit-tap-highlight-color:transparent}
+.cell.on{background:var(--red)}
+button#start{margin-top:20px;padding:10px 28px;font-size:18px;border:0;border-radius:8px;background:var(--btn);color:var(--btnfg);cursor:pointer}
+</style>
+</head>
+<body>
+<div class="stats">
+<span>分數<b id="score">0</b></span>
+<span>關卡<b id="level">1</b></span>
+<span>錯過<b id="miss">0</b></span>
+</div>
+<div id="grid"></div>
+<button id="start">開始</button>
+<script>
+const grid=document.getElementById('grid'),cells=[];
+for(let i=0;i<16;i++){const c=document.createElement('button');c.className='cell';c.onpointerdown=()=>hit(i);grid.appendChild(c);cells.push(c);}
+let score=0,level=1,miss=0,active=-1,timer=null,running=false;
+const HITS_PER_LEVEL=5;
+const duration=()=>Math.max(300,Math.round(1200*Math.pow(0.85,level-1)));
+function show(){
+  if(active>=0)cells[active].classList.remove('on');
+  let n;do{n=Math.floor(Math.random()*16)}while(n===active);
+  active=n;cells[n].classList.add('on');
+  clearTimeout(timer);
+  timer=setTimeout(()=>{miss++;upd();show();},duration());
+}
+function hit(i){
+  if(!running||i!==active)return;
+  score++;
+  level=Math.floor(score/HITS_PER_LEVEL)+1;
+  upd();show();
+}
+function upd(){
+  document.getElementById('score').textContent=score;
+  document.getElementById('level').textContent=level;
+  document.getElementById('miss').textContent=miss;
+}
+document.getElementById('start').onclick=function(){
+  clearTimeout(timer);
+  if(active>=0)cells[active].classList.remove('on');
+  active=-1;score=0;level=1;miss=0;running=true;upd();
+  this.textContent='重新開始';show();
+};
+</script>
+</body>
+</html>

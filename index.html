@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0f1418">
+<meta name="apple-mobile-web-app-title" content="我的遊戲">
+<title>我的遊戲</title>
+<style>
+:root{--bg:#0f1418;--panel:#182027;--line:#26313a;--fg:#e9eef2;--muted:#8a99a6;--accent:#f2994a;color-scheme:dark}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font-family:-apple-system,"PingFang TC","Noto Sans TC",system-ui,sans-serif;
+  padding:calc(24px + env(safe-area-inset-top,0px)) max(16px,env(safe-area-inset-right,0px)) calc(24px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px))}
+main{max-width:860px;margin:0 auto}
+h1{font-size:24px;margin:0 0 4px}
+h2{font-size:15px;color:var(--muted);font-weight:600;margin:24px 0 10px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px}
+a.game{display:flex;gap:14px;align-items:flex-start;background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:16px;color:var(--fg);text-decoration:none}
+a.game:hover,a.game:active{border-color:var(--accent)}
+a.game i{font-style:normal;font-size:30px;line-height:1}
+a.game div{display:flex;flex-direction:column;gap:4px;min-width:0}
+a.game b{font-size:18px}
+a.game span{font-size:14px;color:var(--muted);line-height:1.45}
+</style>
+</head>
+<body>
+<main>
+  <h1>我的遊戲</h1>
+
+  <h2>益智・棋類</h2>
+  <div class="grid">
+    <a class="game" href="mahjong/"><i>🀄</i><div><b>麻將接龍</b><span>點兩張相同的自由牌消除，46 個版面，保證有解</span></div></a>
+    <a class="game" href="OOXX/"><i>⭕</i><div><b>烏雞疊疊樂</b><span>大蓋小井字棋，可疊、可移動，對電腦或雙人</span></div></a>
+    <a class="game" href="othello/"><i>⚫</i><div><b>烏雞奧賽羅</b><span>黑白棋，五位我們這一家角色當電腦對手</span></div></a>
+    <a class="game" href="go/"><i>⚪</i><div><b>圍棋道場</b><span>原則教學、定石練習、9×9／13×13 電腦對弈</span></div></a>
+    <a class="game" href="room/"><i>🧩</i><div><b>逃出客廳</b><span>華容道滑塊益智，三種難度共 45 關</span></div></a>
+  </div>
+
+  <h2>動作・射擊</h2>
+  <div class="grid">
+    <a class="game" href="swat/"><i>🔫</i><div><b>藍腹鷴特勤隊</b><span>軌道式第一人稱光線槍射擊，三個關卡</span></div></a>
+    <a class="game" href="jail/"><i>🎯</i><div><b>高塔狙擊手</b><span>監獄高塔守衛，用麻醉彈阻止逃犯</span></div></a>
+    <a class="game" href="zombie/"><i>🧟</i><div><b>屍潮突破</b><span>四位傭兵往上推進，突破殭屍潮</span></div></a>
+    <a class="game" href="charge-knight/"><i>🛡️</i><div><b>蓄力騎士</b><span>像素風單線道，蓄力攻擊守住城牆</span></div></a>
+    <a class="game" href="wuji-squadron/"><i>🐔</i><div><b>烏雞空戰隊</b><span>可愛縱向射擊（草稿）</span></div></a>
+    <a class="game" href="dream-survivors/"><i>✨</i><div><b>夢幻倖存者</b><span>烏雞與略略的倖存者割草</span></div></a>
+    <a class="game" href="whack-a-mole/"><i>🔨</i><div><b>打地鼠</b><span>經典打地鼠</span></div></a>
+  </div>
+
+  <h2>我們這一家</h2>
+  <div class="grid">
+    <a class="game" href="dessert-td/"><i>🧁</i><div><b>我們這一家大戰甜點</b><span>塔防，15 關＋Boss＋無盡模式</span></div></a>
+    <a class="game" href="together/"><i>🤝</i><div><b>同心協力</b><span>雙人同鍵盤合作，6 個小遊戲</span></div></a>
+    <a class="game" href="bubbles/"><i>🫧</i><div><b>我們這一家泡泡大挑戰</b><span>破關模式與時間挑戰</span></div></a>
+    <a class="game" href="adventure/"><i>🎵</i><div><b>略略與烏雞的大冒險</b><span>節奏遊戲，六首歌</span></div></a>
+    <a class="game" href="littlegmae/"><i>✈️</i><div><b>老大的飛行日記</b><span>調角度蓄力發射，看老大能飛多遠</span></div></a>
+    <a class="game" href="skystar/"><i>🌠</i><div><b>老大與女朋友觀星去</b><span>萬里無雲的夜晚，能看到多少星星呢</span></div></a>
+    <a class="game" href="mystery/"><i>🍮</i><div><b>消失的布丁</b><span>推理文字冒險（介面原型）</span></div></a>
+  </div>
+
+  <h2>其他</h2>
+  <div class="grid">
+    <a class="game" href="brush/"><i>💇</i><div><b>梳劉海小尖兵</b><span>梳整齊劉海，別讓客人等太久生氣</span></div></a>
+    <a class="game" href="ihave/"><i>📅</i><div><b>我有預約</b><span>搶見面會預約，各種刁鑽關卡</span></div></a>
+    <a class="game" href="cloud-run/"><i>☁️</i><div><b>雲朵王國跑酷</b><span>節奏跑酷雛形</span></div></a>
+  </div>
+</main>
+</body>
+</html>
