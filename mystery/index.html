@@ -1,0 +1,758 @@
+<meta charset="utf-8">
+<title>消失的布丁</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@500;700;900&family=Noto+Sans+TC:wght@400;500;700&display=swap">
+<style>
+/* 版面：全螢幕舞台＋底部對話框；所有選單是同一種浮層面板。情境由 data-scene 換背景色調，介面本身保持中性。 */
+:root{
+  --ink:#ECE8DF;          /* 主文字 */
+  --ink-dim:#A7A49C;      /* 次要文字 */
+  --panel:rgba(16,18,24,.84);
+  --panel-solid:#14161C;
+  --line:rgba(236,232,223,.16);
+  --accent:#D9B25F;       /* 黃銅色：偵探筆記的燙金 */
+  --accent-ink:#1A1610;
+  --danger:#C9574A;
+  --f-display:"Noto Serif TC","Songti TC","PMingLiU",serif;
+  --f-body:"Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif;
+  --r:6px;
+  --boxh:clamp(124px,calc(33vh - 24px),230px); /* 對話框約佔畫面 1/3 */
+  color-scheme:dark;
+}
+[hidden]{display:none!important}
+html,body{height:100%}
+body{background:#0B0C10;color:var(--ink);font-family:var(--f-body);overflow:hidden;-webkit-tap-highlight-color:transparent;user-select:none}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
+button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+#app{position:fixed;inset:0;overflow:hidden}
+
+/* ---------- 舞台與情境背景 ---------- */
+#stage{position:absolute;inset:0;transition:background 1.2s ease}
+#stage::after{content:"";position:absolute;inset:0;pointer-events:none;background:radial-gradient(ellipse at 50% 40%,transparent 40%,rgba(0,0,0,.55) 100%)}
+#stage[data-scene="night"]{background:linear-gradient(180deg,#1B2333 0%,#141A26 55%,#0E1119 100%)}
+#stage[data-scene="kitchen"]{background:linear-gradient(180deg,#2A2F33 0%,#1E2226 60%,#121416 100%)}
+#stage[data-scene="window"]{background:linear-gradient(180deg,#16202E 0%,#1A2636 50%,#0D1219 100%)}
+#stage[data-scene="tense"]{background:linear-gradient(180deg,#2B1414 0%,#1C0E10 60%,#0E0708 100%)}
+#stage[data-scene="dawn"]{background:linear-gradient(180deg,#3B4256 0%,#7A6E6A 60%,#C9A57A 100%)}
+#stage[data-scene="title"]{background:#0B0C10}
+
+/* 簡單的場景道具，給背景一點空間感 */
+.prop{position:absolute;pointer-events:none;transition:opacity 1s}
+#floor{left:0;right:0;bottom:0;height:34%;background:linear-gradient(180deg,rgba(255,255,255,.04),rgba(0,0,0,.25));border-top:1px solid rgba(255,255,255,.05)}
+#win{left:9%;top:10%;width:22%;aspect-ratio:3/4;max-width:260px;border:6px solid rgba(255,255,255,.07);background:linear-gradient(160deg,rgba(120,150,200,.18),rgba(20,30,50,.4));opacity:0}
+#win::before{content:"";position:absolute;left:50%;top:0;bottom:0;width:6px;margin-left:-3px;background:rgba(255,255,255,.07)}
+#fridge{right:10%;bottom:20%;width:13%;max-width:150px;aspect-ratio:1/2;border-radius:8px;background:linear-gradient(90deg,#3A4046,#2C3136);box-shadow:0 0 60px rgba(180,220,255,.08);opacity:0}
+#fridge::before{content:"";position:absolute;left:8%;right:8%;top:38%;height:2px;background:rgba(0,0,0,.4)}
+#stage[data-scene="night"] #win,#stage[data-scene="window"] #win{opacity:1}
+#stage[data-scene="window"] #win{width:30%;left:35%;max-width:360px}
+#stage[data-scene="kitchen"] #fridge{opacity:1}
+#rain{position:absolute;inset:0;pointer-events:none;opacity:0;transition:opacity 1s}
+#stage[data-scene="night"] #rain,#stage[data-scene="window"] #rain{opacity:.5}
+
+#flash{position:absolute;inset:0;background:#fff;opacity:0;pointer-events:none}
+#flash.on{animation:flash .5s ease-out}
+@keyframes flash{0%{opacity:.85}100%{opacity:0}}
+#app.shake{animation:shake .4s}
+@keyframes shake{20%{transform:translate(-8px,2px)}40%{transform:translate(7px,-3px)}60%{transform:translate(-5px,1px)}80%{transform:translate(3px,0)}}
+
+/* ---------- 角色立繪 ---------- */
+#chars{position:absolute;inset:0;pointer-events:none}
+.char{position:absolute;bottom:calc(var(--boxh) + 16px + 1.5vh);height:min(calc(100vh - var(--boxh) - 80px),440px);transform:translateX(-50%);transition:left .5s ease,filter .3s,opacity .4s,transform .3s;filter:drop-shadow(0 0 1px rgba(236,232,223,.45)) drop-shadow(0 12px 18px rgba(0,0,0,.5));opacity:0}
+.char.in{opacity:1}
+.char.dim{filter:drop-shadow(0 12px 18px rgba(0,0,0,.5)) brightness(.5) saturate(.6)}
+.char.talk{transform:translateX(-50%) scale(1.03)}
+
+/* ---------- 對話框 ---------- */
+#ui{position:absolute;left:0;right:0;bottom:0;padding:0 max(16px,env(safe-area-inset-right,0px)) calc(16px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px));display:flex;justify-content:center;transition:opacity .25s}
+#ui.hide{opacity:0;pointer-events:none}
+#box{position:relative;width:100%;max-width:1080px;background:var(--panel);border:1px solid var(--line);border-radius:var(--r);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);padding:clamp(16px,3vh,26px) 26px 4px;height:var(--boxh);display:flex;flex-direction:column}
+#name{position:absolute;top:-17px;left:22px;background:var(--panel-solid);border:1px solid var(--line);border-left:3px solid var(--accent);padding:5px 16px;font-family:var(--f-display);font-weight:700;font-size:17px;letter-spacing:.08em;border-radius:3px}
+#name:empty{display:none}
+#text{flex:1;min-height:0;overflow:auto;font-size:clamp(14px,min(2.6vh,2.1vw),20px);line-height:1.75;letter-spacing:.03em;white-space:pre-wrap}
+#text.narr{color:#D6D2C8;font-style:normal}
+#next{display:inline-block;margin-left:6px;color:var(--accent);animation:bob 1s infinite;opacity:0}
+#next.on{opacity:1}
+@keyframes bob{50%{transform:translateY(3px)}}
+#bar{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:0 2px;margin-top:4px;border-top:1px solid var(--line);padding-top:3px}
+#bar button{font-size:12px;letter-spacing:.12em;color:var(--ink-dim);padding:4px 9px;border-radius:3px}
+#bar button:hover{color:var(--ink);background:rgba(255,255,255,.06)}
+#bar button.on{color:var(--accent-ink);background:var(--accent)}
+#chapter{position:absolute;top:calc(14px + env(safe-area-inset-top,0px));left:max(16px,env(safe-area-inset-left,0px));font-family:var(--f-display);font-size:13px;letter-spacing:.2em;color:var(--ink-dim);opacity:.8}
+#mode{position:absolute;top:calc(14px + env(safe-area-inset-top,0px));right:max(16px,env(safe-area-inset-right,0px));font-size:12px;letter-spacing:.2em;color:var(--accent);border:1px solid var(--accent);padding:3px 10px;border-radius:3px}
+
+/* ---------- 選項 ---------- */
+#choices{z-index:1;position:absolute;top:calc(44px + env(safe-area-inset-top,0px));left:0;right:0;bottom:calc(var(--boxh) + 28px);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:0 max(16px,env(safe-area-inset-right,0px)) 0 max(16px,env(safe-area-inset-left,0px))}
+#choices::before{content:"";position:absolute;inset:-44px 0 -28px;background:rgba(8,9,12,.45);z-index:-1}
+#choices .q{font-family:var(--f-display);font-size:15px;letter-spacing:.2em;color:var(--ink);background:var(--panel-solid);padding:4px 16px;border-radius:3px;margin-bottom:4px}
+#choices button{width:min(520px,100%);background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:clamp(8px,1.8vh,14px) 20px;font-size:clamp(15px,2.4vh,17px);letter-spacing:.06em;text-align:center;transition:border-color .15s,background .15s,transform .15s}
+#choices button:hover,#choices button:focus-visible{border-color:var(--accent);background:rgba(30,26,18,.92);transform:translateY(-1px)}
+#choices button.seen{color:var(--ink-dim)}
+
+/* ---------- 浮層面板（設定、存讀檔、履歷、確認） ---------- */
+.ov{position:absolute;inset:0;background:rgba(6,7,10,.78);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;padding:calc(16px + env(safe-area-inset-top,0px)) max(16px,env(safe-area-inset-right,0px)) calc(16px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px));z-index:20}
+.panel{width:100%;max-width:880px;max-height:100%;display:flex;flex-direction:column;background:var(--panel-solid);border:1px solid var(--line);border-radius:var(--r)}
+.panel header{display:flex;align-items:baseline;gap:14px;padding:18px 24px;border-bottom:1px solid var(--line)}
+.panel h2{margin:0;font-family:var(--f-display);font-size:22px;font-weight:700;letter-spacing:.2em}
+.panel header small{color:var(--ink-dim);font-size:12px;letter-spacing:.2em}
+.panel header .sp{flex:1}
+.panel .body{overflow:auto;padding:20px 24px}
+.panel footer{display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap;padding:14px 24px;border-top:1px solid var(--line)}
+.btn{padding:9px 20px;border:1px solid var(--line);border-radius:4px;letter-spacing:.12em;font-size:14px}
+.btn:hover{border-color:var(--ink-dim)}
+.btn.pri{background:var(--accent);color:var(--accent-ink);border-color:var(--accent);font-weight:700}
+.btn.warn{color:var(--danger);border-color:rgba(201,87,74,.5)}
+
+/* 設定 */
+.row{display:grid;grid-template-columns:9em 1fr 4em;align-items:center;gap:16px;padding:14px 0;border-bottom:1px solid var(--line)}
+.row:last-child{border-bottom:0}
+.row label{font-size:15px;letter-spacing:.1em}
+.row output{text-align:right;color:var(--ink-dim);font-variant-numeric:tabular-nums;font-size:14px}
+input[type=range]{width:100%;accent-color:var(--accent)}
+.preview{margin-top:8px;padding:14px 18px;border:1px dashed var(--line);border-radius:4px;font-size:16px;line-height:1.8;min-height:3.6em;color:var(--ink)}
+@media (max-width:560px){.row{grid-template-columns:1fr 3.5em}.row label{grid-column:1/-1}}
+
+/* 存讀檔 */
+.pages{display:flex;gap:4px;flex-wrap:wrap}
+.pages button{min-width:2.4em;padding:5px 8px;border:1px solid var(--line);border-radius:3px;font-size:13px;color:var(--ink-dim);font-variant-numeric:tabular-nums}
+.pages button:hover{color:var(--ink)}
+.pages button.on{background:var(--accent);border-color:var(--accent);color:var(--accent-ink);font-weight:700}
+.slots{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+@media (max-width:640px){.slots{grid-template-columns:minmax(0,1fr)}}
+.slot{display:grid;grid-template-columns:auto 96px minmax(0,1fr);gap:12px;align-items:center;text-align:left;padding:10px;border:1px solid var(--line);border-radius:4px;min-height:78px;transition:border-color .15s,background .15s}
+.slot:hover:not(:disabled){border-color:var(--accent);background:rgba(217,178,95,.06)}
+.slot:disabled{cursor:default;opacity:.55}
+.slot .no{font-family:var(--f-display);font-size:20px;font-weight:700;color:var(--ink-dim);width:2ch;text-align:center;font-variant-numeric:tabular-nums}
+.slot .thumb{height:56px;border-radius:3px;border:1px solid var(--line);background:#1A1D24;position:relative;overflow:hidden}
+.slot .thumb img{position:absolute;bottom:-4px;height:52px;left:50%;transform:translateX(-50%)}
+.slot .meta{min-width:0}
+.slot .t{font-size:12px;color:var(--accent);letter-spacing:.08em;font-variant-numeric:tabular-nums}
+.slot .c{font-size:13px;color:var(--ink-dim);margin:2px 0}
+.slot .p{font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.slot .empty{color:var(--ink-dim);font-size:14px;letter-spacing:.2em}
+
+/* 文字履歷 */
+.log{display:flex;flex-direction:column;gap:14px}
+.log .e{display:grid;grid-template-columns:6.5em minmax(0,1fr);gap:14px;font-size:15px;line-height:1.75}
+.log .n{font-family:var(--f-display);font-weight:700;color:var(--accent);text-align:right}
+.log .e.ch .n{color:var(--ink-dim)}
+.log .e.ch .x{color:var(--ink-dim)}
+.log .e.ch .x::before{content:"▸ 選擇：";letter-spacing:.06em}
+@media (max-width:520px){.log .e{grid-template-columns:minmax(0,1fr);gap:2px}.log .n{text-align:left}}
+
+/* 確認視窗 */
+.confirm{max-width:420px}
+.confirm .body{font-size:16px;line-height:1.8}
+
+/* ---------- 標題畫面 ---------- */
+#title{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:center;padding:0 max(16px,env(safe-area-inset-right,0px)) 0 max(8vw,env(safe-area-inset-left,0px));z-index:10;background:radial-gradient(ellipse at 75% 60%,rgba(217,178,95,.08),transparent 55%),#0B0C10}
+#title .eyebrow{font-size:13px;letter-spacing:.4em;color:var(--accent);margin-bottom:14px}
+#title h1{margin:0;font-family:var(--f-display);font-weight:900;font-size:clamp(44px,8vw,96px);letter-spacing:.12em;line-height:1.1}
+#title .sub{margin-top:12px;color:var(--ink-dim);letter-spacing:.2em;font-size:15px}
+#title nav{display:flex;flex-direction:column;align-items:flex-start;gap:6px;margin-top:48px}
+#title nav button{font-family:var(--f-display);font-size:19px;letter-spacing:.3em;padding:6px 0;color:var(--ink-dim);transition:color .15s,padding .15s}
+#title nav button:hover:not(:disabled),#title nav button:focus-visible{color:var(--ink);padding-left:10px}
+#title nav button:disabled{opacity:.3;cursor:default}
+#title .silhouette{position:absolute;right:6vw;bottom:0;height:min(70vh,560px);filter:brightness(0) drop-shadow(0 0 1px rgba(217,178,95,.6));opacity:.9;pointer-events:none}
+#title .ver{position:absolute;bottom:calc(14px + env(safe-area-inset-bottom,0px));right:max(16px,env(safe-area-inset-right,0px));font-size:11px;color:var(--ink-dim);letter-spacing:.2em}
+@media (max-width:640px){#title .silhouette{opacity:.25;right:-10vw}}
+
+/* 結局卡 */
+#endcard{position:absolute;inset:0;z-index:15;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;background:rgba(6,7,10,.9);text-align:center;padding:0 16px}
+#endcard .k{font-size:13px;letter-spacing:.5em;color:var(--accent)}
+#endcard .h{font-family:var(--f-display);font-size:clamp(30px,5vw,48px);font-weight:900;letter-spacing:.15em}
+#endcard .d{color:var(--ink-dim);letter-spacing:.1em;margin-bottom:24px}
+
+#toast{position:absolute;left:50%;top:calc(20px + env(safe-area-inset-top,0px));transform:translateX(-50%);background:var(--panel-solid);border:1px solid var(--accent);color:var(--ink);padding:8px 18px;border-radius:4px;font-size:14px;letter-spacing:.1em;z-index:30;transition:opacity .3s;opacity:0;pointer-events:none}
+#toast.on{opacity:1}
+
+@media (max-width:640px){
+  #box{padding:22px 14px 4px}
+  #bar button{padding:4px 6px;letter-spacing:.05em}
+  .char{height:min(36vh,300px)}
+}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+
+<div id="app">
+  <div id="stage" data-scene="title">
+    <div id="floor" class="prop"></div>
+    <div id="win" class="prop"></div>
+    <div id="fridge" class="prop"></div>
+    <canvas id="rain"></canvas>
+    <div id="chars"></div>
+    <div id="flash"></div>
+  </div>
+  <div id="chapter"></div>
+  <div id="mode" hidden></div>
+
+  <div id="choices" hidden></div>
+
+  <div id="ui" hidden>
+    <div id="box">
+      <div id="name"></div>
+      <div id="text"></div>
+      <div id="bar">
+        <button id="b-auto" title="自動前進（A）">自動</button>
+        <button id="b-skip" title="跳過（S）">跳過</button>
+        <button id="b-save">存檔</button>
+        <button id="b-load">讀檔</button>
+        <button id="b-log" title="滑鼠滾輪往上也能打開">履歷</button>
+        <button id="b-hide" title="隱藏對話框（H 或右鍵）">隱藏</button>
+        <button id="b-set">設定</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="title">
+    <div class="eyebrow">烏雞偵探事件簿 · 第一案</div>
+    <h1>消失的布丁</h1>
+    <div class="sub">停電的十分鐘裡，冰箱裡的布丁不見了。</div>
+    <nav>
+      <button id="t-start">開始遊戲</button>
+      <button id="t-cont">繼續</button>
+      <button id="t-load">讀取進度</button>
+      <button id="t-set">設定</button>
+    </nav>
+    <img class="silhouette" src="assets/images/wuji.png" alt="">
+    <div class="ver">介面原型 v0.1</div>
+  </div>
+
+  <div id="endcard" hidden>
+    <div class="k">ENDING</div>
+    <div class="h" id="end-h"></div>
+    <div class="d" id="end-d"></div>
+    <button class="btn pri" id="end-back">回到標題</button>
+  </div>
+
+  <!-- 設定 -->
+  <div class="ov" id="ov-set" hidden>
+    <div class="panel" role="dialog" aria-labelledby="set-h">
+      <header><h2 id="set-h">設定</h2><small>CONFIG</small></header>
+      <div class="body">
+        <div class="row"><label for="s-text">文字速度</label><input type="range" id="s-text" min="1" max="10" step="1"><output id="o-text"></output></div>
+        <div class="row"><label for="s-auto">自動前進速度</label><input type="range" id="s-auto" min="1" max="10" step="1"><output id="o-auto"></output></div>
+        <div class="row"><label for="s-bgm">音樂音量</label><input type="range" id="s-bgm" min="0" max="100" step="5"><output id="o-bgm"></output></div>
+        <div class="preview" id="s-preview"></div>
+      </div>
+      <footer>
+        <button class="btn warn" id="set-home">返回首頁</button>
+        <button class="btn pri" id="set-back">返回</button>
+      </footer>
+    </div>
+  </div>
+
+  <!-- 存檔／讀檔 -->
+  <div class="ov" id="ov-sl" hidden>
+    <div class="panel" role="dialog" aria-labelledby="sl-h">
+      <header><h2 id="sl-h">存檔</h2><small id="sl-sub">SAVE</small><span class="sp"></span><div class="pages" id="pages" role="tablist" aria-label="存檔頁"></div></header>
+      <div class="body"><div class="slots" id="slots"></div></div>
+      <footer><button class="btn pri" id="sl-back">返回</button></footer>
+    </div>
+  </div>
+
+  <!-- 文字履歷 -->
+  <div class="ov" id="ov-log" hidden>
+    <div class="panel" role="dialog" aria-labelledby="log-h">
+      <header><h2 id="log-h">文字履歷</h2><small>BACKLOG</small></header>
+      <div class="body" id="log-body"><div class="log" id="log"></div></div>
+      <footer><button class="btn pri" id="log-back">返回</button></footer>
+    </div>
+  </div>
+
+  <!-- 確認 -->
+  <div class="ov" id="ov-cf" hidden>
+    <div class="panel confirm" role="alertdialog">
+      <div class="body" id="cf-msg"></div>
+      <footer><button class="btn" id="cf-no">取消</button><button class="btn pri" id="cf-yes">確定</button></footer>
+    </div>
+  </div>
+
+  <div id="toast"></div>
+</div>
+
+<script>
+/* ================= 角色與劇本 ================= */
+const CHARS={
+  wuji:{name:'烏雞',img:'assets/images/wuji.png'},
+  lala:{name:'略略',img:'assets/images/lala.png'},
+  laoda:{name:'老大',img:'assets/images/laoda.png'},
+  mei:{name:'烏雞妹妹',img:'assets/images/mei.png'},
+  cookie:{name:'餅乾怪獸',img:'assets/images/cookie.png'},
+};
+const POS={l:22,cl:36,c:50,cr:64,r:78};
+const SCENE_NAME={night:'客廳・雨夜',kitchen:'廚房',window:'客廳窗邊',tense:'指認',dawn:'清晨'};
+
+/* 指令：
+   {scene}         換背景      {chapter}        章節標題
+   {show,at}       角色登場    {hide}           角色退場（'all' 全部）
+   {say,t}         角色台詞    {t}              旁白
+   {fx:'flash'|'shake'}       {mood:'calm'|'tense'} 換音樂氣氛
+   {set:旗標}      記下線索    {choice,q,opts:[{t,go,need?,hideIf?}]}
+   {go}            跳到段落    {when:fn,go}     條件跳轉
+   {end,title,desc}           結局 */
+const SCRIPT={
+  start:[
+    {chapter:'第一案　消失的布丁'},
+    {scene:'night'},{mood:'calm'},
+    {t:'晚上九點，窗外的雨下個不停。'},
+    {fx:'flash'},
+    {t:'一道閃電之後，屋裡的燈全熄了。'},
+    {t:'……十分鐘後，電來了。'},
+    {show:'laoda',at:'c'},{fx:'shake'},
+    {say:'laoda',t:'我的布丁！！冰箱裡我留到最後的那一個布丁不見了！'},
+    {show:'wuji',at:'l'},
+    {say:'wuji',t:'冷靜一點，老大。停電只有十分鐘，犯人一定還在這個家裡。'},
+    {show:'lala',at:'r'},
+    {say:'lala',t:'停電的時候我一直待在客廳喔。我什麼都沒看到，太暗了。'},
+    {say:'wuji',t:'那就從現場開始查吧。'},
+    {go:'investigate'},
+  ],
+  investigate:[
+    {when:s=>['fridge','window','mei'].filter(k=>s.flags['v_'+k]).length>=2,go:'gather'},
+    {scene:'night'},
+    {hide:'all'},{show:'wuji',at:'c'},
+    {choice:true,q:'先調查哪裡？',opts:[
+      {t:'打開冰箱看看',go:'fridge',hideIf:'v_fridge'},
+      {t:'檢查客廳的窗戶',go:'window',hideIf:'v_window'},
+      {t:'去問烏雞妹妹',go:'mei',hideIf:'v_mei'},
+    ]},
+  ],
+  fridge:[
+    {set:'v_fridge'},{scene:'kitchen'},
+    {t:'冰箱裡的燈閃了兩下。放布丁的那一格空空的。'},
+    {say:'wuji',t:'……布丁的位置旁邊，有一些碎屑。'},
+    {say:'wuji',t:'摸起來乾乾的，聞起來是奶油餅乾的味道。'},
+    {set:'crumbs'},
+    {t:'【線索】冰箱裡的餅乾屑'},
+    {go:'investigate'},
+  ],
+  window:[
+    {set:'v_window'},{scene:'window'},
+    {t:'客廳的窗戶開了一條縫，雨水打了進來。'},
+    {say:'wuji',t:'窗台上有濕濕的腳印……很小，往屋裡走。'},
+    {show:'lala',at:'r'},
+    {say:'lala',t:'剛剛停電的時候，好像有人從我旁邊走過去。腳步很輕。'},
+    {set:'prints'},
+    {t:'【線索】窗台上的小腳印'},
+    {hide:'lala'},
+    {go:'investigate'},
+  ],
+  mei:[
+    {set:'v_mei'},{scene:'night'},
+    {show:'mei',at:'r'},
+    {say:'mei',t:'我、我一直在房間裡畫畫，什麼都不知道喔！'},
+    {say:'wuji',t:'是嗎。那妳嘴角上那一點褐色的是什麼？'},
+    {say:'mei',t:'這、這是……蠟筆！是蠟筆啦！'},
+    {say:'wuji',t:'（蠟筆會有焦糖的味道嗎……）'},
+    {set:'caramel'},
+    {t:'【線索】妹妹嘴角的焦糖'},
+    {hide:'mei'},
+    {go:'investigate'},
+  ],
+  gather:[
+    {scene:'tense'},{mood:'tense'},
+    {hide:'all'},
+    {show:'laoda',at:'l'},{show:'lala',at:'cl'},{show:'mei',at:'cr'},{show:'cookie',at:'r'},
+    {say:'cookie',t:'餅乾的味道……是誰在叫我？'},
+    {say:'laoda',t:'大家都到齊了。烏雞，你說，到底是誰吃了我的布丁？'},
+    {show:'wuji',at:'c'},
+    {say:'wuji',t:'線索已經夠了。犯人就是──'},
+    {choice:true,q:'指認犯人',opts:[
+      {t:'餅乾怪獸',go:'e_cookie'},
+      {t:'烏雞妹妹',go:'e_mei'},
+      {t:'老大自己',go:'e_laoda'},
+    ]},
+  ],
+  e_cookie:[
+    {say:'cookie',t:'我？我只吃餅乾啊。布丁軟軟的，我不喜歡。'},
+    {when:s=>s.flags.prints,go:'e_cookie2'},
+    {say:'wuji',t:'可是冰箱裡有餅乾屑……'},
+    {say:'cookie',t:'那是我昨天放進去冰的餅乾啦。冰過比較脆。'},
+    {t:'客廳安靜了下來。真正的犯人，悄悄鬆了一口氣。'},
+    {end:true,title:'冤枉的餅乾',desc:'證據只有一半，推理就會走偏。'},
+  ],
+  e_cookie2:[
+    {say:'wuji',t:'……不對。窗台上的腳印那麼小，餅乾怪獸的腳根本塞不進那條縫。'},
+    {say:'wuji',t:'餅乾屑只是障眼法。我收回剛才的話。'},
+    {go:'gather_retry'},
+  ],
+  gather_retry:[
+    {choice:true,q:'重新指認犯人',opts:[
+      {t:'烏雞妹妹',go:'e_mei'},
+      {t:'老大自己',go:'e_laoda'},
+    ]},
+  ],
+  e_mei:[
+    {when:s=>!s.flags.caramel,go:'e_mei_weak'},
+    {say:'wuji',t:'妹妹，妳嘴角的焦糖，就是布丁上面那一層吧。'},
+    {say:'mei',t:'……嗚。'},
+    {say:'mei',t:'對不起！停電好可怕，我想吃點甜的壓壓驚……'},
+    {say:'laoda',t:'……算了。下次跟我說，我分妳一半。'},
+    {scene:'dawn'},{mood:'calm'},
+    {t:'雨停了。這個家又恢復了平靜。'},
+    {end:true,title:'焦糖的味道',desc:'真相大白。你找到了犯人。'},
+  ],
+  e_mei_weak:[
+    {say:'mei',t:'證據呢？你有看到我吃嗎？'},
+    {say:'wuji',t:'……沒有。'},
+    {t:'沒有決定性的證據，妹妹嘟著嘴回房間去了。'},
+    {end:true,title:'證據不足',desc:'也許該多問問某個人。'},
+  ],
+  e_laoda:[
+    {say:'laoda',t:'我？我會偷吃自己的布丁嗎！'},
+    {say:'wuji',t:'說不定你停電的時候夢遊……'},
+    {say:'laoda',t:'烏雞，你今天晚餐沒有了。'},
+    {end:true,title:'晚餐沒了',desc:'偵探最重要的，是不要激怒委託人。'},
+  ],
+};
+
+/* ================= 設定與儲存 ================= */
+const store={
+  get(k,d){try{const v=localStorage.getItem('pudding_'+k);return v?JSON.parse(v):d}catch(e){return d}},
+  set(k,v){try{localStorage.setItem('pudding_'+k,JSON.stringify(v))}catch(e){}}
+};
+const cfg=Object.assign({text:6,auto:5,bgm:60},store.get('cfg',{}));
+const SLOT_COUNT=50,PER_PAGE=10;
+let slots=store.get('slots',Array(SLOT_COUNT).fill(null));
+if(slots.length<SLOT_COUNT)slots=slots.concat(Array(SLOT_COUNT-slots.length).fill(null));
+let slPage=store.get('page',0);
+
+const textMs=v=>v>=10?0:Math.round(90-v*9);          // 1→81ms/字 … 9→9ms/字，10＝瞬間
+const autoWait=(v,len)=>(4200-v*360)+len*(90-v*7);      // 停頓＋依字數延長
+
+/* ================= 遊戲狀態 ================= */
+let S=null;                // 可存檔的狀態
+let log=[];                // 文字履歷
+let seenChoices=store.get('seen',{});
+let typing=null,fullText='',waiting=false,mode=null,autoTimer=null,skipTimer=null,inGame=false;
+
+const $=id=>document.getElementById(id);
+const stage=$('stage'),charsEl=$('chars'),nameEl=$('name'),textEl=$('text'),nextEl=$('next');
+
+function newState(){return{label:'start',i:0,scene:'title',stage:{},flags:{},chapter:'',mood:'calm',line:null}}
+
+/* ---------- 畫面 ---------- */
+function setScene(sc){S.scene=sc;stage.dataset.scene=sc}
+function renderChars(speaker){
+  const want=S.stage;
+  // 移除不在場的
+  [...charsEl.children].forEach(el=>{if(el.dataset.id&&!want[el.dataset.id]){el.removeAttribute('data-id');el.classList.remove('in');setTimeout(()=>el.remove(),400)}});
+  for(const id in want){
+    let el=charsEl.querySelector(`[data-id="${id}"]`);
+    if(!el){el=document.createElement('img');el.className='char';el.dataset.id=id;el.src=CHARS[id].img;el.alt=CHARS[id].name;el.style.left=POS[want[id]]+'%';charsEl.appendChild(el);requestAnimationFrame(()=>requestAnimationFrame(()=>el.classList.add('in')))}
+    el.style.left=POS[want[id]]+'%';
+    el.classList.toggle('dim',!!speaker&&speaker!==id);
+    el.classList.toggle('talk',speaker===id);
+    if(!speaker){el.classList.remove('dim')}
+  }
+}
+function fx(kind){
+  if(mode==='skip')return;
+  if(kind==='flash'){const f=$('flash');f.classList.remove('on');void f.offsetWidth;f.classList.add('on')}
+  if(kind==='shake'){const a=$('app');a.classList.remove('shake');void a.offsetWidth;a.classList.add('shake')}
+}
+
+/* ---------- 執行劇本 ---------- */
+function cmd(){return SCRIPT[S.label][S.i]}
+function run(){
+  hideChoices();
+  while(true){
+    const c=cmd();
+    if(!c){console.warn('劇本結束於',S.label);return}
+    if(c.chapter!==undefined){S.chapter=c.chapter;$('chapter').textContent=c.chapter;S.i++;continue}
+    if(c.scene){setScene(c.scene);S.i++;continue}
+    if(c.mood){S.mood=c.mood;Music.mood(c.mood);S.i++;continue}
+    if(c.show){S.stage[c.show]=c.at||'c';renderChars();S.i++;continue}
+    if(c.hide){if(c.hide==='all')S.stage={};else delete S.stage[c.hide];renderChars();S.i++;continue}
+    if(c.fx){fx(c.fx);S.i++;continue}
+    if(c.set){S.flags[c.set]=true;S.i++;continue}
+    if(c.when){if(c.when(S)){jump(c.go)}else S.i++;continue}
+    if(c.go){jump(c.go);continue}
+    if(c.choice){showChoice(c);return}
+    if(c.end){showEnd(c);return}
+    if(c.t!==undefined){showLine(c);return}
+    S.i++;
+  }
+}
+function jump(label){S.label=label;S.i=0}
+
+function showLine(c){
+  const who=c.say?CHARS[c.say].name:'';
+  S.line={name:who,text:c.t};
+  nameEl.textContent=who;
+  textEl.classList.toggle('narr',!c.say);
+  renderChars(c.say||null);
+  log.push({n:who,x:c.t});if(log.length>200)log.shift();
+  type(c.t);
+}
+function type(str){
+  clearInterval(typing);clearTimeout(autoTimer);waiting=false;
+  fullText=str;textEl.textContent='';
+  const nx=document.createElement('span');nx.id='next';nx.textContent='▼';
+  const ms=textMs(cfg.text);
+  if(ms===0||mode==='skip'){textEl.textContent=str;textEl.appendChild(nx);lineDone();return}
+  let k=0;const span=document.createTextNode('');textEl.appendChild(span);textEl.appendChild(nx);
+  typing=setInterval(()=>{k++;span.data=str.slice(0,k);if(k>=str.length){clearInterval(typing);typing=null;lineDone()}},ms);
+}
+function lineDone(){
+  waiting=true;
+  const nx=document.getElementById('next');if(nx)nx.classList.add('on');
+  if(mode==='auto')autoTimer=setTimeout(()=>{if(mode==='auto'&&waiting&&!overlayOpen())advance()},autoWait(cfg.auto,fullText.length));
+  if(mode==='skip')skipTimer=setTimeout(()=>{if(mode==='skip'&&!overlayOpen())advance()},50);
+}
+function advance(){
+  if(!inGame||overlayOpen()||!$('choices').hidden||!$('endcard').hidden)return;
+  if($('ui').classList.contains('hide')){toggleHide(false);return}
+  if(typing){clearInterval(typing);typing=null;textEl.firstChild.data=fullText;lineDone();return}
+  if(!waiting)return;
+  waiting=false;S.i++;run();
+}
+
+/* ---------- 選項 ---------- */
+function showChoice(c){
+  setMode(null);
+  waiting=false;
+  const box=$('choices');box.innerHTML='';
+  const q=document.createElement('div');q.className='q';q.textContent=c.q||'';box.appendChild(q);
+  c.opts.filter(o=>!(o.hideIf&&S.flags[o.hideIf])).forEach(o=>{
+    const b=document.createElement('button');b.textContent=o.t;
+    const key=S.label+'>'+o.go;if(seenChoices[key])b.classList.add('seen');
+    b.onclick=e=>{e.stopPropagation();seenChoices[key]=1;store.set('seen',seenChoices);log.push({n:'',x:o.t,ch:1});hideChoices();jump(o.go);run()};
+    box.appendChild(b);
+  });
+  box.hidden=false;
+  box.querySelector('button')?.focus({preventScroll:true});
+}
+function hideChoices(){$('choices').hidden=true}
+
+/* ---------- 結局 ---------- */
+function showEnd(c){
+  setMode(null);
+  $('end-h').textContent=c.title;$('end-d').textContent=c.desc||'';
+  $('endcard').hidden=false;
+  const ends=store.get('ends',{});ends[c.title]=1;store.set('ends',ends);
+}
+
+/* ---------- 模式：自動／跳過 ---------- */
+function setMode(m){
+  mode=(mode===m)?null:m;
+  clearTimeout(autoTimer);clearTimeout(skipTimer);
+  $('b-auto').classList.toggle('on',mode==='auto');
+  $('b-skip').classList.toggle('on',mode==='skip');
+  $('mode').hidden=!mode;$('mode').textContent=mode==='auto'?'AUTO':'SKIP';
+  if(mode&&waiting)lineDone();
+  if(mode==='skip'&&typing)advance();
+}
+function toggleHide(force){const u=$('ui');const h=force??!u.classList.contains('hide');u.classList.toggle('hide',h)}
+
+/* ---------- 浮層 ---------- */
+function overlayOpen(){return [...document.querySelectorAll('.ov')].some(o=>!o.hidden)}
+function openOv(id){if(mode==='skip')setMode(null);$(id).hidden=false;$(id).querySelector('.btn.pri')?.focus({preventScroll:true})}
+function closeOv(id){$(id).hidden=true;if(mode==='auto'&&waiting)lineDone()}
+
+let cfResolve=null;
+function ask(msg,yes='確定'){return new Promise(r=>{cfResolve=r;$('cf-msg').textContent=msg;$('cf-yes').textContent=yes;openOv('ov-cf')})}
+$('cf-yes').onclick=()=>{closeOv('ov-cf');cfResolve&&cfResolve(true)};
+$('cf-no').onclick=()=>{closeOv('ov-cf');cfResolve&&cfResolve(false)};
+
+function toast(msg){const t=$('toast');t.textContent=msg;t.classList.add('on');clearTimeout(t._h);t._h=setTimeout(()=>t.classList.remove('on'),1600)}
+
+/* ---------- 設定 ---------- */
+const sampleLine='停電只有十分鐘，犯人一定還在這個家裡。';
+let previewTimer=null,previewAuto=null;
+function syncCfg(){
+  $('s-text').value=cfg.text;$('s-auto').value=cfg.auto;$('s-bgm').value=cfg.bgm;
+  $('o-text').textContent=cfg.text>=10?'瞬間':cfg.text;
+  $('o-auto').textContent=cfg.auto;
+  $('o-bgm').textContent=cfg.bgm+'%';
+}
+function playPreview(){
+  clearInterval(previewTimer);clearTimeout(previewAuto);
+  const p=$('s-preview'),ms=textMs(cfg.text);let k=0;p.textContent='';
+  const loop=()=>{previewAuto=setTimeout(playPreview,autoWait(cfg.auto,sampleLine.length))};
+  if(!ms){p.textContent=sampleLine;loop();return}
+  previewTimer=setInterval(()=>{k++;p.textContent=sampleLine.slice(0,k);if(k>=sampleLine.length){clearInterval(previewTimer);loop()}},ms);
+}
+['text','auto','bgm'].forEach(k=>{
+  $('s-'+k).addEventListener('input',e=>{cfg[k]=+e.target.value;syncCfg();store.set('cfg',cfg);if(k==='bgm')Music.vol(cfg.bgm);else playPreview()});
+});
+function openSettings(){syncCfg();$('set-home').hidden=!inGame;openOv('ov-set');playPreview()}
+$('set-back').onclick=()=>{clearInterval(previewTimer);clearTimeout(previewAuto);closeOv('ov-set')};
+$('set-home').onclick=async()=>{if(await ask('回到標題畫面？沒存檔的進度會消失。','返回首頁')){closeOv('ov-set');toTitle()}};
+
+/* ---------- 存檔／讀檔 ---------- */
+let slMode='save';
+function snapshot(){
+  const lead=Object.keys(S.stage)[0]||'wuji';
+  return{state:JSON.parse(JSON.stringify(S)),log:log.slice(-80),time:Date.now(),lead,
+    place:SCENE_NAME[S.scene]||'',preview:S.line?((S.line.name?S.line.name+'：':'')+S.line.text):'（選項）'};
+}
+function fmt(t){const d=new Date(t),p=n=>String(n).padStart(2,'0');return`${d.getFullYear()}/${p(d.getMonth()+1)}/${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`}
+function renderSlots(){
+  const box=$('slots');box.innerHTML='';
+  const pg=$('pages');pg.innerHTML='';
+  for(let p=0;p<SLOT_COUNT/PER_PAGE;p++){const t=document.createElement('button');t.textContent=p+1;t.title=`第 ${p+1} 頁（${p*PER_PAGE+1}–${(p+1)*PER_PAGE}）`;t.setAttribute('role','tab');t.classList.toggle('on',p===slPage);t.onclick=()=>{slPage=p;store.set('page',p);renderSlots()};pg.appendChild(t)}
+  slots.forEach((s,i)=>{
+    if(Math.floor(i/PER_PAGE)!==slPage)return;
+    const b=document.createElement('button');b.className='slot';
+    b.innerHTML=`<span class="no">${String(i+1).padStart(2,'0')}</span>`;
+    if(s){
+      const th=document.createElement('span');th.className='thumb';
+      th.dataset.scene=s.state.scene;th.style.backgroundImage=sceneThumb(s.state.scene);
+      const im=document.createElement('img');im.src=CHARS[s.lead].img;im.alt='';th.appendChild(im);
+      const m=document.createElement('span');m.className='meta';
+      m.innerHTML=`<div class="t"></div><div class="c"></div><div class="p"></div>`;
+      m.children[0].textContent=fmt(s.time);
+      m.children[1].textContent=(s.state.chapter||'')+(s.place?'　'+s.place:'');
+      m.children[2].textContent=s.preview;
+      b.append(th,m);
+    }else{
+      const th=document.createElement('span');th.className='thumb';
+      const m=document.createElement('span');m.className='meta';m.innerHTML='<span class="empty">空白</span>';
+      b.append(th,m);
+      if(slMode==='load')b.disabled=true;
+    }
+    b.onclick=()=>slotClick(i);
+    box.appendChild(b);
+  });
+}
+function sceneThumb(sc){
+  return{night:'linear-gradient(180deg,#1B2333,#0E1119)',kitchen:'linear-gradient(180deg,#2A2F33,#121416)',window:'linear-gradient(180deg,#16202E,#0D1219)',tense:'linear-gradient(180deg,#2B1414,#0E0708)',dawn:'linear-gradient(180deg,#3B4256,#C9A57A)'}[sc]||'none';
+}
+async function slotClick(i){
+  if(slMode==='save'){
+    if(slots[i]&&!await ask(`覆蓋第 ${i+1} 格的存檔？`,'覆蓋'))return;
+    slots[i]=snapshot();store.set('slots',slots);renderSlots();toast(`已存到第 ${i+1} 格`);
+  }else{
+    if(!slots[i])return;
+    if(inGame&&!await ask(`讀取第 ${i+1} 格？目前沒存檔的進度會消失。`,'讀取'))return;
+    closeOv('ov-sl');loadSlot(slots[i]);
+  }
+}
+function openSL(m){
+  slMode=m;$('sl-h').textContent=m==='save'?'存檔':'讀檔';$('sl-sub').textContent=m==='save'?'SAVE':'LOAD';
+  renderSlots();openOv('ov-sl');
+}
+$('sl-back').onclick=()=>closeOv('ov-sl');
+
+/* ---------- 文字履歷 ---------- */
+function openLog(){
+  const box=$('log');box.innerHTML='';
+  log.forEach(e=>{
+    const d=document.createElement('div');d.className='e'+(e.ch?' ch':'');
+    const n=document.createElement('div');n.className='n';n.textContent=e.n||(e.ch?'':'　');
+    const x=document.createElement('div');x.className='x';x.textContent=e.x;
+    d.append(n,x);box.appendChild(d);
+  });
+  if(!log.length)box.innerHTML='<div style="color:var(--ink-dim)">還沒有對話。</div>';
+  openOv('ov-log');
+  const b=$('log-body');b.scrollTop=b.scrollHeight;
+}
+$('log-back').onclick=()=>closeOv('ov-log');
+
+/* ---------- 流程 ---------- */
+function enterGame(){
+  inGame=true;$('title').hidden=true;$('ui').hidden=false;$('endcard').hidden=true;toggleHide(false);
+}
+function newGame(){
+  Music.start();
+  S=newState();log=[];charsEl.innerHTML='';enterGame();setMode(null);run();
+}
+function loadSlot(s){
+  Music.start();
+  S=JSON.parse(JSON.stringify(s.state));log=(s.log||[]).slice();
+  charsEl.innerHTML='';enterGame();setMode(null);
+  setScene(S.scene);$('chapter').textContent=S.chapter||'';Music.mood(S.mood);renderChars();
+  if(log.length&&cmd()&&cmd().t!==undefined)log.pop(); // 這句會重新顯示
+  run();
+}
+function toTitle(){
+  inGame=false;setMode(null);clearInterval(typing);typing=null;
+  hideChoices();$('ui').hidden=true;$('endcard').hidden=true;$('chapter').textContent='';
+  charsEl.innerHTML='';stage.dataset.scene='title';$('title').hidden=false;refreshTitle();Music.mood('calm');
+}
+function latest(){let best=null;slots.forEach(s=>{if(s&&(!best||s.time>best.time))best=s});return best}
+function refreshTitle(){const has=!!latest();$('t-cont').disabled=!has;$('t-load').disabled=!slots.some(Boolean)}
+
+$('t-start').onclick=newGame;
+$('t-cont').onclick=()=>{const s=latest();if(s)loadSlot(s)};
+$('t-load').onclick=()=>{Music.start();openSL('load')};
+$('t-set').onclick=()=>{Music.start();openSettings()};
+$('end-back').onclick=toTitle;
+
+$('b-auto').onclick=e=>{e.stopPropagation();setMode('auto')};
+$('b-skip').onclick=e=>{e.stopPropagation();setMode('skip')};
+$('b-save').onclick=e=>{e.stopPropagation();openSL('save')};
+$('b-load').onclick=e=>{e.stopPropagation();openSL('load')};
+$('b-log').onclick=e=>{e.stopPropagation();openLog()};
+$('b-hide').onclick=e=>{e.stopPropagation();toggleHide(true)};
+$('b-set').onclick=e=>{e.stopPropagation();openSettings()};
+
+/* 點畫面前進 */
+$('app').addEventListener('click',e=>{
+  if(e.target.closest('.ov,#title,#endcard,#choices button,#bar'))return;
+  advance();
+});
+$('app').addEventListener('contextmenu',e=>{if(inGame&&!overlayOpen()){e.preventDefault();toggleHide()}});
+$('app').addEventListener('wheel',e=>{if(inGame&&!overlayOpen()&&e.deltaY<0&&$('endcard').hidden)openLog()},{passive:true});
+document.addEventListener('keydown',e=>{
+  if(e.key==='Escape'){
+    if(!$('ov-cf').hidden){$('cf-no').click();return}
+    for(const id of ['ov-set','ov-sl','ov-log'])if(!$(id).hidden){$(id).querySelector('footer .btn.pri').click();return}
+    return;
+  }
+  if(!inGame||overlayOpen())return;
+  if(e.key===' '||e.key==='Enter'){if(document.activeElement?.closest('#choices,#bar'))return;e.preventDefault();advance()}
+  else if(e.key==='a'||e.key==='A')setMode('auto');
+  else if(e.key==='s'||e.key==='S')setMode('skip');
+  else if(e.key==='h'||e.key==='H')toggleHide();
+});
+
+/* ================= 背景音樂（程式合成的低音氛圍） ================= */
+const Music=(()=>{
+  let ctx=null,master=null,voices=[],cur='calm';
+  const MOODS={calm:[55,82.4,110],tense:[49,51.9,73.4]};
+  function build(m){
+    voices.forEach(v=>{v.g.gain.setTargetAtTime(0,ctx.currentTime,.6);setTimeout(()=>{try{v.o.stop()}catch(e){}},3000)});
+    voices=MOODS[m].map((f,i)=>{
+      const o=ctx.createOscillator(),g=ctx.createGain(),lf=ctx.createOscillator(),lg=ctx.createGain();
+      o.type=i?'triangle':'sine';o.frequency.value=f;
+      lf.frequency.value=.07+i*.05;lg.gain.value=m==='tense'?3:1.2;lf.connect(lg).connect(o.frequency);
+      g.gain.value=0;o.connect(g).connect(master);o.start();lf.start();
+      g.gain.setTargetAtTime(i?.05:.09,ctx.currentTime,1.2);
+      return{o,g};
+    });
+  }
+  return{
+    start(){
+      if(ctx){ctx.resume();return}
+      try{ctx=new (window.AudioContext||window.webkitAudioContext)()}catch(e){return}
+      const lp=ctx.createBiquadFilter();lp.type='lowpass';lp.frequency.value=600;
+      master=ctx.createGain();master.gain.value=cfg.bgm/100;master.connect(lp).connect(ctx.destination);
+      build(cur);
+    },
+    vol(v){if(master)master.gain.setTargetAtTime(v/100,ctx.currentTime,.05)},
+    mood(m){if(m===cur&&voices.length)return;cur=m;if(ctx)build(m)},
+  };
+})();
+
+/* ================= 雨 ================= */
+(()=>{
+  const c=$('rain'),g=c.getContext('2d');let drops=[];
+  function size(){c.width=innerWidth;c.height=innerHeight;drops=Array.from({length:Math.round(innerWidth/9)},()=>({x:Math.random()*c.width,y:Math.random()*c.height,v:9+Math.random()*7,l:10+Math.random()*14}))}
+  size();addEventListener('resize',size);
+  if(matchMedia('(prefers-reduced-motion: reduce)').matches)return;
+  (function loop(){
+    if(stage.dataset.scene==='night'||stage.dataset.scene==='window'){
+      g.clearRect(0,0,c.width,c.height);g.strokeStyle='rgba(180,200,230,.35)';g.lineWidth=1;g.beginPath();
+      for(const d of drops){g.moveTo(d.x,d.y);g.lineTo(d.x-2,d.y+d.l);d.y+=d.v;d.x-=.6;if(d.y>c.height){d.y=-20;d.x=Math.random()*c.width}}
+      g.stroke();
+    }
+    requestAnimationFrame(loop);
+  })();
+})();
+
+refreshTitle();
+</script>

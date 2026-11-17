@@ -1,0 +1,1133 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>麻將接龍</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@700;900&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --felt:#0f3b33; --felt2:#16564a; --deep:#0a2621;
+  --panel:#13312b; --panel2:#1d4239; --line:#2f5f53;
+  --gold:#e8c46a; --gold2:#b8902f; --ivory:#f7f0dd; --muted:#a9c3b8; --red:#d9483b;
+  --serif:'Noto Serif TC','Songti TC','PMingLiU',serif;
+  --body:'Noto Sans TC','PingFang TC','Microsoft JhengHei',sans-serif;
+  color-scheme:dark;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;overflow:hidden}
+body{background:radial-gradient(ellipse at 50% 35%,var(--felt2),var(--felt) 55%,var(--deep));color:var(--ivory);font-family:var(--body);font-size:15px;user-select:none;-webkit-user-select:none}
+button{font-family:var(--body);cursor:pointer;color:inherit}
+button:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+h1,h2,h3{font-family:var(--serif);font-weight:900;margin:0;text-wrap:balance}
+.screen{position:fixed;inset:0;display:none;flex-direction:column;
+  padding:calc(10px + env(safe-area-inset-top,0px)) max(16px,env(safe-area-inset-right,0px)) calc(10px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px))}
+.screen.on{display:flex}
+.btn{display:inline-block;padding:10px 22px;font-size:16px;font-weight:700;letter-spacing:.08em;color:#3a2a0c;
+  background:linear-gradient(#ffe39a,var(--gold));border:0;border-radius:999px;box-shadow:0 4px 0 var(--gold2),0 8px 16px #0006;transition:transform .08s}
+.btn:active{transform:translateY(3px);box-shadow:0 1px 0 var(--gold2)}
+.btn.ghost{background:var(--panel2);color:var(--ivory);box-shadow:0 4px 0 #061814,0 8px 16px #0005}
+.btn.wide{display:block;width:min(260px,76vw)}
+.icon{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:7px 11px;font-size:14px;white-space:nowrap}
+.icon:hover:not(:disabled){border-color:var(--gold)}
+.icon:disabled{opacity:.4;cursor:default}
+.icon b{font-variant-numeric:tabular-nums;color:var(--gold);font-weight:500}
+
+/* 主選單 */
+#menu{align-items:center;overflow:auto}
+.mhead{text-align:center;margin:clamp(8px,4vh,36px) 0 clamp(10px,3vh,24px)}
+.mhead h1{font-size:clamp(40px,10vw,68px);letter-spacing:.12em;color:var(--ivory);text-shadow:0 3px 0 #0a2621,0 8px 20px #0008}
+.mhead h1 span{color:var(--red)}
+.mhead .sub{color:var(--muted);letter-spacing:.3em;font-size:13px;margin-top:6px}
+.mtiles{display:flex;justify-content:center;gap:6px;margin-top:14px}
+.mtiles canvas{width:38px;height:50px}
+.lays{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;width:min(920px,100%);padding-bottom:12px}
+@media (max-width:520px){.lays{grid-template-columns:1fr 1fr;gap:8px}.lay{padding:8px;border-radius:12px}.lay canvas{height:84px}.lay .nm{font-size:17px}.lay .lv{display:none}.lay .ds{font-size:11px}}
+.lay{background:var(--panel);border:2px solid var(--line);border-radius:16px;padding:12px;text-align:left;display:flex;flex-direction:column;gap:6px;transition:transform .1s,border-color .1s}
+.lay:hover{border-color:var(--gold);transform:translateY(-2px)}
+.lay canvas{width:100%;height:110px;background:#0b2a24;border-radius:10px}
+.lay .nm{font-family:var(--serif);font-size:21px;display:flex;justify-content:space-between;align-items:baseline}
+.lay .lv{font-family:var(--body);font-size:12px;padding:2px 8px;border-radius:999px;background:var(--panel2);color:var(--gold)}
+.lay .ds{font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
+
+/* 封面 */
+#cover{align-items:center;justify-content:center;overflow:auto}
+.cwrap{display:flex;flex-direction:column;align-items:center;gap:clamp(16px,4vh,36px);margin:auto 0}
+.cwrap .mhead{margin:0}
+.cprog{color:var(--muted);font-size:13px;letter-spacing:.1em;font-variant-numeric:tabular-nums}
+/* 選版面 */
+#menu{align-items:center;overflow:auto}
+.shead{display:flex;align-items:center;justify-content:space-between;width:min(920px,100%);margin-bottom:12px}
+.shead h2{font-size:24px;color:var(--gold);letter-spacing:.1em}
+.shead .sp{width:72px}
+.tiers{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;width:min(920px,100%)}
+.tier{background:var(--panel);border:2px solid var(--line);border-radius:14px;padding:10px 6px;display:flex;flex-direction:column;align-items:center;gap:2px}
+.tier .tn{font-family:var(--serif);font-size:22px}
+.tier .tc{font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
+.tier.on{border-color:var(--gold);background:var(--panel2)}
+.tier.on .tn{color:var(--gold)}
+.tdesc{color:var(--muted);font-size:13px;margin:10px 0 12px;text-align:center}
+.lay.done{border-color:#4f8f6a}
+.lay .ok{color:#8fe0a8}
+/* 遊戲 */
+#game{padding-bottom:calc(6px + env(safe-area-inset-bottom,0px))}
+.gtop{display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:space-between}
+.gtop .ttl{font-family:var(--serif);font-size:20px;color:var(--gold)}
+.stats{display:flex;gap:14px;font-size:14px;color:var(--muted);font-variant-numeric:tabular-nums;flex-wrap:wrap}
+.stats b{color:var(--ivory);font-weight:500}
+.tools{display:flex;gap:6px;flex-wrap:wrap}
+#wrap{flex:1;position:relative;min-height:0;margin-top:6px}
+#cv{position:absolute;inset:0;width:100%;height:100%;touch-action:manipulation}
+#banner{position:absolute;left:50%;bottom:10px;transform:translateX(-50%);background:#0a2621ee;border:1px solid var(--gold2);border-radius:14px;
+  padding:10px 14px;display:none;align-items:center;gap:10px;flex-wrap:wrap;justify-content:center;box-shadow:0 8px 24px #000a;max-width:calc(100% - 8px)}
+#banner.on{display:flex}
+#banner .btxt{display:flex;flex-direction:column;gap:2px;max-width:340px}
+#banner .btxt b{color:var(--gold)}
+#banner .btxt span{font-size:13px;color:var(--muted);line-height:1.5}
+#banner .btn{padding:8px 16px;font-size:14px}
+#banner.dead{border-color:#e07a5a}
+#toast{position:absolute;left:50%;top:8px;transform:translateX(-50%);background:#0a2621dd;border-radius:999px;padding:6px 16px;font-size:14px;opacity:0;transition:opacity .25s;pointer-events:none;white-space:nowrap}
+#toast.on{opacity:1}
+
+/* 視窗 */
+.ov{position:fixed;inset:0;background:#031512cc;display:none;align-items:center;justify-content:center;padding:16px;z-index:10;backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px)}
+.ov.on{display:flex}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:20px;width:min(640px,100%);max-height:100%;overflow:auto;box-shadow:0 14px 40px #000a}
+.card h2{font-size:28px;text-align:center;margin-bottom:12px;color:var(--gold);letter-spacing:.1em}
+.foot{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:16px}
+.vstack{display:flex;flex-direction:column;gap:12px;align-items:center}
+.row{display:flex;align-items:center;gap:12px;margin:12px 0;flex-wrap:wrap}
+.row>label{min-width:110px;color:var(--muted);font-size:14px}
+input[type=range]{flex:1;min-width:120px;accent-color:var(--gold)}
+.val{width:40px;text-align:right;font-variant-numeric:tabular-nums;color:var(--muted);font-size:13px}
+.seg{display:flex;border:1px solid var(--line);border-radius:999px;overflow:hidden}
+.seg button{background:transparent;border:0;padding:6px 16px;font-size:14px}
+.seg button.on{background:var(--gold);color:#3a2a0c;font-weight:700}
+.note{color:var(--muted);font-size:13px;line-height:1.7}
+.sect{font-family:var(--serif);font-size:18px;color:var(--gold);margin:16px 0 6px}
+.help p,.help li{line-height:1.8;font-size:14px}
+.help ul{padding-left:20px;margin:6px 0}
+.tgroup{display:flex;flex-wrap:wrap;gap:4px;align-items:center;margin:4px 0 8px}
+.tgroup img{width:30px;height:40px}
+.tgroup span{font-size:13px;color:var(--muted);margin-right:8px}
+.res{display:grid;grid-template-columns:1fr auto;gap:6px 20px;font-size:16px;margin:8px auto;width:min(320px,100%)}
+.res div:nth-child(even){text-align:right;font-variant-numeric:tabular-nums}
+.res .big{font-size:22px;color:var(--gold);font-weight:700}
+.newrec{text-align:center;color:var(--gold);font-weight:700;margin:6px 0}
+#helpFig{display:block;margin:6px auto;max-width:100%}
+</style>
+</head>
+<body>
+
+<!-- 封面 -->
+<section class="screen on" id="cover">
+  <div class="cwrap">
+    <div class="mhead">
+      <h1>麻將<span>接龍</span></h1>
+      <div class="sub">找出兩張一樣的牌 · 全部消光</div>
+      <div class="mtiles" id="mTiles"></div>
+    </div>
+    <div class="vstack">
+      <button class="btn wide" id="cStart">遊戲開始</button>
+      <button class="btn ghost wide" id="mHelp">說明</button>
+      <button class="btn ghost wide" id="mSet">設定</button>
+    </div>
+    <div class="cprog" id="cProg"></div>
+  </div>
+</section>
+
+<!-- 選難度與版面 -->
+<section class="screen" id="menu">
+  <div class="shead">
+    <button class="icon" id="sBack">← 封面</button>
+    <h2>選擇版面</h2>
+    <span class="sp"></span>
+  </div>
+  <div class="tiers" id="tiers"></div>
+  <div class="tdesc" id="tDesc"></div>
+  <div class="lays" id="lays"></div>
+</section>
+
+<!-- 遊戲 -->
+<section class="screen" id="game">
+  <div class="gtop">
+    <div class="ttl" id="gName">金字塔</div>
+    <div class="stats">
+      <span>時間 <b id="sTime">0:00</b></span>
+      <span>分數 <b id="sScore">0</b></span>
+      <span>剩下 <b id="sLeft">0</b> 張</span>
+      <span id="sPairsBox">可配 <b id="sPairs">0</b> 對</span>
+    </div>
+    <div class="tools">
+      <button class="icon" id="bHint" title="提示（H）">提示</button>
+      <button class="icon" id="bUndo" title="復原（Z）">復原</button>
+      <button class="icon" id="bShuffle" title="洗牌（S）">洗牌</button>
+      <button class="icon" id="bPause" title="暫停（Esc）">暫停 ❚❚</button>
+    </div>
+  </div>
+  <div id="wrap">
+    <canvas id="cv"></canvas>
+    <div id="toast"></div>
+    <div id="banner">
+      <div class="btxt"><b id="bnTitle">已經沒有可以配對的牌了</b><span id="bnSub"></span></div>
+      <button class="btn" id="kBack">退回到還能解的那一步</button>
+      <button class="btn ghost" id="kShuffle">洗牌</button>
+      <button class="btn ghost" id="kClose">先繼續玩</button>
+    </div>
+  </div>
+</section>
+
+<!-- 暫停 -->
+<div class="ov" id="ovPause"><div class="card">
+  <h2>暫停</h2>
+  <div class="vstack">
+    <button class="btn wide" id="pResume">繼續</button>
+    <button class="btn ghost wide" id="pSet">設定</button>
+    <button class="btn ghost wide" id="pHelp">說明</button>
+    <button class="btn ghost wide" id="pRetry">同一盤重來</button>
+    <button class="btn ghost wide" id="pNew">換一副新牌</button>
+    <button class="btn ghost wide" id="pLays">換版面</button>
+    <button class="btn ghost wide" id="pMenu">回封面</button>
+  </div>
+</div></div>
+
+<!-- 設定 -->
+<div class="ov" id="ovSet"><div class="card">
+  <h2>設定</h2>
+  <div class="row"><label>音樂音量</label><input type="range" min="0" max="100" id="stMusic"><span class="val" id="stMusicV"></span></div>
+  <div class="row"><label>音效音量</label><input type="range" min="0" max="100" id="stSfx"><span class="val" id="stSfxV"></span></div>
+  <div class="row"><label>可以點的牌</label><div class="seg" id="stFree"><button data-v="1">標示</button><button data-v="0">不標示</button></div></div>
+  <div class="row"><label>走進死局時</label><div class="seg" id="stDead"><button data-v="2">自動退回</button><button data-v="1">只提醒</button><button data-v="0">不管</button></div></div>
+  <div class="row"><label>危險配對</label><div class="seg" id="stWarn"><button data-v="1">標示</button><button data-v="2">標示並擋下</button><button data-v="0">關</button></div></div>
+  <div class="row"><label>可配對數量</label><div class="seg" id="stPairs"><button data-v="1">顯示</button><button data-v="0">隱藏</button></div></div>
+  <div class="row"><label>花牌圖案</label><div class="seg" id="stSameF"><button data-v="0">梅蘭竹菊</button><button data-v="1">四張相同</button></div></div>
+  <div class="row"><label>季節牌圖案</label><div class="seg" id="stSameX"><button data-v="0">春夏秋冬</button><button data-v="1">四張相同</button></div></div>
+  <div class="row"><label>桌布顏色</label><div class="seg" id="stFelt"><button data-v="green">墨綠</button><button data-v="blue">深藍</button><button data-v="red">酒紅</button></div></div>
+  <p class="note">「危險配對」：電腦會把「現在可以消、但消了就會走進死局」的牌用紅色虛線框和 ✕ 標出來。先點其中一張，會只把跟它配了會死局的那張標紅。消掉別的牌讓局面改變後，不再危險的標示會自動消失。「標示並擋下」會直接不讓你消那一對。<br>「花牌圖案／季節牌圖案」選「四張相同」後，同一組的四張會畫成一樣的圖，一眼就看得出能配；規則不變。<br>「標示」會讓被擋住、暫時不能點的牌顏色變暗，比較好找。想要挑戰可以關掉。<br>「走進死局時」：每消一對，電腦會在背景試解剩下的牌。一旦確定這局已經不可能消光（就算還有牌能配），「自動退回」會直接把牌退回到最後一步還解得開的狀態；「只提醒」會跳出提醒讓你自己決定。</p>
+  <div class="foot"><button class="btn" id="stClose">完成</button></div>
+</div></div>
+
+<!-- 說明 -->
+<div class="ov" id="ovHelp"><div class="card help">
+  <h2>說明</h2>
+  <p>麻將牌疊成一個形狀，有好幾層。每次點兩張<b>一樣的牌</b>就會消掉，把全部的牌消光就過關。</p>
+  <div class="sect">哪些牌可以點？</div>
+  <p>只有「自由」的牌可以點，要同時符合：</p>
+  <ul>
+    <li><b>上面沒有牌壓著</b>（就算只壓到一半也不行）。</li>
+    <li><b>左邊或右邊至少有一邊是空的</b>。上下兩邊不影響。</li>
+  </ul>
+  <canvas id="helpFig" width="600" height="180"></canvas>
+  <div class="sect">怎樣算一樣？</div>
+  <p>花色和數字都要一樣，例如三萬配三萬。只有花牌和季節牌例外：</p>
+  <div class="tgroup" id="hgFlower"></div>
+  <div class="tgroup" id="hgSeason"></div>
+  <div class="sect">全部的牌</div>
+  <div class="tgroup" id="hgAll"></div>
+  <div class="sect">小幫手</div>
+  <ul>
+    <li><b>提示</b>：閃出一對可以消的牌。再按一次會換另一對。</li>
+    <li><b>復原</b>：退回上一步，可以一直退。</li>
+    <li><b>洗牌</b>：把剩下的牌重新排過，排完一定還解得開。</li>
+    <li><b>死局自動退回</b>：每消一對，電腦會在背景試解剩下的牌。一旦確定已經不可能全部消光（就算畫面上還有牌可以配），會自動把剛剛那幾步退回到最後一個還解得開的狀態，退回來的牌會閃橘色。設定裡可以改成「只提醒」或「不管」。</li>
+    <li>提示會優先指出「照著消還解得開」的那一對。</li>
+    <li><b>危險配對標示</b>：現在可以消、但消了就會走進死局的牌，會有紅色虛線框和右上角的 ✕。先點其中一張，跟它配了會死局的那張會整張變紅；同種牌有三張時，安全的那張不會變紅。局面改變、不再危險時，標示會自動消失。</li>
+    <li>每一副牌在發牌時都確認過一定有解法，只是走錯順序還是會卡住。</li>
+  </ul>
+  <div class="sect">分數</div>
+  <ul>
+    <li>每消一對 +10。上一對消完 5 秒內再消一對算連擊，連擊越多加越多。</li>
+    <li>提示 −20、洗牌 −50、復原 −5。死局自動退回不扣分。</li>
+    <li>過關時比標準時間快，每快 1 秒 +2。</li>
+  </ul>
+  <div class="sect">操作</div>
+  <ul>
+    <li>滑鼠點選或手指點選。點已選的牌可以取消。</li>
+    <li>鍵盤：Esc 暫停、H 提示、Z 復原、S 洗牌。</li>
+  </ul>
+  <div class="foot"><button class="btn" id="hClose">知道了</button></div>
+</div></div>
+
+<!-- 過關 -->
+<div class="ov" id="ovWin"><div class="card">
+  <h2>全部消光！</h2>
+  <div class="res" id="winRes"></div>
+  <div class="newrec" id="winRec"></div>
+  <div class="foot">
+    <button class="btn" id="wNew">再來一副</button>
+    <button class="btn ghost" id="wRetry">同一盤重來</button>
+    <button class="btn ghost" id="wMenu">換版面</button>
+  </div>
+</div></div>
+
+<audio id="mMenu" src="assets/audio/menu.mp3" loop preload="auto"></audio>
+<audio id="mPlay" src="assets/audio/play.mp3" loop preload="auto"></audio>
+
+<script src="config.js"></script>
+<script src="layouts.js"></script>
+<script>
+'use strict';
+const CFG = window.MJ_CONFIG;
+const $ = id => document.getElementById(id);
+const rnd = n => Math.floor(Math.random() * n);
+function shuffle(a){ for(let i=a.length-1;i>0;i--){const j=rnd(i+1);[a[i],a[j]]=[a[j],a[i]];} return a; }
+function fmtTime(s){ s=Math.floor(s); return Math.floor(s/60)+':'+String(s%60).padStart(2,'0'); }
+const store = {
+  get(k,d){ try{ const v=localStorage.getItem('mj_'+k); return v==null?d:JSON.parse(v);}catch(e){return d;} },
+  set(k,v){ try{ localStorage.setItem('mj_'+k,JSON.stringify(v)); }catch(e){} }
+};
+
+/* ===================== 設定 ===================== */
+const S = Object.assign({ music:50, sfx:70, free:1, pairs:1, felt:'green', dead:2, sameF:0, sameX:0, warn:1 }, store.get('settings',{}));
+const FELTS = { green:['#16564a','#0f3b33','#0a2621'], blue:['#1d4370','#122c4d','#0a1a30'], red:['#6a2232','#4a1622','#2a0c13'] };
+function applyFelt(){
+  const f=FELTS[S.felt]||FELTS.green;
+  document.body.style.background=`radial-gradient(ellipse at 50% 35%,${f[0]},${f[1]} 55%,${f[2]})`;
+}
+
+/* ===================== 牌面 ===================== */
+// kind: { id, key(配對用), group, label }
+const KINDS = [];
+const NUMS = ['一','二','三','四','五','六','七','八','九'];
+for(let n=1;n<=9;n++) KINDS.push({id:'m'+n, key:'m'+n, suit:'m', n, label:NUMS[n-1]+'萬'});
+for(let n=1;n<=9;n++) KINDS.push({id:'p'+n, key:'p'+n, suit:'p', n, label:NUMS[n-1]+'筒'});
+for(let n=1;n<=9;n++) KINDS.push({id:'s'+n, key:'s'+n, suit:'s', n, label:NUMS[n-1]+'條'});
+['東','南','西','北'].forEach((c,i)=>KINDS.push({id:'w'+i, key:'w'+i, suit:'w', ch:c, label:c+'風'}));
+[['中','#c8352a'],['發','#1f7a3a'],['白','#2a5aa8']].forEach((d,i)=>KINDS.push({id:'d'+i, key:'d'+i, suit:'d', ch:d[0], col:d[1], label:d[0]}));
+[['梅','#c8352a'],['蘭','#7a3fa8'],['竹','#1f7a3a'],['菊','#c88a1a']].forEach((d,i)=>KINDS.push({id:'f'+i, key:'F', suit:'f', ch:d[0], col:d[1], n:i+1, label:d[0]}));
+[['春','#1f7a3a'],['夏','#c8352a'],['秋','#c88a1a'],['冬','#2a5aa8']].forEach((d,i)=>KINDS.push({id:'x'+i, key:'X', suit:'x', ch:d[0], col:d[1], n:i+1, label:d[0]}));
+const KIND = Object.fromEntries(KINDS.map(k=>[k.id,k]));
+
+const FW=120, FH=160, FS=2; // 牌面圖大小（邏輯像素）與解析度倍率
+const faceCache = {};
+const SERIF = "'Noto Serif TC','Songti TC','PMingLiU','SimSun',serif";
+function faceOf(id){
+  // 設定「同一組用相同圖案」時，花牌／季節牌都畫成同一張
+  const k0=KIND[id];
+  if(k0.suit==='f' && S.sameF) id='fA';
+  else if(k0.suit==='x' && S.sameX) id='xA';
+  if(faceCache[id]) return faceCache[id];
+  const c=document.createElement('canvas'); c.width=FW*FS; c.height=FH*FS;
+  const g=c.getContext('2d'); g.scale(FS,FS);
+  drawFace(g, id==='fA'?{suit:'fA'}:id==='xA'?{suit:'xA'}:KIND[id]);
+  return faceCache[id]=c;
+}
+function txt(g,s,x,y,size,col,weight){
+  g.font=`${weight||900} ${size}px ${SERIF}`; g.fillStyle=col; g.textAlign='center'; g.textBaseline='middle'; g.fillText(s,x,y);
+}
+function dot(g,x,y,r,col){
+  g.fillStyle=col; g.beginPath(); g.arc(x,y,r,0,7); g.fill();
+  g.fillStyle='#fffaf0'; g.beginPath(); g.arc(x,y,r*.68,0,7); g.fill();
+  g.fillStyle=col; g.beginPath(); g.arc(x,y,r*.48,0,7); g.fill();
+  g.fillStyle='#fffaf0'; g.beginPath(); g.arc(x,y,r*.16,0,7); g.fill();
+}
+function stick(g,x,y,len,col){
+  const w=10;
+  g.fillStyle=col; g.beginPath(); g.roundRect(x-w/2,y-len/2,w,len,4); g.fill();
+  g.fillStyle='#ffffff55'; g.fillRect(x-w/2+2,y-len/2+3,2,len-6);
+  g.fillStyle='#0003'; g.fillRect(x-w/2,y-1,w,2.5);
+  g.fillStyle=col; g.fillRect(x-w/2-1.5,y-len/2+1,w+3,2.5); g.fillRect(x-w/2-1.5,y+len/2-3.5,w+3,2.5);
+}
+const DOTS = {
+  2:[[.5,.27],[.5,.73]], 3:[[.24,.2],[.5,.5],[.76,.8]], 4:[[.3,.27],[.7,.27],[.3,.73],[.7,.73]],
+  5:[[.27,.22],[.73,.22],[.5,.5],[.27,.78],[.73,.78]], 6:[[.3,.18],[.7,.18],[.3,.52],[.7,.52],[.3,.82],[.7,.82]],
+  7:[[.2,.14],[.5,.26],[.8,.38],[.3,.62],[.7,.62],[.3,.86],[.7,.86]],
+  8:[[.3,.13],[.7,.13],[.3,.38],[.7,.38],[.3,.62],[.7,.62],[.3,.87],[.7,.87]],
+  9:[[.2,.18],[.5,.18],[.8,.18],[.2,.5],[.5,.5],[.8,.5],[.2,.82],[.5,.82],[.8,.82]]
+};
+const DOTCOL = { 2:['#2a5aa8','#1f7a3a'], 3:['#2a5aa8','#c8352a','#1f7a3a'], 4:['#2a5aa8','#1f7a3a','#1f7a3a','#2a5aa8'],
+  5:['#2a5aa8','#1f7a3a','#c8352a','#1f7a3a','#2a5aa8'], 6:['#1f7a3a','#1f7a3a','#c8352a','#c8352a','#c8352a','#c8352a'],
+  7:['#1f7a3a','#1f7a3a','#1f7a3a','#c8352a','#c8352a','#c8352a','#c8352a'], 8:Array(8).fill('#2a5aa8'),
+  9:['#2a5aa8','#2a5aa8','#2a5aa8','#c8352a','#c8352a','#c8352a','#1f7a3a','#1f7a3a','#1f7a3a'] };
+const STICKS = { // [x,y,長度,紅?]
+  2:[[.5,.27,52],[.5,.73,52]], 3:[[.5,.27,52],[.3,.73,52],[.7,.73,52]],
+  4:[[.3,.27,52],[.7,.27,52],[.3,.73,52],[.7,.73,52]],
+  5:[[.25,.27,52],[.75,.27,52],[.5,.5,52,1],[.25,.73,52],[.75,.73,52]],
+  6:[[.22,.27,52],[.5,.27,52],[.78,.27,52],[.22,.73,52],[.5,.73,52],[.78,.73,52]],
+  7:[[.5,.15,34,1],[.22,.5,34],[.5,.5,34],[.78,.5,34],[.22,.84,34],[.5,.84,34],[.78,.84,34]],
+  8:[[.16,.27,52],[.39,.27,52],[.61,.27,52],[.84,.27,52],[.16,.73,52],[.39,.73,52],[.61,.73,52],[.84,.73,52]],
+  9:[[.22,.17,36],[.5,.17,36,1],[.78,.17,36],[.22,.5,36],[.5,.5,36,1],[.78,.5,36],[.22,.83,36],[.5,.83,36,1],[.78,.83,36]]
+};
+function drawFace(g,k){
+  const W=FW,H=FH;
+  if(k.suit==='m'){
+    txt(g,NUMS[k.n-1],W/2,H*.3,58,'#1d2c4a');
+    txt(g,'萬',W/2,H*.7,62,'#c8352a');
+  } else if(k.suit==='p'){
+    if(k.n===1){
+      const x=W/2,y=H/2;
+      const ring=(r,c)=>{g.fillStyle=c;g.beginPath();g.arc(x,y,r,0,7);g.fill();};
+      ring(46,'#1f7a3a'); ring(40,'#fffaf0');
+      g.strokeStyle='#2a5aa8'; g.lineWidth=4;
+      for(let i=0;i<12;i++){const a=i*Math.PI/6; g.beginPath(); g.moveTo(x+Math.cos(a)*22,y+Math.sin(a)*22); g.lineTo(x+Math.cos(a)*36,y+Math.sin(a)*36); g.stroke();}
+      ring(20,'#c8352a'); ring(13,'#fffaf0'); ring(8,'#c8352a');
+    } else {
+      const r = k.n<=3?22:k.n<=5?18:k.n<=7?15:k.n===8?14:15;
+      DOTS[k.n].forEach((p,i)=>dot(g,10+p[0]*(W-20),10+p[1]*(H-20),r,DOTCOL[k.n][i]));
+    }
+  } else if(k.suit==='s'){
+    if(k.n===1){ // 小鳥
+      const x=W/2,y=H*.52;
+      g.fillStyle='#1f7a3a';
+      for(let i=-2;i<=2;i++){ g.save(); g.translate(x-10,y+18); g.rotate(Math.PI*.85+i*.22); g.beginPath(); g.ellipse(0,26,7,26,0,0,7); g.fill(); g.restore(); }
+      g.fillStyle='#2a8a4a'; g.beginPath(); g.ellipse(x+4,y,30,22,-.3,0,7); g.fill();
+      g.fillStyle='#c8352a'; g.beginPath(); g.arc(x+28,y-24,14,0,7); g.fill();
+      g.fillStyle='#e8a020'; g.beginPath(); g.moveTo(x+40,y-28); g.lineTo(x+54,y-22); g.lineTo(x+40,y-18); g.fill();
+      g.fillStyle='#fff'; g.beginPath(); g.arc(x+31,y-27,4.5,0,7); g.fill();
+      g.fillStyle='#111'; g.beginPath(); g.arc(x+32,y-27,2.5,0,7); g.fill();
+      g.fillStyle='#1d5a30'; g.beginPath(); g.ellipse(x-2,y-2,16,10,-.5,0,7); g.fill();
+      g.strokeStyle='#c8352a'; g.lineWidth=4; g.beginPath(); g.moveTo(x,y+20); g.lineTo(x-4,y+40); g.moveTo(x+12,y+18); g.lineTo(x+12,y+40); g.stroke();
+    } else {
+      STICKS[k.n].forEach(s=>stick(g,10+s[0]*(W-20),10+s[1]*(H-20),s[2],s[3]?'#c8352a':'#1f7a3a'));
+    }
+  } else if(k.suit==='w'){
+    txt(g,k.ch,W/2,H/2+2,86,'#1d2c4a');
+  } else if(k.suit==='d'){
+    if(k.ch==='白'){
+      g.strokeStyle=k.col; g.lineWidth=6; g.beginPath(); g.roundRect(18,22,W-36,H-44,6); g.stroke();
+      g.lineWidth=2; g.beginPath(); g.roundRect(28,32,W-56,H-64,4); g.stroke();
+    } else txt(g,k.ch,W/2,H/2+2,90,k.col);
+  } else if(k.suit==='fA'){ // 花牌共用圖案
+    const cx=W/2, cy=H*.36;
+    const cols=['#c8352a','#7a3fa8','#1f7a3a','#c88a1a','#2a5aa8'];
+    for(let i=0;i<5;i++){ const a=i*Math.PI*2/5-Math.PI/2; g.fillStyle=cols[i]+'dd'; g.beginPath(); g.arc(cx+Math.cos(a)*17,cy+Math.sin(a)*17,13,0,7); g.fill(); }
+    g.fillStyle='#f0c040'; g.beginPath(); g.arc(cx,cy,10,0,7); g.fill();
+    txt(g,'花',W/2,H*.76,52,'#c8352a');
+  } else if(k.suit==='xA'){ // 季節牌共用圖案
+    const cx=W/2, cy=H*.36;
+    const cols=['#1f7a3a','#c8352a','#c88a1a','#2a5aa8'];
+    for(let i=0;i<4;i++){ g.fillStyle=cols[i]; g.beginPath(); g.moveTo(cx,cy); g.arc(cx,cy,30,i*Math.PI/2-Math.PI/2,(i+1)*Math.PI/2-Math.PI/2); g.closePath(); g.fill(); }
+    g.fillStyle='#fffaf0'; g.beginPath(); g.arc(cx,cy,12,0,7); g.fill();
+    txt(g,'季',W/2,H*.76,52,'#1d2c4a');
+  } else { // 花、季
+    // 小裝飾
+    const petals=(x,y,r,c)=>{ g.fillStyle=c; for(let i=0;i<5;i++){const a=i*Math.PI*2/5-Math.PI/2; g.beginPath(); g.arc(x+Math.cos(a)*r,y+Math.sin(a)*r,r*.75,0,7); g.fill();} g.fillStyle='#f0c040'; g.beginPath(); g.arc(x,y,r*.6,0,7); g.fill(); };
+    if(k.suit==='f') petals(W*.5,H*.3,13,k.col+'cc');
+    else { g.fillStyle=k.col+'33'; g.beginPath(); g.arc(W*.5,H*.32,30,0,7); g.fill(); }
+    txt(g,k.ch,W/2,H*.66,64,k.col);
+    txt(g,String(k.n),16,18,18,'#1d2c4a',700);
+    txt(g,k.suit==='f'?'花':'季',W-16,18,16,'#1d2c4a',700);
+  }
+}
+
+/* ===================== 版面 ===================== */
+function buildPositions(layout, transpose){
+  const P=[];
+  for(const L of layout.layers) L.rows.forEach((r,ri)=>[...r].forEach((c,ci)=>{
+    if(c==='#'){ const x=L.ox+ci*2, y=L.oy+ri*2; P.push(transpose?{x:y,y:x,z:L.z}:{x,y,z:L.z}); }
+  }));
+  return P;
+}
+function layoutBounds(P){
+  let mx=0,my=0,mz=0; for(const p of P){ mx=Math.max(mx,p.x+2); my=Math.max(my,p.y+2); mz=Math.max(mz,p.z); }
+  return {mx,my,mz};
+}
+
+/* ===================== 遊戲狀態 ===================== */
+const G = { layout:null, tiles:[], startKinds:[], state:'menu', time:0, score:0, combo:0, lastMatch:-99,
+  sel:-1, hist:[], hints:0, shuffles:0, undos:0, hintPair:null, hintT:0, hintIdx:0, transpose:false, fx:[], won:false, info:[], solveId:0, dismissed:-1 };
+
+function linkNeighbors(T){
+  for(const t of T){ t.cover=[]; t.left=[]; t.right=[]; t.blocks=[]; }
+  for(const a of T) for(const b of T){
+    if(a===b) continue;
+    const dx=b.x-a.x, dy=b.y-a.y;
+    if(Math.abs(dx)<2 && Math.abs(dy)<2 && b.z>a.z) a.cover.push(b.i);
+    if(b.z===a.z && Math.abs(dy)<2){ if(dx===-2) a.left.push(b.i); else if(dx===2) a.right.push(b.i); }
+  }
+  for(const a of T){ for(const j of a.cover) T[j].blocks.push(a.i); for(const j of a.left.concat(a.right)) T[j].blocks.push(a.i); }
+}
+function isFreeIn(t, alive){
+  if(t.cover.some(i=>alive[i])) return false;
+  return !t.left.some(i=>alive[i]) || !t.right.some(i=>alive[i]);
+}
+function isFree(t){ return t.alive && isFreeIn(t, G.alive); }
+
+// 用「從滿版開始一對一對拿掉」的方式找出一個一定可行的消除順序，再把牌面配上去
+function dealFaces(idxs, pairs){
+  const T=G.tiles;
+  for(let attempt=0; attempt<CFG.deal.retries; attempt++){
+    const alive=G.tiles.map(()=>false); idxs.forEach(i=>alive[i]=true);
+    let left=idxs.length; const order=[]; let ok=true;
+    while(left>0){
+      const free=idxs.filter(i=>alive[i] && isFreeIn(T[i],alive));
+      if(free.length<2){ ok=false; break; }
+      // 偏好拿高層的牌，讓上下層的牌混在一起
+      shuffle(free);
+      const a=free.pop(), b=free[rnd(free.length)];
+      alive[a]=alive[b]=false; left-=2; order.push([a,b]);
+    }
+    if(!ok) continue;
+    shuffle(pairs);
+    order.forEach(([a,b],k)=>{ const p=pairs[k]; const s=Math.random()<.5; T[a].kind=s?p[0]:p[1]; T[b].kind=s?p[1]:p[0]; });
+    return order;
+  }
+  // 找不到就隨便發（極少發生）
+  const flat=shuffle(pairs.flat()); idxs.forEach((i,k)=>T[i].kind=flat[k]);
+  return null;
+}
+function makePairs(n){
+  // 標準一副：34 種各 4 張（=各 2 對）＋花 4＋季 4
+  const all=[];
+  for(const k of KINDS){ if(k.suit!=='f'&&k.suit!=='x'){ all.push([k.id,k.id],[k.id,k.id]); } }
+  all.push(['f0','f1'],['f2','f3'],['x0','x1'],['x2','x3']);
+  const out=[]; let pool=[];
+  while(out.length<n){
+    if(!pool.length){
+      // 為了讓小版面也常出現四張一樣的，以「同一種的兩對」為單位抽
+      const groups={}; all.forEach(p=>{ const key=KIND[p[0]].key; (groups[key]=groups[key]||[]).push(p); });
+      pool=shuffle(Object.values(groups));
+    }
+    const grp=pool.pop(); for(const p of grp){ if(out.length<n) out.push(p.slice()); }
+  }
+  return out;
+}
+
+function startGame(layout, same){
+  G.layout=layout;
+  if(!same){
+    // 依畫面方向決定要不要轉 90 度
+    const a=fitScale(buildPositions(layout,false)), b=fitScale(buildPositions(layout,true));
+    G.transpose = b > a*1.15;
+  }
+  const P=buildPositions(layout,G.transpose);
+  G.above=null;
+  G.tiles=P.map((p,i)=>({i,x:p.x,y:p.y,z:p.z,kind:null,alive:true,fade:0,shake:0}));
+  linkNeighbors(G.tiles);
+  G.alive=G.tiles.map(()=>true);
+  if(same && G.startKinds.length===G.tiles.length){ G.tiles.forEach((t,i)=>t.kind=G.startKinds[i]); }
+  else { G.startPath=dealFaces(G.tiles.map(t=>t.i), makePairs(G.tiles.length/2)); G.dealOk=!!G.startPath; G.startKinds=G.tiles.map(t=>t.kind); }
+  // 依繪製順序排序
+  G.order=G.tiles.map(t=>t.i).sort((p,q)=>{const a=G.tiles[p],b=G.tiles[q]; return a.z-b.z || a.x-b.x || a.y-b.y;});
+  Object.assign(G,{time:0,score:0,combo:0,lastMatch:-99,sel:-1,hist:[],hints:0,shuffles:0,undos:0,hintPair:null,hintT:0,hintIdx:0,fx:[],won:false,dismissed:-1,autoBacks:0,backFlash:null,pendingBack:false});
+  G.info=[G.startPath?{s:1,path:G.startPath.slice()}:null]; G.solveId++;
+  MEMO.clear(); G.danger=null;
+  $('gName').textContent=layout.name;
+  show('game'); G.state='play';
+  $('banner').classList.remove('on');
+  resize(); updateHud(); playMusic('play'); analyze();
+}
+
+function freePairs(){
+  const free=G.tiles.filter(isFree), by={}, out=[];
+  for(const t of free){ const k=KIND[t.kind].key; (by[k]=by[k]||[]).push(t.i); }
+  for(const k in by){ const a=by[k]; for(let i=0;i<a.length;i++) for(let j=i+1;j<a.length;j++) out.push([a[i],a[j]]); }
+  return out;
+}
+function aliveCount(){ return G.tiles.filter(t=>t.alive).length; }
+
+function updateHud(){
+  $('sTime').textContent=fmtTime(G.time);
+  $('sScore').textContent=G.score;
+  $('sLeft').textContent=aliveCount();
+  const fp=freePairs().length; $('sPairs').textContent=fp;
+  $('sPairsBox').style.display=S.pairs?'':'none';
+  const lim=CFG.limits;
+  const lbl=(base,used,max)=>max?`${base} <b>${Math.max(0,max-used)}</b>`:base;
+  $('bHint').innerHTML=lbl('提示',G.hints,lim.hints); $('bHint').disabled=!!(lim.hints&&G.hints>=lim.hints);
+  $('bShuffle').innerHTML=lbl('洗牌',G.shuffles,lim.shuffles); $('bShuffle').disabled=!!(lim.shuffles&&G.shuffles>=lim.shuffles);
+  $('bUndo').innerHTML=lbl('復原',G.undos,lim.undo); $('bUndo').disabled=!G.hist.length||!!(lim.undo&&G.undos>=lim.undo);
+  $('kShuffle').disabled=$('bShuffle').disabled;
+}
+function lastSolvable(){ for(let j=G.hist.length-1;j>=0;j--) if(G.info[j]&&G.info[j].s===1) return j; return -1; }
+function checkStuck(){
+  const idx=G.hist.length, info=G.info[idx];
+  const left=aliveCount(), fp=left?freePairs().length:0;
+  const stuck = G.state==='play' && left>0 && fp===0 && !(S.dead===2 && !(info&&info.s!==0) && lastSolvable()>=0);
+  const dead = !stuck && G.state==='play' && S.dead===1 && info && info.s===0 && G.dismissed!==idx;
+  const bn=$('banner');
+  bn.classList.toggle('on',stuck||dead); bn.classList.toggle('dead',dead);
+  if(!(stuck||dead)) return;
+  const j=lastSolvable();
+  if(stuck){ $('bnTitle').textContent='已經沒有可以配對的牌了'; $('bnSub').textContent=''; }
+  else { $('bnTitle').textContent='這一局已經解不開了'; $('bnSub').textContent=`現在還有 ${fp} 對可以配，但不管接下來怎麼消，都沒辦法全部消光。`; }
+  const kb=$('kBack'); kb.style.display=(j>=0&&S.dead)?'':'none';
+  if(j>=0) kb.textContent=`退回到還能解的那一步（退 ${idx-j} 步）`;
+  $('kClose').style.display=dead?'':'none';
+}
+function autoBack(){
+  // 等消牌動畫跑完再退回，讓玩家看得出是哪一步
+  setTimeout(()=>{
+    if(G.state!=='play'){ G.pendingBack=true; return; }
+    const info=G.info[G.hist.length]; if(!info||info.s!==0) return;
+    backToSolvable(true);
+  }, CFG.anim.removeMs+250);
+}
+function backToSolvable(auto){
+  const j=lastSolvable(); if(j<0) return;
+  const steps=G.hist.length-j;
+  const back=[]; for(const h of G.hist.slice(j)) if(h.type==='pair') back.push(h.a,h.b);
+  while(G.hist.length>j){
+    const h=G.hist.pop();
+    if(h.type==='pair'){ for(const i of [h.a,h.b]){ G.tiles[i].alive=true; G.alive[i]=true; G.tiles[i].fade=0; } G.score=h.score; G.combo=h.combo; G.lastMatch=h.lastMatch; }
+    else if(h.type==='shuffle'){ h.kinds.forEach((k,i)=>G.tiles[i].kind=k); }
+  }
+  const pen = auto===true ? CFG.score.deadBackPenalty : CFG.score.undoPenalty*steps;
+  if(auto===true) G.autoBacks=(G.autoBacks||0)+1; else G.undos+=steps;
+  G.score=Math.max(0,G.score-pen);
+  // 把退回來的牌閃一下
+  G.sel=-1; G.solveId++; sfx('dead');
+  toast(auto===true ? (steps===1?'剛剛那一步會走進死局，已經幫你退回':`剛剛 ${steps} 步走進死局，已經幫你退回`) : `退回 ${steps} 步，現在這局還解得開`);
+  G.hintPair = null; G.backFlash={ids:back, t:1600};
+  updateHud(); checkStuck(); analyze();
+}
+
+/* ===================== 死局偵測（背景試解） ===================== */
+const Z1=[],Z2=[];
+function zob(i){ while(Z1.length<=i){ Z1.push((Math.random()*2**32)>>>0); Z2.push((Math.random()*2**32)>>>0); } }
+function* solveGen(alive0,maxNodes){
+  const T=G.tiles, n=T.length, alive=alive0.slice();
+  const key=T.map(t=>KIND[t.kind].key), remain={};
+  let h1=0,h2=0,left=0;
+  for(let i=0;i<n;i++){ zob(i); if(alive[i]){ h1^=Z1[i]; h2^=Z2[i]; left++; remain[key[i]]=(remain[key[i]]||0)+1; } }
+  const seen=new Set(), path=[]; let nodes=0;
+  // above[i]：壓在 i 上面（直接或間接）的所有牌
+  if(!G.above){ G.above=T.map(()=>null); const calc=i=>{ if(G.above[i]) return G.above[i]; const st=new Set(); for(const j of T[i].cover){ st.add(j); for(const q of calc(j)) st.add(q);} return G.above[i]=st; }; T.forEach(t=>calc(t.i)); }
+  const above=G.above;
+  const rm=(i)=>{ alive[i]=false; h1^=Z1[i]; h2^=Z2[i]; remain[key[i]]--; };
+  const add=(i)=>{ alive[i]=true; h1^=Z1[i]; h2^=Z2[i]; remain[key[i]]++; };
+  const weight=(i)=>{ let w=0; for(const j of T[i].blocks) if(alive[j]) w+= T[j].z<T[i].z?3:1; return w+T[i].z*2; };
+  function* dfs(){
+    if(left===0) return true;
+    if(++nodes>maxNodes) throw 'budget';
+    if(nodes%400===0) yield;
+    const k=h1+','+h2; if(seen.has(k)) return false;
+    const by={}, two={};
+    for(let i=0;i<n;i++) if(alive[i]){
+      const kk=key[i];
+      if(remain[kk]===2){ if(two[kk]===undefined) two[kk]=i; else if(above[i].has(two[kk])||above[two[kk]].has(i)){ seen.add(k); return false; } }
+      if(isFreeIn(T[i],alive)) (by[kk]=by[kk]||[]).push(i);
+    }
+    let moves=[];
+    for(const kk in by){
+      const g=by[kk]; if(g.length<2) continue;
+      if(g.length===remain[kk] && g.length%2===0){ // 這種牌全部都是自由的：直接全拿最安全
+        moves=[[]]; for(let a=0;a<g.length;a+=2) moves[0].push([g[a],g[a+1]]); break;
+      }
+      for(let a=0;a<g.length;a++) for(let b=a+1;b<g.length;b++) moves.push([[g[a],g[b]]]);
+    }
+    if(moves.length>1){ const sc=moves.map(m=>weight(m[0][0])+weight(m[0][1])); const idx=moves.map((_,i)=>i).sort((p,q)=>sc[q]-sc[p]); moves=idx.map(i=>moves[i]); }
+    for(const m of moves){
+      for(const [a,b] of m){ rm(a); rm(b); left-=2; path.push([a,b]); }
+      if(yield* dfs()) return true;
+      for(let q=m.length-1;q>=0;q--){ const [a,b]=m[q]; add(a); add(b); left+=2; path.pop(); }
+    }
+    seen.add(k); return false;
+  }
+  const ok=yield* dfs();
+  return ok?{s:1,path:path.slice(),nodes}:{s:0,nodes};
+}
+/* 盤面記憶：同一個盤面算過就不重算 */
+const MEMO=new Map();
+function stateKey(alive){ let k=''; for(let i=0;i<G.tiles.length;i++) k+= alive[i]?G.tiles[i].kind:'-'; return k; }
+function memoSet(alive,res){ if(res.s===-1) return; if(MEMO.size>4000) MEMO.clear(); MEMO.set(stateKey(alive),res); }
+
+// 在背景一步一步跑試解，不讓畫面卡住
+function runSolve(id, alive, maxNodes, maxMs, cb){
+  const it=solveGen(alive, maxNodes), t0=performance.now();
+  function step(){
+    if(id!==G.solveId) return;
+    const s0=performance.now();
+    try{
+      while(performance.now()-s0<CFG.solver.sliceMs){
+        const r=it.next();
+        if(r.done){ cb(r.value, performance.now()-t0); return; }
+      }
+    }catch(e){ if(e==='budget'){ cb({s:-1}, performance.now()-t0); return; } throw e; }
+    if(performance.now()-t0>maxMs){ cb({s:-1}, performance.now()-t0); return; }
+    setTimeout(step,0);
+  }
+  setTimeout(step,0);
+}
+
+/* ===== 危險配對：哪些「現在可以消」的牌，消了會走進死局 ===== */
+function scanDanger(id){
+  const idx=G.hist.length;
+  G.danger={idx, pairs:[], done:false};
+  if(!S.warn || G.state==='won'){ G.danger.done=true; return; }
+  const info=G.info[idx]; if(!info || info.s!==1){ G.danger.done=true; return; }
+  const safe=info.path&&info.path[0];
+  const todo=freePairs().filter(([a,b])=>!(safe && ((safe[0]===a&&safe[1]===b)||(safe[0]===b&&safe[1]===a))));
+  const t0=performance.now();
+  (function next(){
+    if(id!==G.solveId) return;
+    if(!todo.length || performance.now()-t0>CFG.solver.dangerMaxMs){ G.danger.done=true; return; }
+    const [a,b]=todo.shift();
+    const al=G.alive.slice(); al[a]=al[b]=false;
+    if(!al.some(x=>x)){ next(); return; }
+    const m=MEMO.get(stateKey(al));
+    if(m){ if(m.s===0) G.danger.pairs.push([a,b]); setTimeout(next,0); return; }
+    runSolve(id, al, CFG.solver.dangerNodes, CFG.solver.maxMs, res=>{
+      memoSet(al,res);
+      if(res.s===0) G.danger.pairs.push([a,b]);
+      next();
+    });
+  })();
+}
+function dangerPairs(){ return (S.warn && G.danger && G.danger.idx===G.hist.length) ? G.danger.pairs : []; }
+function isDangerPair(a,b){ return dangerPairs().some(p=>(p[0]===a&&p[1]===b)||(p[0]===b&&p[1]===a)); }
+
+function analyze(){
+  const id=++G.solveId, idx=G.hist.length;
+  G.danger=null;
+  if(aliveCount()===0) return;
+  if(!G.info[idx]){ const m=MEMO.get(stateKey(G.alive)); if(m) G.info[idx]=m; }
+  if(G.info[idx]){
+    const res=G.info[idx];
+    if(res.s===0 && S.dead===2 && G.state==='play' && lastSolvable()>=0){ autoBack(); return; }
+    checkStuck(); scanDanger(id); return;
+  }
+  const it=solveGen(G.alive.slice(), CFG.solver.maxNodes);
+  const t0=performance.now();
+  function step(){
+    if(id!==G.solveId) return;
+    const s0=performance.now();
+    try{
+      while(performance.now()-s0<CFG.solver.sliceMs){
+        const r=it.next();
+        if(r.done){ done(r.value); return; }
+      }
+    }catch(e){ if(e==='budget'){ done({s:-1}); return; } throw e; }
+    if(performance.now()-t0>CFG.solver.maxMs){ done({s:-1}); return; }
+    setTimeout(step,0);
+  }
+  function done(res){
+    if(id!==G.solveId) return;
+    G.info[idx]=res; G.lastSolve={ms:Math.round(performance.now()-t0),res:res.s,nodes:res.nodes};
+    memoSet(G.alive,res);
+    if(res.s===0 && S.dead===2 && G.state==='play' && lastSolvable()>=0){ autoBack(); return; }
+    if(res.s===0 && S.dead && G.state==='play') sfx('dead');
+    checkStuck(); scanDanger(id);
+  }
+  setTimeout(step,0);
+}
+
+let toastT=0;
+function toast(s){ $('toast').textContent=s; $('toast').classList.add('on'); clearTimeout(toastT); toastT=setTimeout(()=>$('toast').classList.remove('on'),1600); }
+
+function clickTile(i){
+  if(G.state!=='play') return;
+  const t=G.tiles[i];
+  if(!isFree(t)){ t.shake=CFG.anim.shakeMs; sfx('block'); return; }
+  if(G.sel===i){ G.sel=-1; sfx('click'); return; }
+  if(G.sel>=0 && KIND[G.tiles[G.sel].kind].key===KIND[t.kind].key){
+    if(S.warn===2 && isDangerPair(G.sel,i)){ t.shake=CFG.anim.shakeMs; sfx('block'); toast('這一對消掉會走進死局，換別的牌試試'); return; }
+    match(G.sel,i); return;
+  }
+  G.sel=i; sfx('click');
+}
+function match(a,b){
+  const ta=G.tiles[a], tb=G.tiles[b], sc=CFG.score;
+  const prev={type:'pair',a,b,score:G.score,combo:G.combo,lastMatch:G.lastMatch};
+  G.combo = (G.time-G.lastMatch<=sc.comboWindowSec) ? G.combo+1 : 0;
+  const gain = sc.pair + Math.min(G.combo*sc.comboStep, sc.comboMax);
+  G.score += gain; G.lastMatch=G.time;
+  G.hist.push(prev); G.info.length=G.hist.length;
+  ta.alive=tb.alive=false; G.alive[a]=G.alive[b]=false; ta.fade=tb.fade=1;
+  G.sel=-1; G.hintPair=null;
+  const pa=tilePos(ta), pb=tilePos(tb);
+  G.fx.push({x:(pa.x+pb.x)/2+geo.w/2, y:Math.min(pa.y,pb.y), t:0, s:'+'+gain+(G.combo?`  連擊×${G.combo}`:'')});
+  sfx('match', G.combo);
+  updateHud();
+  if(aliveCount()===0){ win(); return; }
+  analyze(); checkStuck();
+}
+function undo(){
+  if(G.state!=='play' || !G.hist.length) return;
+  const lim=CFG.limits.undo; if(lim && G.undos>=lim) return;
+  const h=G.hist.pop();
+  if(h.type==='pair'){
+    for(const i of [h.a,h.b]){ G.tiles[i].alive=true; G.alive[i]=true; G.tiles[i].fade=0; }
+    G.score=h.score; G.combo=h.combo; G.lastMatch=h.lastMatch;
+  } else if(h.type==='shuffle'){
+    h.kinds.forEach((k,i)=>G.tiles[i].kind=k);
+  }
+  G.undos++; G.score=Math.max(0,G.score-CFG.score.undoPenalty);
+  G.sel=-1; G.hintPair=null; sfx('click'); updateHud(); analyze(); checkStuck();
+}
+function hint(){
+  if(G.state!=='play') return;
+  const lim=CFG.limits.hints; if(lim && G.hints>=lim) return;
+  const fp=freePairs();
+  if(!fp.length){ toast('沒有可以配對的牌，試試洗牌'); return; }
+  const info=G.info[G.hist.length];
+  const good = info&&info.s===1&&info.path&&info.path[0];
+  if(good && G.hintPair!==good && !(G.hintPair&&G.hintT>0)){ G.hintPair=good; G.hintIdx=0; }
+  else { G.hintIdx=(G.hintIdx)%fp.length; G.hintPair=fp[G.hintIdx]; G.hintIdx++; }
+  G.hintT=CFG.anim.hintMs; G.hints++; G.score=Math.max(0,G.score-CFG.score.hintPenalty);
+  sfx('hint'); updateHud();
+}
+function doShuffle(){
+  if(G.state!=='play') return;
+  const lim=CFG.limits.shuffles; if(lim && G.shuffles>=lim) return;
+  const idxs=G.tiles.filter(t=>t.alive).map(t=>t.i);
+  if(idxs.length<2) return;
+  const kinds=G.tiles.map(t=>t.kind);
+  // 依配對群組把剩下的牌兩兩成對
+  const by={}; idxs.forEach(i=>{ const k=KIND[G.tiles[i].kind].key; (by[k]=by[k]||[]).push(G.tiles[i].kind); });
+  const pairs=[]; for(const k in by){ const a=shuffle(by[k]); for(let i=0;i+1<a.length;i+=2) pairs.push([a[i],a[i+1]]); }
+  const order=dealFaces(idxs,pairs);
+  G.hist.push({type:'shuffle',kinds}); G.info.length=G.hist.length; if(order){ G.info.push({s:1,path:order.slice()}); G.solveId++; }
+  G.shuffles++; G.score=Math.max(0,G.score-CFG.score.shufflePenalty);
+  G.sel=-1; G.hintPair=null; G.shuffleT=CFG.anim.shuffleMs;
+  sfx('shuffle'); updateHud(); checkStuck(); analyze();
+}
+function win(){
+  G.state='won'; G.won=true;
+  const L=G.layout, sc=CFG.score;
+  const bonus=Math.max(0,Math.round((L.parSec-G.time)*sc.timeBonusPerSec));
+  const total=G.score+bonus;
+  const rec=store.get('best_'+L.id,null);
+  const nr={ time:!rec||G.time<rec.time, score:!rec||total>rec.score };
+  store.set('best_'+L.id,{ time:rec?Math.min(rec.time,G.time):G.time, score:rec?Math.max(rec.score,total):total, wins:(rec?rec.wins||0:0)+1 });
+  $('winRes').innerHTML=`<div>版面</div><div>${L.name}</div><div>用時</div><div>${fmtTime(G.time)}</div>
+    <div>消牌分數</div><div>${G.score}</div><div>時間獎勵（標準 ${fmtTime(L.parSec)}）</div><div>+${bonus}</div>
+    <div>提示／洗牌／復原</div><div>${G.hints}／${G.shuffles}／${G.undos}</div>
+    <div>走進死局被退回</div><div>${G.autoBacks||0} 次</div>
+    <div class="big">總分</div><div class="big">${total}</div>`;
+  $('winRec').textContent = rec ? [nr.time?'最快紀錄！':'', nr.score?'最高分！':''].filter(Boolean).join('　') : '第一次過關！';
+  sfx('win');
+  setTimeout(()=>{ if(G.state==='won') $('ovWin').classList.add('on'); }, 900);
+  // 慶祝：彈出牌面
+  for(let k=0;k<40;k++) G.fx.push({conf:true, kind:KINDS[rnd(KINDS.length)].id, x:cvW*Math.random(), y:-60-Math.random()*300, vx:(Math.random()-.5)*80, vy:60+Math.random()*120, r:Math.random()*6, vr:(Math.random()-.5)*4, t:0});
+}
+
+/* ===================== 繪製 ===================== */
+const cv=$('cv'), ctx=cv.getContext('2d');
+let cvW=0,cvH=0,DPR=1;
+const geo={hw:20,hh:26,w:40,h:52,dz:4,th:5,ox:0,oy:0};
+function fitScale(P){
+  const {mx,my,mz}=layoutBounds(P), T=CFG.tile;
+  const W=$('wrap').clientWidth||innerWidth, H=$('wrap').clientHeight||innerHeight-80;
+  const a=mx + 2*T.thickness + 2*T.depth*mz, b=my*T.ratio + 2*T.thickness + 2*T.depth*mz;
+  return Math.min(W*.97/a, H*.97/b);
+}
+function resize(){
+  DPR=Math.min(2.5,window.devicePixelRatio||1);
+  cvW=$('wrap').clientWidth; cvH=$('wrap').clientHeight;
+  cv.width=Math.round(cvW*DPR); cv.height=Math.round(cvH*DPR);
+  if(!G.tiles.length) return;
+  const T=CFG.tile, {mx,my,mz}=layoutBounds(G.tiles);
+  const hw=fitScale(G.tiles);
+  geo.hw=hw; geo.w=hw*2; geo.hh=hw*T.ratio; geo.h=geo.hh*2; geo.dz=geo.w*T.depth; geo.th=geo.w*T.thickness;
+  const bw=mx*hw+geo.th+mz*geo.dz, bh=my*geo.hh+geo.th+mz*geo.dz;
+  geo.ox=(cvW-bw)/2+mz*geo.dz; geo.oy=(cvH-bh)/2+mz*geo.dz;
+}
+function tilePos(t){ return {x:geo.ox+t.x*geo.hw-t.z*geo.dz, y:geo.oy+t.y*geo.hh-t.z*geo.dz}; }
+function rr(x,y,w,h,r){ ctx.beginPath(); ctx.roundRect(x,y,w,h,r); }
+
+function drawTile(t,x,y,alpha,opts){
+  const w=geo.w, h=geo.h, th=geo.th, r=w*.12;
+  ctx.globalAlpha=alpha;
+  // 陰影
+  ctx.fillStyle='rgba(0,0,0,.28)'; rr(x+th*1.6,y+th*1.6,w,h,r); ctx.fill();
+  // 牌身（綠色背＋象牙層）
+  ctx.fillStyle='#1f6b4c'; rr(x+th,y+th,w,h,r); ctx.fill();
+  ctx.fillStyle='#d6cba9'; rr(x+th*.45,y+th*.45,w,h,r); ctx.fill();
+  // 牌面
+  const gr=ctx.createLinearGradient(x,y,x+w,y+h); gr.addColorStop(0,'#fffcf2'); gr.addColorStop(1,'#efe5c9');
+  ctx.fillStyle=gr; rr(x,y,w,h,r); ctx.fill();
+  ctx.strokeStyle='rgba(120,100,60,.35)'; ctx.lineWidth=Math.max(1,w*.02); ctx.stroke();
+  const pad=w*.07;
+  ctx.drawImage(faceOf(t.kind), x+pad, y+pad*1.1, w-pad*2, h-pad*2.2);
+  if(opts.dim){ ctx.fillStyle='rgba(20,40,35,.34)'; rr(x,y,w,h,r); ctx.fill(); }
+  if(opts.sel){ ctx.fillStyle='rgba(255,210,60,.35)'; rr(x,y,w,h,r); ctx.fill(); ctx.strokeStyle='#ffcf3a'; ctx.lineWidth=Math.max(2,w*.07); rr(x,y,w,h,r); ctx.stroke(); }
+  if(opts.danger){
+    // 1 = 這張牌有某種配法會走進死局（右上角警告）；2 = 跟目前選的那張配會走進死局（整張標紅）
+    if(opts.danger===2){ ctx.fillStyle='rgba(220,50,40,.38)'; rr(x,y,w,h,r); ctx.fill(); }
+    ctx.strokeStyle='#e8453a'; ctx.lineWidth=Math.max(2,w*.06); ctx.setLineDash([w*.12,w*.08]); rr(x+1,y+1,w-2,h-2,r); ctx.stroke(); ctx.setLineDash([]);
+    const br=w*.17, bx=x+w-br*.9, by=y+br*.9;
+    ctx.fillStyle='#e8453a'; ctx.beginPath(); ctx.arc(bx,by,br,0,7); ctx.fill();
+    ctx.strokeStyle='#fff'; ctx.lineWidth=Math.max(1.5,br*.28); ctx.beginPath(); ctx.moveTo(bx-br*.42,by-br*.42); ctx.lineTo(bx+br*.42,by+br*.42); ctx.moveTo(bx+br*.42,by-br*.42); ctx.lineTo(bx-br*.42,by+br*.42); ctx.stroke();
+  }
+  if(opts.back){ ctx.strokeStyle=`rgba(255,140,80,${opts.back})`; ctx.lineWidth=Math.max(2,w*.08); rr(x-1,y-1,w+2,h+2,r); ctx.stroke(); ctx.fillStyle=`rgba(255,140,80,${opts.back*.3})`; ctx.fill(); }
+  if(opts.hint){ ctx.strokeStyle=`rgba(80,220,255,${opts.hint})`; ctx.lineWidth=Math.max(2,w*.08); rr(x-1,y-1,w+2,h+2,r); ctx.stroke(); ctx.fillStyle=`rgba(80,220,255,${opts.hint*.25})`; ctx.fill(); }
+  ctx.globalAlpha=1;
+}
+
+let last=performance.now();
+function frame(now){
+  const dt=Math.min(.05,(now-last)/1000); last=now;
+  if(G.state==='play' && !document.hidden){ G.time+=dt; if(Math.floor(G.time)!==Math.floor(G.time-dt)) $('sTime').textContent=fmtTime(G.time); }
+  ctx.setTransform(DPR,0,0,DPR,0,0); ctx.clearRect(0,0,cvW,cvH);
+  if(G.tiles.length && (G.state==='play'||G.state==='won'||G.state==='pause')){
+    const hp=G.hintPair; if(G.hintT>0) G.hintT-=dt*1000; else G.hintPair=null;
+    if(G.shuffleT>0) G.shuffleT-=dt*1000;
+    if(G.backFlash&&G.backFlash.t>0) G.backFlash.t-=dt*1000;
+    for(const i of G.order){
+      const t=G.tiles[i];
+      if(!t.alive){ if(t.fade>0){ t.fade=Math.max(0,t.fade-dt*1000/CFG.anim.removeMs); const p=tilePos(t); drawTile(t,p.x,p.y-(1-t.fade)*geo.h*.3,t.fade,{}); } continue; }
+      const p=tilePos(t); let x=p.x, y=p.y;
+      if(t.shake>0){ t.shake-=dt*1000; x+=Math.sin(t.shake/22)*geo.w*.06; }
+      if(G.shuffleT>0){ const k=G.shuffleT/CFG.anim.shuffleMs; x+=Math.sin(i*1.7+now/40)*geo.w*.12*k; y+=Math.cos(i*2.3+now/50)*geo.w*.12*k; }
+      const free=isFree(t);
+      let hint = hp && (hp[0]===i||hp[1]===i) ? (.55+.45*Math.sin(now/120)) : 0;
+      const back = G.backFlash && G.backFlash.t>0 && G.backFlash.ids.includes(i) ? G.backFlash.t/1600 : 0;
+      drawTile(t,x,y,1,{dim:S.free&&!free, sel:G.sel===i, hint, back, danger:dangerOf(i)});
+    }
+  }
+  // 特效
+  ctx.textAlign='center'; ctx.textBaseline='middle';
+  G.fx=G.fx.filter(f=>{
+    f.t+=dt;
+    if(f.conf){
+      f.x+=f.vx*dt; f.y+=f.vy*dt; f.vy+=200*dt; f.r+=f.vr*dt;
+      ctx.save(); ctx.translate(f.x,f.y); ctx.rotate(f.r); ctx.fillStyle='#fffcf2'; const w=34,h=45; rr(-w/2,-h/2,w,h,4); ctx.fill(); ctx.drawImage(faceOf(f.kind),-w/2+2,-h/2+2,w-4,h-4); ctx.restore();
+      return f.y<cvH+80;
+    }
+    const a=1-f.t/1.1; if(a<=0) return false;
+    ctx.globalAlpha=a; ctx.font=`700 ${Math.max(16,geo.w*.4)}px 'Noto Sans TC',sans-serif`;
+    ctx.lineWidth=4; ctx.strokeStyle='#0a2621'; ctx.strokeText(f.s,f.x,f.y-f.t*40); ctx.fillStyle='#ffe08a'; ctx.fillText(f.s,f.x,f.y-f.t*40);
+    ctx.globalAlpha=1; return true;
+  });
+  requestAnimationFrame(frame);
+}
+
+function dangerOf(i){
+  const dp=dangerPairs(); if(!dp.length) return 0;
+  if(G.sel>=0 && G.sel!==i){
+    // 已經選了一張：只標「跟它配會死局」的那張
+    return isDangerPair(G.sel,i)?2:0;
+  }
+  return dp.some(p=>p[0]===i||p[1]===i)?1:0;
+}
+function hitTest(px,py){
+  for(let k=G.order.length-1;k>=0;k--){
+    const t=G.tiles[G.order[k]]; if(!t.alive) continue;
+    const p=tilePos(t);
+    if(px>=p.x && px<=p.x+geo.w && py>=p.y && py<=p.y+geo.h) return t.i;
+  }
+  return -1;
+}
+cv.addEventListener('pointerdown',e=>{
+  unlockAudio();
+  const r=cv.getBoundingClientRect(); const i=hitTest(e.clientX-r.left,e.clientY-r.top);
+  if(i>=0) clickTile(i); else if(G.sel>=0){ G.sel=-1; }
+});
+
+/* ===================== 音效與音樂 ===================== */
+let AC=null, SG=null;
+function unlockAudio(){
+  if(!AC){ try{ AC=new (window.AudioContext||window.webkitAudioContext)(); SG=AC.createGain(); SG.connect(AC.destination); }catch(e){} }
+  if(AC && AC.state==='suspended') AC.resume();
+  if(curMusic && curMusic.paused) curMusic.play().catch(()=>{});
+}
+function clack(t0,vol,freq){
+  const n=AC.sampleRate*.05, b=AC.createBuffer(1,n,AC.sampleRate), d=b.getChannelData(0);
+  for(let i=0;i<n;i++) d[i]=(Math.random()*2-1)*Math.pow(1-i/n,6);
+  const s=AC.createBufferSource(); s.buffer=b;
+  const f=AC.createBiquadFilter(); f.type='bandpass'; f.frequency.value=freq||2600; f.Q.value=3;
+  const g=AC.createGain(); g.gain.value=vol;
+  s.connect(f); f.connect(g); g.connect(SG); s.start(t0);
+}
+function tone(t0,freq,dur,vol,type){
+  const o=AC.createOscillator(), g=AC.createGain(); o.type=type||'sine'; o.frequency.value=freq;
+  g.gain.setValueAtTime(0,t0); g.gain.linearRampToValueAtTime(vol,t0+.01); g.gain.exponentialRampToValueAtTime(.0001,t0+dur);
+  o.connect(g); g.connect(SG); o.start(t0); o.stop(t0+dur+.05);
+}
+function sfx(name,arg){
+  if(!AC || S.sfx<=0) return;
+  SG.gain.value=S.sfx/100;
+  const t=AC.currentTime;
+  if(name==='click') clack(t,1.4,2800);
+  else if(name==='block'){ tone(t,150,.12,.25,'square'); }
+  else if(name==='match'){
+    clack(t,1.6,2400); clack(t+.07,1.4,3000);
+    const base=660*Math.pow(2,Math.min(arg||0,8)/12);
+    tone(t+.05,base,.35,.18); tone(t+.1,base*1.5,.4,.12);
+  }
+  else if(name==='dead'){ tone(t,392,.3,.15,'triangle'); tone(t+.18,311,.45,.15,'triangle'); }
+  else if(name==='hint'){ tone(t,1046,.25,.12,'triangle'); tone(t+.12,1318,.3,.1,'triangle'); }
+  else if(name==='shuffle'){ for(let i=0;i<10;i++) clack(t+i*.04+Math.random()*.02,1,1800+Math.random()*1800); }
+  else if(name==='win'){ [523,659,784,1046,1318].forEach((f,i)=>tone(t+i*.12,f,.6,.16,'triangle')); }
+}
+let curMusic=null;
+function playMusic(which){
+  const m = which==='menu'?$('mMenu'):which==='play'?$('mPlay'):null;
+  if(curMusic && curMusic!==m){ curMusic.pause(); }
+  curMusic=m;
+  if(m){ m.volume=S.music/100; if(m.paused){ m.currentTime=0; m.play().catch(()=>{}); } }
+}
+
+/* ===================== 畫面切換 ===================== */
+function show(id){ document.querySelectorAll('.screen').forEach(s=>s.classList.toggle('on',s.id===id)); }
+function pause(){
+  if(G.state!=='play') return;
+  G.state='pause'; $('ovPause').classList.add('on');
+}
+function resume(){ $('ovPause').classList.remove('on'); if(G.state==='pause'){ G.state='play'; last=performance.now(); if(G.pendingBack){ G.pendingBack=false; const inf=G.info[G.hist.length]; if(inf&&inf.s===0&&S.dead===2){ backToSolvable(true); return; } } checkStuck(); } }
+function toMenu(){
+  ['ovPause','ovWin'].forEach(o=>$(o).classList.remove('on'));
+  G.state='menu'; show('menu'); buildMenu(); playMusic('menu');
+}
+function toCover(){
+  ['ovPause','ovWin'].forEach(o=>$(o).classList.remove('on'));
+  G.state='menu'; show('cover'); buildCover(); playMusic('menu');
+}
+let setReturn=null;
+function openSettings(from){
+  setReturn=from;
+  if(from) $(from).classList.remove('on');
+  syncSettingsUI(); $('ovSet').classList.add('on');
+}
+function closeSettings(){ $('ovSet').classList.remove('on'); store.set('settings',S); if(setReturn) $(setReturn).classList.add('on'); setReturn=null; }
+let helpReturn=null;
+function openHelp(from){ helpReturn=from; if(from) $(from).classList.remove('on'); $('ovHelp').classList.add('on'); drawHelpFig(); }
+function closeHelp(){ $('ovHelp').classList.remove('on'); if(helpReturn) $(helpReturn).classList.add('on'); helpReturn=null; }
+
+function syncSettingsUI(){
+  $('stMusic').value=S.music; $('stMusicV').textContent=S.music;
+  $('stSfx').value=S.sfx; $('stSfxV').textContent=S.sfx;
+  const seg=(id,v)=>$(id).querySelectorAll('button').forEach(b=>b.classList.toggle('on',b.dataset.v==String(v)));
+  seg('stFree',S.free); seg('stDead',S.dead); seg('stPairs',S.pairs); seg('stFelt',S.felt); seg('stSameF',S.sameF); seg('stWarn',S.warn); seg('stSameX',S.sameX);
+}
+$('stMusic').oninput=e=>{ S.music=+e.target.value; $('stMusicV').textContent=S.music; if(curMusic) curMusic.volume=S.music/100; };
+$('stSfx').oninput=e=>{ S.sfx=+e.target.value; $('stSfxV').textContent=S.sfx; };
+$('stSfx').onchange=()=>{ unlockAudio(); sfx('click'); };
+$('stFree').onclick=e=>{ if(e.target.dataset.v){ S.free=+e.target.dataset.v; syncSettingsUI(); } };
+$('stDead').onclick=e=>{ if(e.target.dataset.v){ S.dead=+e.target.dataset.v; syncSettingsUI(); if(G.tiles.length){ const inf=G.info[G.hist.length]; if(S.dead===2&&inf&&inf.s===0&&G.state!=='menu') G.pendingBack=true; checkStuck(); } } };
+$('stPairs').onclick=e=>{ if(e.target.dataset.v){ S.pairs=+e.target.dataset.v; syncSettingsUI(); if(G.tiles.length) updateHud(); } };
+$('stWarn').onclick=e=>{ if(e.target.dataset.v){ S.warn=+e.target.dataset.v; syncSettingsUI(); if(G.tiles.length && G.state!=='menu') analyze(); } };
+$('stSameF').onclick=e=>{ if(e.target.dataset.v){ S.sameF=+e.target.dataset.v; syncSettingsUI(); buildMenuTiles(); buildHelp(); } };
+$('stSameX').onclick=e=>{ if(e.target.dataset.v){ S.sameX=+e.target.dataset.v; syncSettingsUI(); buildMenuTiles(); buildHelp(); } };
+$('stFelt').onclick=e=>{ if(e.target.dataset.v){ S.felt=e.target.dataset.v; syncSettingsUI(); applyFelt(); } };
+$('stClose').onclick=closeSettings;
+
+/* ===================== 主選單 ===================== */
+const LAYOUTS=(window.MJ_LAYOUTS||[]).map(L=>{ const P=buildPositions(L,false); return Object.assign(L,{count:P.length, levels:Math.max(...P.map(p=>p.z))+1}); }).sort((a,b)=>a.count-b.count);
+function tierOf(L){ const T=CFG.tiers; for(const t of T) if(L.count<=t.max) return t; return T[T.length-1]; }
+let curTier=store.get('tier', CFG.tiers[0].id);
+function buildCover(){
+  const done=LAYOUTS.filter(L=>store.get('best_'+L.id,null)).length;
+  $('cProg').textContent=`共 ${LAYOUTS.length} 個版面 · 已過關 ${done} 個`;
+}
+function buildMenu(){
+  if(!CFG.tiers.some(t=>t.id===curTier)) curTier=CFG.tiers[0].id;
+  const tb=$('tiers'); tb.innerHTML='';
+  CFG.tiers.forEach(t=>{
+    const list=LAYOUTS.filter(L=>tierOf(L)===t), done=list.filter(L=>store.get('best_'+L.id,null)).length;
+    const b=document.createElement('button'); b.className='tier'+(t.id===curTier?' on':'');
+    b.innerHTML=`<span class="tn">${t.name}</span><span class="tc">過關 ${done} / ${list.length}</span>`;
+    b.onclick=()=>{ curTier=t.id; store.set('tier',curTier); sfx('click'); buildMenu(); };
+    tb.appendChild(b);
+  });
+  const tier=CFG.tiers.find(t=>t.id===curTier);
+  $('tDesc').textContent=tier.desc||'';
+  const box=$('lays'); box.innerHTML='';
+  LAYOUTS.filter(L=>tierOf(L)===tier).forEach(L=>{
+    const P=buildPositions(L,false), rec=store.get('best_'+L.id,null);
+    const b=document.createElement('button'); b.className='lay'+(rec?' done':'');
+    b.innerHTML=`<canvas></canvas><div class="nm">${L.name}<span class="lv">${tier.name}</span></div>
+      <div class="ds">${L.count} 張 · ${L.levels} 層${rec?` · <span class="ok">✓</span> 最快 ${fmtTime(rec.time)} · 最高 ${rec.score} 分`:' · 還沒過關'}</div>`;
+    b.onclick=()=>{ unlockAudio(); startGame(L,false); };
+    box.appendChild(b);
+    requestAnimationFrame(()=>drawPreview(b.querySelector('canvas'),P));
+  });
+}
+function drawPreview(c,P){
+  const W=c.clientWidth, H=c.clientHeight, d=Math.min(2,devicePixelRatio||1);
+  c.width=W*d; c.height=H*d; const g=c.getContext('2d'); g.scale(d,d);
+  const {mx,my,mz}=layoutBounds(P);
+  const hw=Math.min((W-16)/(mx+mz*.4+.6),(H-16)/(my*1.3+mz*.4+.6)), hh=hw*1.3, dz=hw*.2;
+  const ox=(W-(mx*hw+mz*dz))/2+mz*dz, oy=(H-(my*hh+mz*dz))/2+mz*dz;
+  const S2=[...P].sort((a,b)=>a.z-b.z||a.x-b.x||a.y-b.y);
+  for(const p of S2){
+    const x=ox+p.x*hw-p.z*dz, y=oy+p.y*hh-p.z*dz;
+    g.fillStyle='#1f6b4c'; g.fillRect(x+dz*.8,y+dz*.8,hw*2-1,hh*2-1);
+    const l=88+p.z*3; g.fillStyle=`hsl(45,40%,${l}%)`; g.fillRect(x,y,hw*2-1,hh*2-1);
+    g.strokeStyle='rgba(90,70,30,.4)'; g.lineWidth=.6; g.strokeRect(x,y,hw*2-1,hh*2-1);
+  }
+}
+function buildMenuTiles(){
+  const box=$('mTiles'); box.innerHTML='';
+  ['d0','m8','p1','s1','x0','w0'].forEach(id=>{
+    const c=document.createElement('canvas'); c.width=76; c.height=100; const g=c.getContext('2d');
+    g.fillStyle='#1f6b4c'; g.beginPath(); g.roundRect(5,5,70,94,8); g.fill();
+    g.fillStyle='#fffcf2'; g.beginPath(); g.roundRect(0,0,70,94,8); g.fill();
+    g.drawImage(faceOf(id),4,5,62,84); box.appendChild(c);
+  });
+}
+
+/* ===================== 說明 ===================== */
+function tileImg(id){ const c=document.createElement('canvas'); c.width=60; c.height=80; const g=c.getContext('2d');
+  g.fillStyle='#1f6b4c'; g.beginPath(); g.roundRect(4,4,56,76,6); g.fill();
+  g.fillStyle='#fffcf2'; g.beginPath(); g.roundRect(0,0,56,76,6); g.fill(); g.drawImage(faceOf(id),3,4,50,68);
+  const im=new Image(); im.src=c.toDataURL(); im.alt=KIND[id].label; im.title=KIND[id].label; return im; }
+function buildHelp(){
+  const fl=$('hgFlower'); fl.innerHTML='<span>花牌：四張任兩張都能配（設定可改成四張相同圖案）</span>'; ['f0','f1','f2','f3'].forEach(id=>fl.appendChild(tileImg(id)));
+  const se=$('hgSeason'); se.innerHTML='<span>季節牌：四張任兩張都能配（設定可改成四張相同圖案）</span>'; ['x0','x1','x2','x3'].forEach(id=>se.appendChild(tileImg(id)));
+  const al=$('hgAll'); al.innerHTML='';
+  KINDS.forEach(k=>al.appendChild(tileImg(k.id)));
+}
+function drawHelpFig(){
+  const c=$('helpFig'), g=c.getContext('2d'); g.clearRect(0,0,c.width,c.height);
+  const w=50,h=66;
+  const tile=(x,y,id,state)=>{
+    g.fillStyle='#1f6b4c'; g.beginPath(); g.roundRect(x+6,y+6,w,h,6); g.fill();
+    g.fillStyle='#fffcf2'; g.beginPath(); g.roundRect(x,y,w,h,6); g.fill(); g.drawImage(faceOf(id),x+3,y+4,w-6,h-8);
+    if(state==='no'){ g.fillStyle='rgba(20,40,35,.4)'; g.beginPath(); g.roundRect(x,y,w,h,6); g.fill(); }
+    if(state==='ok'){ g.strokeStyle='#ffcf3a'; g.lineWidth=4; g.beginPath(); g.roundRect(x,y,w,h,6); g.stroke(); }
+  };
+  const mark=(x,y,ok)=>{ g.font='bold 26px sans-serif'; g.textAlign='center'; g.fillStyle=ok?'#7be08a':'#ff7a6a'; g.fillText(ok?'○':'✕',x,y); };
+  const y0=60, lab=(t,x)=>{ g.font='bold 18px sans-serif'; g.fillStyle='#d8e8e0'; g.textAlign='center'; g.fillText(t,x,30); };
+  // 一排三張：兩端可點、中間不行
+  tile(25,y0,'m3','ok'); tile(75,y0,'p5','no'); tile(125,y0,'m3','ok');
+  mark(50,y0+100,true); mark(100,y0+100,false); mark(150,y0+100,true); lab('兩端可點、中間不行',100);
+  // 疊在上面
+  tile(250,y0,'s4','no'); tile(300,y0,'s7','no'); tile(275,y0-16,'w0','ok');
+  mark(275,y0+100,false); mark(325,y0+100,false); lab('被壓住的不能點',300);
+  // 單獨一張
+  tile(475,y0,'d1','ok'); mark(500,y0+100,true); lab('左右都空可以點',500);
+}
+
+/* ===================== 按鈕與鍵盤 ===================== */
+$('mHelp').onclick=()=>openHelp(null);
+$('cStart').onclick=()=>{ unlockAudio(); sfx('click'); toMenu(); };
+$('sBack').onclick=()=>{ sfx('click'); toCover(); };
+$('mSet').onclick=()=>{ unlockAudio(); openSettings(null); };
+$('hClose').onclick=closeHelp;
+$('bPause').onclick=pause;
+$('bHint').onclick=hint; $('bUndo').onclick=undo; $('bShuffle').onclick=doShuffle;
+$('kShuffle').onclick=doShuffle; $('kBack').onclick=backToSolvable; $('kClose').onclick=()=>{ G.dismissed=G.hist.length; checkStuck(); };
+$('pResume').onclick=resume;
+$('pSet').onclick=()=>openSettings('ovPause');
+$('pHelp').onclick=()=>openHelp('ovPause');
+$('pRetry').onclick=()=>{ $('ovPause').classList.remove('on'); startGame(G.layout,true); };
+$('pNew').onclick=()=>{ $('ovPause').classList.remove('on'); startGame(G.layout,false); };
+$('pMenu').onclick=toCover;
+$('pLays').onclick=toMenu;
+$('wNew').onclick=()=>{ $('ovWin').classList.remove('on'); startGame(G.layout,false); };
+$('wRetry').onclick=()=>{ $('ovWin').classList.remove('on'); startGame(G.layout,true); };
+$('wMenu').onclick=toMenu;
+document.addEventListener('keydown',e=>{
+  if(e.key==='Escape'){
+    if($('ovSet').classList.contains('on')) closeSettings();
+    else if($('ovHelp').classList.contains('on')) closeHelp();
+    else if(G.state==='play') pause(); else if(G.state==='pause') resume();
+    else if(G.state==='menu' && $('menu').classList.contains('on')) toCover();
+    return;
+  }
+  if(G.state!=='play') return;
+  const k=e.key.toLowerCase();
+  if(k==='h') hint(); else if(k==='z') undo(); else if(k==='s') doShuffle(); else if(k==='p') pause();
+});
+document.addEventListener('visibilitychange',()=>{ if(document.hidden) pause(); });
+document.addEventListener('pointerdown',unlockAudio,{once:true});
+window.addEventListener('resize',()=>{ resize(); });
+
+/* ===================== 開始 ===================== */
+applyFelt();
+function init(){ Object.keys(faceCache).forEach(k=>delete faceCache[k]); buildMenuTiles(); buildCover(); if($('menu').classList.contains('on')) buildMenu(); buildHelp(); }
+init();
+if(document.fonts && document.fonts.load){
+  Promise.all([document.fonts.load(`900 40px 'Noto Serif TC'`,'一二三四五六七八九萬東南西北中發梅蘭竹菊春夏秋冬花季'),document.fonts.ready]).then(init).catch(()=>{});
+}
+playMusic('menu');
+requestAnimationFrame(frame);
+
+// 測試用
+window.__mj={MEMO,dangerPairs,G,startGame,CFG,LAYOUTS,tierOf,freePairs,match,isFree,solveGen,backToSolvable};
+</script>
+</body>
+</html>

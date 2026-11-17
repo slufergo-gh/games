@@ -1,0 +1,1309 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>屍潮突破</title>
+<style>
+  :root { --ink:#e9e4cf; --dim:#9a9682; --red:#e0503e; --green:#8fd16b; --amber:#f0c04a; --purple:#c070ff; --panel:rgba(12,16,13,.94); --line:#3c4636; }
+  html,body { margin:0; height:100%; background:#0b0f0d; color:var(--ink); overflow:hidden;
+    font-family:"Noto Sans TC","Microsoft JhengHei","PingFang TC",sans-serif; user-select:none; -webkit-user-select:none; }
+  #box { position:fixed; inset:0; overflow:hidden; }
+  #gl { width:100%; height:100%; display:block; image-rendering:pixelated; image-rendering:crisp-edges; }
+  .ov { position:absolute; inset:0; pointer-events:none; }
+  #hud { display:none; font-weight:700; text-shadow:0 2px 0 #000; }
+  #xpbar { position:absolute; left:0; right:0; top:0; height:12px; background:#1b2219; border-bottom:2px solid #000; }
+  #xpfill { height:100%; width:0; background:linear-gradient(#7fd6ff,#3d8fd0); }
+  #lvtxt { position:absolute; left:8px; top:-2px; font-size:11px; }
+  #stageTxt { position:absolute; top:20px; left:12px; font-size:18px; }
+  #build { position:absolute; top:48px; left:12px; font-size:12px; line-height:1.55; }
+  #build b { color:var(--amber); }
+  #leak { position:absolute; top:20px; right:44px; font-size:17px; text-align:right; }
+  #leak small { display:block; font-size:13px; color:var(--dim); }
+  #prog { position:absolute; right:14px; top:22px; bottom:90px; width:12px; background:#1b2219; border:2px solid #000; }
+  #progfill { position:absolute; left:0; right:0; bottom:0; background:linear-gradient(#f0c04a,#a07a20); }
+  #prog::before { content:"☠"; position:absolute; top:-20px; left:-4px; font-size:14px; }
+  #bossbar { position:absolute; top:22px; left:50%; transform:translateX(-50%); width:min(520px,60vw); display:none; text-align:center; font-size:13px; color:#ffb4a8; }
+  #bossbar div { height:10px; background:#2a1210; border:2px solid #000; margin-top:2px; }
+  #bossfill { display:block; height:100%; width:100%; background:linear-gradient(#ff6a50,#a8281a); }
+  #hpwrap { position:absolute; left:14px; bottom:16px; width:min(300px,38vw); height:20px; background:#2a1512; border:2px solid #000; }
+  #hpfill { height:100%; width:100%; background:linear-gradient(#ff7a62,#c0362a); }
+  #hptxt { position:absolute; inset:0; text-align:center; font-size:13px; line-height:20px; }
+  #charTxt { position:absolute; left:14px; bottom:42px; font-size:14px; }
+  #skills { position:absolute; bottom:12px; left:50%; transform:translateX(-50%); display:flex; gap:10px; align-items:flex-end; }
+  .sk { position:relative; width:54px; height:54px; border:2px solid #000; background:#1e261c; border-radius:6px; overflow:hidden; text-align:center; }
+  .sk .ic { font-size:24px; line-height:40px; display:block; }
+  .sk .key { position:absolute; left:0; right:0; bottom:1px; font-size:10px; color:var(--dim); }
+  .sk .cd { position:absolute; inset:0; background:conic-gradient(rgba(0,0,0,.72) var(--p,0%), transparent 0); }
+  .sk .cdt { position:absolute; inset:0; line-height:54px; font-size:18px; color:#fff; }
+  #ultbox { width:150px; }
+  #ultbox .bar { position:absolute; left:0; bottom:0; top:0; width:0; background:linear-gradient(90deg,#7a4a10,#f0c04a); opacity:.55; }
+  #ultbox.ready { border-color:var(--amber); box-shadow:0 0 12px var(--amber); }
+  #ultbox .lbl { position:absolute; inset:0; font-size:13px; line-height:16px; padding-top:9px; }
+  #pips { display:none; gap:6px; position:absolute; bottom:74px; left:50%; transform:translateX(-50%); }
+  #pips i { width:16px; height:16px; border-radius:50%; border:2px solid #000; background:#2a1a33; display:inline-block; }
+  #pips i.on { background:var(--purple); box-shadow:0 0 8px var(--purple); }
+  #banner { position:absolute; top:28%; left:0; right:0; text-align:center; font-size:34px; color:var(--amber); opacity:0; transition:opacity .25s; letter-spacing:3px; }
+  #hurt { background:radial-gradient(ellipse at center, transparent 50%, rgba(200,20,10,.65)); opacity:0; }
+  #godfx { background:radial-gradient(ellipse at center, rgba(160,60,255,.0) 30%, rgba(90,20,160,.55)); opacity:0; }
+  .dn { position:absolute; font-weight:900; font-size:14px; color:#fff; text-shadow:0 0 3px #000, 0 2px 0 #000; transform:translate(-50%,-50%); white-space:nowrap; }
+  .dn.p { color:#ff6a5a; }
+  .dn.b { color:var(--amber); font-size:20px; }
+  .scr { position:absolute; inset:0; display:none; align-items:center; justify-content:center; background:rgba(5,8,6,.8); pointer-events:auto; }
+  .card { background:var(--panel); border:2px solid var(--line); border-radius:10px; padding:24px 28px; max-width:min(720px,92vw); max-height:88vh; overflow:auto; box-sizing:border-box; }
+  h1 { margin:0 0 2px; font-size:46px; letter-spacing:6px; color:#c9e07a; text-shadow:0 3px 0 #000; }
+  h2 { margin:0 0 14px; font-size:24px; }
+  h3 { margin:16px 0 6px; font-size:17px; color:var(--amber); }
+  .sub { color:var(--dim); margin-bottom:20px; }
+  .menu { display:flex; flex-direction:column; gap:10px; width:260px; }
+  .menu button { margin:0; }
+  button { font:inherit; font-weight:700; font-size:17px; padding:10px 22px; background:#5f7a33; color:#fff; border:2px solid #000; border-radius:8px; cursor:pointer; margin:4px 6px 0 0; }
+  button:hover { background:#78963f; }
+  button.alt { background:#3a4236; } button.alt:hover { background:#4c5646; }
+  table.keys { border-collapse:collapse; font-size:14px; }
+  table.keys td { padding:4px 14px 4px 0; vertical-align:top; }
+  table.keys td:first-child { color:var(--amber); white-space:nowrap; font-weight:700; }
+  #chars { display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:12px; margin-bottom:12px; }
+  .ch { background:#1c2419; border:2px solid #4c5a40; border-radius:10px; padding:12px; cursor:pointer; font-size:13px; line-height:1.5; }
+  .ch:hover { border-color:var(--amber); background:#26301f; }
+  .ch .ic { font-size:34px; } .ch .nm { font-size:19px; font-weight:700; margin:2px 0 6px; }
+  .ch .st { color:var(--dim); font-size:12px; margin-top:6px; }
+  #cards { display:flex; gap:14px; flex-wrap:wrap; justify-content:center; }
+  .up { width:190px; min-height:165px; background:#1c2419; border:2px solid #4c5a40; border-radius:10px; padding:14px; cursor:pointer; box-sizing:border-box; }
+  .up:hover { border-color:var(--amber); background:#26301f; transform:translateY(-3px); }
+  .up .ic { font-size:32px; } .up .nm { font-size:18px; margin:6px 0 2px; } .up .lv { font-size:12px; color:var(--amber); }
+  .up .ds { font-size:13px; color:#cfcab4; margin-top:8px; line-height:1.45; } .up .tag { font-size:11px; color:var(--dim); }
+  .row { display:flex; align-items:center; gap:12px; margin:10px 0; font-size:15px; }
+  .row label { width:110px; } .row input[type=range] { flex:1; } .row span { width:40px; text-align:right; font-family:monospace; }
+  .row select { font:inherit; background:#222a20; color:var(--ink); border:1px solid #556; padding:4px; }
+  table.stat { border-collapse:collapse; font-size:14px; margin:8px 0 16px; width:100%; }
+  table.stat td { padding:3px 8px; border-bottom:1px solid #2c3428; }
+  table.stat td:last-child { text-align:right; font-family:"Courier New",monospace; }
+</style>
+</head>
+<body>
+<div id="box">
+  <canvas id="gl"></canvas>
+  <div id="godfx" class="ov"></div>
+  <div id="hurt" class="ov"></div>
+  <div id="dmg" class="ov"></div>
+  <div id="hud" class="ov">
+    <div id="xpbar"><div id="xpfill"></div><span id="lvtxt">Lv 1</span></div>
+    <div id="stageTxt"></div>
+    <div id="build"></div>
+    <div id="bossbar"><span>屍王</span><div><i id="bossfill"></i></div></div>
+    <div id="leak"></div>
+    <div id="prog"><div id="progfill"></div></div>
+    <div id="charTxt"></div>
+    <div id="hpwrap"><div id="hpfill"></div><span id="hptxt"></span></div>
+    <div id="pips"></div>
+    <div id="skills">
+      <div class="sk" id="skR"><span class="ic">🌀</span><span class="key">X</span><div class="cd"></div><div class="cdt"></div></div>
+      <div class="sk" id="ultbox"><div class="bar"></div><div class="lbl"><span id="ultName">絕招</span><br><span id="ultTxt"></span></div><span class="key">空白／右鍵</span></div>
+    </div>
+    <div id="banner"></div>
+  </div>
+
+  <!-- 封面 -->
+  <div class="scr" id="sTitle" style="display:flex">
+    <div class="card" style="text-align:center">
+      <div style="color:var(--dim);letter-spacing:4px">傭兵團</div>
+      <h1>屍潮突破</h1>
+      <div class="sub">殺出一條路，打倒盡頭的屍王</div>
+      <div class="menu" style="margin:0 auto">
+        <button id="bCampaign">破關模式</button>
+        <button id="bEndless">無盡模式</button>
+        <button class="alt" id="bSettings">設定</button>
+        <button class="alt" id="bHelp">操作說明</button>
+      </div>
+      <div id="bestTxt" style="color:var(--dim);font-size:13px;margin-top:14px"></div>
+    </div>
+  </div>
+
+  <!-- 選角 -->
+  <div class="scr" id="sSelect">
+    <div class="card" style="max-width:min(900px,94vw)">
+      <h2 id="selTitle">選擇傭兵</h2>
+      <div id="chars"></div>
+      <button class="alt" id="bSelBack">返回</button>
+    </div>
+  </div>
+
+  <!-- 設定 -->
+  <div class="scr" id="sSettings">
+    <div class="card" style="width:min(460px,92vw)">
+      <h2>設定</h2>
+      <div class="row"><label>主音量</label><input type="range" id="vMaster" min="0" max="100"><span id="tMaster"></span></div>
+      <div class="row"><label>音效</label><input type="range" id="vSfx" min="0" max="100"><span id="tSfx"></span></div>
+      <div class="row" style="opacity:.45"><label>音樂</label><input type="range" id="vMusic" min="0" max="100" disabled><span id="tMusic"></span></div>
+      <div style="font-size:12px;color:var(--dim);margin:-6px 0 8px 122px">音樂之後加入</div>
+      <div class="row"><label>畫面震動</label><input type="checkbox" id="vShake"></div>
+      <div class="row"><label>傷害數字</label><input type="checkbox" id="vNums"></div>
+      <div class="row"><label>畫質</label><select id="vPixel"><option value="sharp">清晰</option><option value="std">標準（PS1 感）</option><option value="retro">復古（更粗）</option></select></div>
+      <button id="bSetBack">返回</button>
+    </div>
+  </div>
+
+  <!-- 操作說明 -->
+  <div class="scr" id="sHelp">
+    <div class="card">
+      <h2>操作說明</h2>
+      <table class="keys">
+        <tr><td>WASD／方向鍵</td><td>八方向移動。攻擊會往面向的方向出招；按住攻擊時面向鎖定，可以邊退邊打</td></tr>
+        <tr><td>Z／滑鼠左鍵</td><td>攻擊（按住連續攻擊）</td></tr>
+        <tr><td>X</td><td>翻滾（短暫無敵）</td></tr>
+        <tr><td>空白鍵／滑鼠右鍵</td><td>絕招（靠擊殺累積，集滿才能用）</td></tr>
+        <tr><td>P／Esc</td><td>暫停</td></tr>
+      </table>
+      <h3>規則</h3>
+      <div style="font-size:14px;line-height:1.7">
+        一路往上推進，盡頭會出現<b>屍王</b>，打倒就過關。<br>
+        可以往後退，但只能退到<b>白色後退線</b>。開局一段時間後，後退線會自己往前推，逼你前進。<br>殭屍越過你一段距離後就不再追你，跑過<b style="color:var(--red)">紅線</b>就算放跑。血量歸零就失敗。<br>過關時依<b>時間、擊殺、放跑</b>算分數並給 S～C 評價：衝越快時間分越高，但遇到的殭屍越多、越容易受傷和放跑。<br>
+        打倒殭屍會升級，每次三選一強化，每位傭兵的強化選項不同。<br>
+        破關模式共 3 關；無盡模式會一直往下一關，越來越難。
+      </div>
+      <h3>傭兵</h3>
+      <div style="font-size:14px;line-height:1.7">
+        🪖 <b>士兵</b>：兩道子彈，各穿透一整列。絕招：火焰放射器，可以邊走邊噴 3 秒。<br>
+        🥋 <b>武道家</b>：近身三段連擊，傷害高，第三段是迴旋重擊。絕招：集氣 1 秒後大範圍震地，全程無敵。<br>
+        🧪 <b>科學家</b>：拋出藥瓶，延遲落地留下藥池持續傷害。絕招：大範圍化學藥劑，定身＋中毒。<br>
+        🕯️ <b>邪教崇拜者</b>：不能直接攻擊，攻擊鍵是禱告（站著不動，移動會中斷）。完成 4 次禱告，邪神降下一記巨拳。絕招：短時間無敵。
+      </div>
+      <h3>殭屍</h3>
+      <div style="font-size:14px;line-height:1.7">
+        第 1 關：行屍、狂奔者。<br>
+        第 2 關：胖屍、吐酸者，加上<b>爆炸殭屍</b>（背著紅色油桶，打倒會爆炸，炸掉周圍殭屍和障礙物，太近你也會受傷）和<b>毒液殭屍</b>（紫色頭，吐毒在地上，踩到會扣血）。<br>
+        第 3 關：<b>雷射殭屍</b>（地上先出現紅線預告，接著發射雷射）和<b>屏障殭屍</b>（2～3 隻拿盾排成牆，正面擋住普攻，要繞到側面或背後打，絕招和爆炸可以破盾）。
+      </div>
+      <button id="bHelpBack" style="margin-top:14px">返回</button>
+    </div>
+  </div>
+
+  <div class="scr" id="sLevel">
+    <div class="card" style="max-width:none;background:transparent;border:none">
+      <h2 style="text-align:center">升級！選一項 <span id="lvPending" style="color:var(--dim);font-size:15px"></span></h2>
+      <div id="cards"></div>
+      <div style="text-align:center;color:var(--dim);font-size:13px;margin-top:12px">也可以按 1 / 2 / 3</div>
+    </div>
+  </div>
+
+  <div class="scr" id="sPause">
+    <div class="card">
+      <h2>暫停</h2>
+      <div id="pauseInfo"></div>
+      <button id="bResume">繼續</button><button class="alt" id="bPauseSet">設定</button><button class="alt" id="bQuit">回到封面</button>
+    </div>
+  </div>
+
+  <div class="scr" id="sClear">
+    <div class="card">
+      <h2 id="clearTitle">過關！</h2>
+      <div id="clearInfo"></div>
+      <button id="bNext">下一關</button>
+    </div>
+  </div>
+
+  <div class="scr" id="sOver">
+    <div class="card">
+      <h2 id="overTitle">任務失敗</h2>
+      <div id="overInfo"></div>
+      <button id="bRetry">再挑戰</button><button class="alt" id="bToTitle">回到封面</button>
+    </div>
+  </div>
+</div>
+
+<script src="assets/lib/three.min.js"></script>
+<script src="config.js"></script>
+<script>
+'use strict';
+const C = window.CONFIG;
+const $ = id => document.getElementById(id);
+const rand = (a, b) => a + Math.random() * (b - a);
+const clamp = (v, a, b) => v < a ? a : v > b ? b : v;
+const RH = C.game.roadHalf;
+const UP = C.upgrades;
+
+/* ================= 設定 ================= */
+const SET = Object.assign({ master: 80, sfx: 80, music: 60, shake: true, numbers: true, pixel: 'std' }, (() => { try { return JSON.parse(localStorage.getItem('zmerc_settings') || '{}'); } catch (e) { return {}; } })());
+function saveSet() { try { localStorage.setItem('zmerc_settings', JSON.stringify(SET)); } catch (e) {} }
+function loadBest() { try { return JSON.parse(localStorage.getItem('zmerc_best') || '{}'); } catch (e) { return {}; } }
+function saveBest(b) { try { localStorage.setItem('zmerc_best', JSON.stringify(b)); } catch (e) {} }
+const PIXEL = { sharp: 0.75, std: C.game.renderScale, retro: 0.28 };
+
+/* ================= 渲染 ================= */
+const box = $('box'), cvs = $('gl');
+const renderer = new THREE.WebGLRenderer({ canvas: cvs, antialias: false });
+renderer.setPixelRatio(1);
+const scene = new THREE.Scene();
+const FOG = 0x121a17;
+scene.background = new THREE.Color(FOG);
+scene.fog = new THREE.Fog(FOG, 30, 58);
+const camera = new THREE.PerspectiveCamera(45, 1, 0.5, 160);
+scene.add(new THREE.HemisphereLight(0x9fb0c8, 0x2a2a20, 0.8));
+const moon = new THREE.DirectionalLight(0xc8d8ff, 0.55); moon.position.set(-10, 20, 8); scene.add(moon);
+const plight = new THREE.PointLight(0xffc888, 0.8, 13, 1.5); scene.add(plight);
+let VW = 1, VH = 1;
+function resize() {
+  VW = box.clientWidth; VH = box.clientHeight; const sc = PIXEL[SET.pixel] || C.game.renderScale;
+  renderer.setSize(Math.max(160, Math.round(VW * sc)), Math.max(90, Math.round(VH * sc)), false);
+  camera.aspect = VW / VH; camera.updateProjectionMatrix();
+}
+addEventListener('resize', resize); resize();
+
+/* ================= 幾何工具 ================= */
+const _m4 = new THREE.Matrix4(), _q = new THREE.Quaternion(), _e = new THREE.Euler(), _v1 = new THREE.Vector3(), _s1 = new THREE.Vector3(1, 1, 1);
+function part(geo, color, x = 0, y = 0, z = 0, rx = 0, ry = 0, rz = 0) {
+  const g = geo.index ? geo.toNonIndexed() : geo;
+  _m4.compose(_v1.set(x, y, z), _q.setFromEuler(_e.set(rx, ry, rz)), _s1); g.applyMatrix4(_m4);
+  const n = g.attributes.position.count, col = new Float32Array(n * 3), c = new THREE.Color(color);
+  for (let i = 0; i < n; i++) { col[i * 3] = c.r; col[i * 3 + 1] = c.g; col[i * 3 + 2] = c.b; }
+  g.setAttribute('color', new THREE.BufferAttribute(col, 3)); return g;
+}
+function place(g, x, y, z, ry) { _m4.compose(_v1.set(x, y, z), _q.setFromEuler(_e.set(0, ry, 0)), _s1); g.applyMatrix4(_m4); return g; }
+function merge(parts) {
+  let n = 0; for (const p of parts) n += p.attributes.position.count;
+  const pos = new Float32Array(n * 3), nor = new Float32Array(n * 3), col = new Float32Array(n * 3); let o = 0;
+  for (const p of parts) { pos.set(p.attributes.position.array, o); nor.set(p.attributes.normal.array, o); col.set(p.attributes.color.array, o); o += p.attributes.position.count * 3; }
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.BufferAttribute(pos, 3)); g.setAttribute('normal', new THREE.BufferAttribute(nor, 3)); g.setAttribute('color', new THREE.BufferAttribute(col, 3));
+  g.computeBoundingSphere(); return g;
+}
+const Bx = (w, h, d) => new THREE.BoxGeometry(w, h, d);
+const Cy = (r1, r2, h, s) => new THREE.CylinderGeometry(r1, r2, h, s);
+const vcMat = new THREE.MeshLambertMaterial({ vertexColors: true });
+
+/* ================= 關卡地圖 ================= */
+const groundTex = (() => {
+  const tc = document.createElement('canvas'); tc.width = tc.height = 64; const g = tc.getContext('2d');
+  g.fillStyle = '#383b36'; g.fillRect(0, 0, 64, 64);
+  for (let i = 0; i < 700; i++) { const v = 44 + Math.random() * 26 | 0; g.fillStyle = `rgb(${v},${v + 2},${v - 3})`; g.fillRect(Math.random() * 64 | 0, Math.random() * 64 | 0, 1, 1); }
+  g.strokeStyle = 'rgba(20,22,18,.8)'; g.beginPath(); g.moveTo(5, 10); g.lineTo(14, 18); g.lineTo(12, 30); g.moveTo(40, 44); g.lineTo(52, 50); g.stroke();
+  const t = new THREE.CanvasTexture(tc); t.magFilter = t.minFilter = THREE.NearestFilter; t.wrapS = t.wrapT = THREE.RepeatWrapping; return t;
+})();
+let stageGroup = null, OBST = [], L = 240, gateZ = -240;
+function buildStage(st) {
+  if (stageGroup) { scene.remove(stageGroup); stageGroup.traverse(o => { if (o.geometry) o.geometry.dispose(); if (o.material && o.material !== vcMat) o.material.dispose(); }); }
+  stageGroup = new THREE.Group(); scene.add(stageGroup);
+  L = C.stage.baseLength + C.stage.lengthPerStage * (st - 1); gateZ = -L; OBST = [];
+  let seed = 777 + st * 101;
+  const sr = () => { seed = (seed + 0x6D2B79F5) | 0; let t = Math.imul(seed ^ seed >>> 15, 1 | seed); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; };
+  const len = L + 80, midZ = -L / 2 + 20;
+  const tex = groundTex.clone(); tex.needsUpdate = true; tex.repeat.set(RH * 2 / 4, len / 4);
+  const road = new THREE.Mesh(new THREE.PlaneGeometry(RH * 2 + 1, len), new THREE.MeshLambertMaterial({ map: tex }));
+  road.rotation.x = -Math.PI / 2; road.position.set(0, 0, midZ); stageGroup.add(road);
+  const sideCol = [0x4a4d46, 0x3d4a3a, 0x4a3f3a][(st - 1) % 3];
+  const side = new THREE.Mesh(new THREE.PlaneGeometry(80, len), new THREE.MeshLambertMaterial({ color: sideCol }));
+  side.rotation.x = -Math.PI / 2; side.position.set(0, -0.02, midZ); stageGroup.add(side);
+  const parts = [];
+  // 中線 / 路緣
+  for (let z = 30; z > -L - 10; z -= 6) parts.push(part(Bx(0.25, 0.04, 2.6), 0xb8a860, 0, 0.03, z));
+  for (const s of [-1, 1]) parts.push(part(Bx(0.4, 0.25, len), 0x6a6c64, s * (RH + 0.7), 0.12, midZ));
+  // 兩側建築
+  const bcols = [0x4e4a44, 0x3e4650, 0x5a4a3c, 0x464a3e, 0x52423f];
+  for (const s of [-1, 1]) {
+    let z = 40;
+    while (z > -L - 30) {
+      const d = 6 + sr() * 7, h = 4 + sr() * 11, w = 7 + sr() * 4, x = s * (RH + 3 + w / 2), c = bcols[sr() * bcols.length | 0];
+      parts.push(part(Bx(w, h, d - 0.6), c, x, h / 2, z - d / 2));
+      for (let wy = 1.6; wy < h - 0.8; wy += 2.2) for (let wz = z - 1.2; wz > z - d + 1; wz -= 1.8)
+        parts.push(part(Bx(0.06, 0.8, 0.9), sr() < 0.12 ? 0xffd27a : 0x1a1e22, s * (RH + 2.97), wy, wz));
+      z -= d;
+    }
+  }
+  // 路上障礙
+  const carCols = [0x6a3030, 0x30486a, 0x5a5a50, 0x6a5a2a, 0x3c5a40];
+  for (let z = -18; z > -L + 30; z -= 9 + sr() * 9) {
+    const t = sr(), x = (sr() * 2 - 1) * (RH - 2.5), ry = sr() * Math.PI, ps = [], o0 = OBST.length;
+    if (t < 0.4) {
+      const c = carCols[sr() * carCols.length | 0];
+      ps.push(part(Bx(2, 0.8, 4.2), c, 0, 0.65, 0), part(Bx(1.8, 0.65, 2.1), 0x23292c, 0, 1.35, -0.25), part(Bx(1.6, 0.1, 1.9), c, 0, 1.72, -0.25));
+      for (const [wx, wz] of [[-1, 1.3], [1, 1.3], [-1, -1.3], [1, -1.3]]) ps.push(part(Bx(0.3, 0.6, 0.6), 0x151515, wx, 0.3, wz));
+      const dx = Math.sin(ry) * 1.1, dz = Math.cos(ry) * 1.1;
+      OBST.push({ x: x + dx, z: z + dz, r: 1.15 }, { x: x - dx, z: z - dz, r: 1.15 });
+    } else if (t < 0.7) {
+      ps.push(part(Bx(2.4, 0.9, 0.6), 0x9a9a92, 0, 0.45, 0), part(Bx(2.4, 0.15, 0.62), 0xc04030, 0, 0.75, 0));
+      OBST.push({ x: x + Math.cos(ry) * 0.7, z: z - Math.sin(ry) * 0.7, r: 0.55 }, { x: x - Math.cos(ry) * 0.7, z: z + Math.sin(ry) * 0.7, r: 0.55 });
+    } else {
+      for (let k = 0; k < 3; k++) ps.push(part(Cy(0.42, 0.42, 1.0, 7), k % 2 ? 0x3c5a6a : 0x8a4a20, (k - 1) * 0.9, 0.5, (k % 2) * 0.5));
+      OBST.push({ x, z, r: 1.2 });
+    }
+    const om = new THREE.Mesh(merge(ps.map(p => place(p, x, 0, z, ry))), vcMat); stageGroup.add(om);
+    const obj = { mesh: om, x, z }; for (let i = o0; i < OBST.length; i++) OBST[i].obj = obj;
+  }
+  // 終點：屍巢城牆
+  for (let x = -RH - 3; x <= RH + 3; x += 2) {
+    parts.push(part(Bx(2, 3.4 + (Math.abs(x) % 4 === 0 ? 0.8 : 0), 1.4), 0x3a3230, x, 1.7, gateZ - 1.6));
+    parts.push(part(new THREE.ConeGeometry(0.25, 1.2, 4), 0xa09a80, x, 3.9, gateZ - 1.2, 0.5));
+  }
+  parts.push(part(new THREE.DodecahedronGeometry(4, 0), 0x4a5a30, 0, 2, gateZ - 6), part(new THREE.DodecahedronGeometry(2.5, 0), 0x6a7a3a, 3, 3.5, gateZ - 5));
+  stageGroup.add(new THREE.Mesh(merge(parts), vcMat));
+}
+
+/* ================= 模型 ================= */
+function humanoid(o) {
+  const s = o.skin, sh = o.shirt, pa = o.pants, ps = [], W = o.w || 1, H = o.h || 1;
+  ps.push(part(Bx(0.22 * W, 0.7 * H, 0.24), pa, -0.14 * W, 0.35 * H, 0), part(Bx(0.22 * W, 0.7 * H, 0.24), pa, 0.14 * W, 0.35 * H, 0));
+  ps.push(part(Bx(0.6 * W, 0.66 * H, 0.36 * (o.belly || 1)), sh, 0, 1.03 * H, o.belly ? 0.05 : 0, o.lean || 0));
+  const hs = o.head || 0.36;
+  ps.push(part(Bx(hs, hs, hs), s, 0, 1.36 * H + hs / 2 + 0.02, (o.lean || 0) * 0.4));
+  if (o.armsFwd) ps.push(part(Bx(0.15 * W, 0.15, 0.62), s, -0.38 * W, 1.22 * H, 0.32), part(Bx(0.15 * W, 0.15, 0.62), s, 0.38 * W, 1.22 * H, 0.3, -0.15));
+  if (o.extra) o.extra(ps, W, H);
+  return merge(ps);
+}
+const GEO = {};
+GEO.walker = humanoid({ skin: 0x7f9a6a, shirt: 0x6b6a52, pants: 0x3a3f4a, armsFwd: true });
+GEO.runner = humanoid({ skin: 0x8aa070, shirt: 0x7a3b30, pants: 0x2a2c34, armsFwd: true, w: 0.85, lean: 0.35 });
+GEO.spitter = humanoid({ skin: 0xa6c060, shirt: 0x4a5a3a, pants: 0x3a3a30, head: 0.6, extra: ps => ps.push(part(Bx(0.3, 0.12, 0.05), 0x2a3a10, 0, 1.55, 0.31)) });
+GEO.brute = humanoid({ skin: 0x8c9a6a, shirt: 0x9aa878, pants: 0x3a3428, w: 2.1, h: 1.2, belly: 2.3, head: 0.4, armsFwd: true });
+GEO.boss = humanoid({ skin: 0x5c6b48, shirt: 0x47523a, pants: 0x2a2620, w: 1.7, h: 1.1, belly: 1.8, head: 0.5, armsFwd: true,
+  extra: (ps, W, H) => { for (let i = -2; i <= 2; i++) ps.push(part(new THREE.ConeGeometry(0.1, 0.45, 4), 0xc8c0a0, i * 0.2, 1.45 * H, -0.3, -0.6));
+    ps.push(part(Bx(0.1, 0.06, 0.04), 0xff2a1a, -0.12, 1.36 * H + 0.3, 0.26), part(Bx(0.1, 0.06, 0.04), 0xff2a1a, 0.12, 1.36 * H + 0.3, 0.26)); } });
+GEO.bomber = humanoid({ skin: 0x86a06a, shirt: 0x5a4a3a, pants: 0x34302a, armsFwd: true, extra: ps => { ps.push(part(Cy(0.3, 0.3, 0.8, 8), 0xd02a1a, 0, 1.15, -0.4), part(Cy(0.31, 0.31, 0.12, 8), 0xf0c040, 0, 1.25, -0.4), part(Bx(0.12, 0.2, 0.12), 0x222222, 0, 1.6, -0.4)); } });
+GEO.toxic = humanoid({ skin: 0x9a7ab0, shirt: 0x3a3048, pants: 0x2a2a30, head: 0.5, armsFwd: true, extra: ps => ps.push(part(Bx(0.26, 0.1, 0.05), 0xe040e0, 0, 1.6, 0.26)) });
+GEO.laser = humanoid({ skin: 0x7a8a7a, shirt: 0x2a2e3a, pants: 0x1e2028, armsFwd: true, extra: ps => { ps.push(part(Bx(0.42, 0.1, 0.12), 0x222222, 0, 1.6, 0.16), part(Bx(0.14, 0.09, 0.06), 0xff2020, 0, 1.6, 0.23)); } });
+const shieldParts = () => [part(Bx(1.15, 1.6, 0.12), 0x6a7a8e, 0, 0.95, 0.5), part(Bx(1.0, 0.25, 0.14), 0xd0d8e0, 0, 1.45, 0.5), part(Bx(0.5, 0.12, 0.15), 0x1a1e24, 0, 1.15, 0.52)];
+GEO.shield = humanoid({ skin: 0x7f9a6a, shirt: 0x3a4250, pants: 0x2a2e36, extra: ps => { ps.push(...shieldParts(), part(Bx(0.42, 0.18, 0.42), 0x2a2e36, 0, 1.78, 0)); } });
+GEO.shieldBroken = humanoid({ skin: 0x7f9a6a, shirt: 0x3a4250, pants: 0x2a2e36, armsFwd: true, extra: ps => ps.push(part(Bx(0.42, 0.18, 0.42), 0x2a2e36, 0, 1.78, 0)) });
+const ZSCALE = { walker: 1, runner: 1, spitter: 1, brute: 1, bomber: 1, toxic: 1, laser: 1, shield: 1, boss: 2.1 };
+const HERO = {
+  soldier: () => merge([
+    part(Bx(0.22, 0.7, 0.25), 0x2f3a2a, -0.14, 0.35, 0), part(Bx(0.22, 0.7, 0.25), 0x2f3a2a, 0.14, 0.35, 0),
+    part(Bx(0.62, 0.66, 0.38), 0x5d6f3a, 0, 1.03, 0), part(Bx(0.64, 0.3, 0.4), 0x3c4a28, 0, 0.98, 0),
+    part(Bx(0.36, 0.36, 0.36), 0xd9a77a, 0, 1.56, 0), part(Bx(0.46, 0.2, 0.46), 0x4a5a30, 0, 1.78, 0),
+    part(Bx(0.15, 0.15, 0.5), 0x5d6f3a, -0.24, 1.18, 0.28), part(Bx(0.15, 0.15, 0.5), 0x5d6f3a, 0.2, 1.18, 0.28),
+    part(Bx(0.1, 0.16, 0.85), 0x1e1e1e, -0.02, 1.22, 0.7), part(Bx(0.08, 0.2, 0.1), 0x1e1e1e, -0.02, 1.1, 0.45)]),
+  martial: () => merge([
+    part(Bx(0.24, 0.7, 0.28), 0xe8e4d8, -0.15, 0.35, 0), part(Bx(0.24, 0.7, 0.28), 0xe8e4d8, 0.15, 0.35, 0),
+    part(Bx(0.62, 0.66, 0.38), 0xf0ece0, 0, 1.03, 0), part(Bx(0.64, 0.1, 0.4), 0x111111, 0, 0.78, 0),
+    part(Bx(0.36, 0.36, 0.36), 0xd9a77a, 0, 1.56, 0), part(Bx(0.38, 0.08, 0.38), 0xc02020, 0, 1.64, 0), part(Bx(0.06, 0.06, 0.3), 0xc02020, 0.1, 1.62, -0.3),
+    part(Bx(0.16, 0.16, 0.42), 0xd9a77a, -0.3, 1.25, 0.2), part(Bx(0.16, 0.16, 0.42), 0xd9a77a, 0.3, 1.25, 0.2),
+    part(Bx(0.2, 0.2, 0.2), 0xd9a77a, -0.3, 1.25, 0.45), part(Bx(0.2, 0.2, 0.2), 0xd9a77a, 0.3, 1.25, 0.45)]),
+  scientist: () => merge([
+    part(Bx(0.22, 0.7, 0.25), 0x2a2a3a, -0.14, 0.35, 0), part(Bx(0.22, 0.7, 0.25), 0x2a2a3a, 0.14, 0.35, 0),
+    part(Bx(0.64, 0.95, 0.4), 0xf4f4f0, 0, 0.92, 0), part(Bx(0.2, 0.5, 0.05), 0x5aa0d0, 0, 1.1, 0.21),
+    part(Bx(0.36, 0.36, 0.36), 0xd9a77a, 0, 1.56, 0), part(Bx(0.4, 0.16, 0.4), 0xb0b0b0, 0, 1.76, -0.02),
+    part(Bx(0.32, 0.07, 0.04), 0x111111, 0, 1.6, 0.19),
+    part(Bx(0.15, 0.15, 0.45), 0xf4f4f0, 0.3, 1.18, 0.2), part(Bx(0.15, 0.4, 0.15), 0xf4f4f0, -0.38, 1.05, 0),
+    part(Bx(0.16, 0.26, 0.16), 0x7aff5a, 0.3, 1.25, 0.48)]),
+  cultist: () => merge([
+    part(Bx(0.7, 1.35, 0.5), 0x3a2148, 0, 0.68, 0), part(Bx(0.76, 0.12, 0.56), 0x6a3a10, 0, 0.9, 0),
+    part(Bx(0.42, 0.42, 0.42), 0x2a1636, 0, 1.58, -0.02), part(Bx(0.3, 0.26, 0.05), 0x0a0610, 0, 1.55, 0.2),
+    part(Bx(0.07, 0.04, 0.03), 0xff50ff, -0.07, 1.58, 0.23), part(Bx(0.07, 0.04, 0.03), 0xff50ff, 0.07, 1.58, 0.23),
+    part(Bx(0.16, 0.16, 0.42), 0x3a2148, -0.3, 1.15, 0.2), part(Bx(0.16, 0.16, 0.42), 0x3a2148, 0.3, 1.15, 0.2),
+    part(Bx(0.4, 0.06, 0.3), 0x7a1a1a, 0, 1.2, 0.45)]),
+};
+const fistGeo = merge([part(Bx(2.6, 1.8, 2.2), 0x4a2060, 0, 0, 0), ...[-0.9, -0.3, 0.3, 0.9].map(x => part(Bx(0.55, 0.9, 0.7), 0x5a2a72, x, -1.1, 0.6)), part(Bx(0.6, 0.6, 1.0), 0x5a2a72, -1.5, -0.3, 0.4), part(Bx(1.8, 2.6, 1.6), 0x2a1236, 0, 2, -0.2)]);
+const flashMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
+const windupMat = new THREE.MeshBasicMaterial({ color: 0xff5040 });
+const stunMat = new THREE.MeshLambertMaterial({ color: 0x8ab0ff });
+
+/* ================= 輸入 ================= */
+const keys = {}; let mouseL = false, mouseX = 0, mouseY = 0;
+addEventListener('keydown', e => {
+  const k = e.key.toLowerCase(); keys[k] = true;
+  if ([' ', 'arrowup', 'arrowdown', 'arrowleft', 'arrowright'].includes(k)) e.preventDefault();
+  if (state === 'play') {
+    if (k === 'x') tryRoll();
+    if (k === ' ') tryUlt();
+    if (k === 'p' || k === 'escape') setPause(true);
+  } else if (state === 'pause' && (k === 'p' || k === 'escape')) setPause(false);
+  else if (state === 'level' && ['1', '2', '3'].includes(k)) pickCard(+k - 1);
+});
+addEventListener('keyup', e => { keys[e.key.toLowerCase()] = false; });
+box.addEventListener('mousemove', e => { mouseX = e.clientX; mouseY = e.clientY; });
+box.addEventListener('mousedown', e => { if (state !== 'play') return; if (e.button === 0) mouseL = true; if (e.button === 2) tryUlt(); });
+addEventListener('mouseup', e => { if (e.button === 0) mouseL = false; });
+box.addEventListener('contextmenu', e => e.preventDefault());
+addEventListener('blur', () => { mouseL = false; for (const k in keys) keys[k] = false; if (state === 'play') setPause(true); });
+const attackHeld = () => keys.z || mouseL;
+function moveInput() {
+  let x = 0, z = 0;
+  if (keys.w || keys.arrowup) z -= 1; if (keys.s || keys.arrowdown) z += 1; if (keys.a || keys.arrowleft) x -= 1; if (keys.d || keys.arrowright) x += 1;
+  const l = Math.hypot(x, z); return l ? [x / l, z / l] : [0, 0];
+}
+
+/* ================= 音效（程式合成，無音樂） ================= */
+let AC = null, master = null, sfxBus = null, noiseBuf = null;
+function audioInit() {
+  if (AC) { if (AC.state === 'suspended') AC.resume(); return; }
+  try {
+    AC = new (window.AudioContext || window.webkitAudioContext)();
+    master = AC.createGain(); master.connect(AC.destination);
+    sfxBus = AC.createGain(); sfxBus.connect(master);
+    noiseBuf = AC.createBuffer(1, AC.sampleRate, AC.sampleRate);
+    const d = noiseBuf.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+    applyVolume();
+  } catch (e) { AC = null; }
+}
+function applyVolume() { if (!AC) return; master.gain.value = SET.master / 100 * 0.7; sfxBus.gain.value = SET.sfx / 100; }
+const sndLast = {};
+function canPlay(n, gap) { if (!AC) return false; const t = AC.currentTime; if (sndLast[n] && t - sndLast[n] < gap) return false; sndLast[n] = t; return true; }
+function sNoise(dur, freq, type, vol, q = 1, t0 = 0) {
+  const t = AC.currentTime + t0, s = AC.createBufferSource(); s.buffer = noiseBuf;
+  const f = AC.createBiquadFilter(); f.type = type; f.frequency.value = freq; f.Q.value = q;
+  const g = AC.createGain(); g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(0.001, t + dur);
+  s.connect(f); f.connect(g); g.connect(sfxBus); s.start(t, Math.random() * 0.5); s.stop(t + dur);
+}
+function sTone(f1, f2, dur, type, vol, t0 = 0) {
+  const t = AC.currentTime + t0, o = AC.createOscillator(); o.type = type;
+  o.frequency.setValueAtTime(f1, t); o.frequency.exponentialRampToValueAtTime(Math.max(20, f2), t + dur);
+  const g = AC.createGain(); g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(0.001, t + dur);
+  o.connect(g); g.connect(sfxBus); o.start(t); o.stop(t + dur);
+}
+const SFX = {
+  shot() { if (!canPlay('shot', 0.04)) return; sNoise(0.09, 1500, 'highpass', 0.22); sTone(260, 60, 0.07, 'square', 0.09); },
+  punch() { sNoise(0.08, 900, 'bandpass', 0.3, 1.5); sTone(180, 60, 0.08, 'square', 0.12); },
+  heavy() { sNoise(0.2, 400, 'lowpass', 0.45); sTone(120, 40, 0.18, 'square', 0.18); },
+  throw() { sNoise(0.15, 2000, 'bandpass', 0.12, 2); },
+  glass() { if (!canPlay('glass', 0.05)) return; sNoise(0.18, 4200, 'highpass', 0.2); sNoise(0.4, 700, 'lowpass', 0.18, 1, 0.03); },
+  hit() { if (!canPlay('hit', 0.04)) return; sNoise(0.06, 500, 'bandpass', 0.16, 2); },
+  kill() { if (!canPlay('kill', 0.05)) return; sTone(160, 50, 0.13, 'sawtooth', 0.06); sNoise(0.1, 300, 'lowpass', 0.13); },
+  roll() { sNoise(0.25, 900, 'bandpass', 0.18, 0.8); },
+  hurt() { sTone(200, 70, 0.25, 'sawtooth', 0.2); sNoise(0.15, 400, 'lowpass', 0.2); },
+  boom() { sNoise(0.7, 240, 'lowpass', 0.6); sTone(90, 30, 0.5, 'sine', 0.45); },
+  slam() { sNoise(0.5, 180, 'lowpass', 0.7); sTone(70, 25, 0.5, 'sine', 0.5); },
+  pray() { sTone(330, 330, 0.25, 'triangle', 0.08); sTone(495, 495, 0.3, 'triangle', 0.06, 0.08); },
+  prayFull() { [220, 262, 330, 440].forEach((f, i) => sTone(f, f * 0.98, 0.5, 'sawtooth', 0.06, i * 0.06)); },
+  prayBreak() { sTone(300, 120, 0.15, 'square', 0.06); },
+  god() { sTone(60, 25, 1.0, 'sawtooth', 0.35); sNoise(0.9, 160, 'lowpass', 0.6); },
+  kick() { sNoise(0.5, 1200, 'bandpass', 0.3, 0.7); sTone(400, 900, 0.3, 'square', 0.08); },
+  ult() { sTone(220, 880, 0.35, 'square', 0.1); sTone(330, 1320, 0.35, 'square', 0.06, 0.05); },
+  leak() { if (!canPlay('leak', 0.12)) return; sTone(880, 440, 0.18, 'square', 0.1); },
+  level() { [523, 659, 784, 1047].forEach((f, i) => sTone(f, f, 0.18, 'square', 0.07, i * 0.07)); },
+  spit() { if (!canPlay('spit', 0.1)) return; sNoise(0.2, 1200, 'bandpass', 0.15, 3); },
+  growl() { if (!canPlay('growl', 1.4)) return; const o = AC.createOscillator(), g = AC.createGain(), t = AC.currentTime; o.type = 'sawtooth'; o.frequency.setValueAtTime(rand(70, 95), t); o.frequency.linearRampToValueAtTime(rand(50, 65), t + 0.7); g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(0.05, t + 0.15); g.gain.linearRampToValueAtTime(0, t + 0.7); const f = AC.createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = 400; o.connect(f); f.connect(g); g.connect(sfxBus); o.start(t); o.stop(t + 0.75); },
+  bossroar() { sTone(90, 40, 1.2, 'sawtooth', 0.25); sNoise(1.0, 300, 'lowpass', 0.3); },
+  clear() { [392, 523, 659, 784, 1047].forEach((f, i) => sTone(f, f, 0.25, 'square', 0.07, i * 0.1)); },
+};
+const play = n => { if (AC) SFX[n](); };
+
+/* ================= 物件池與特效 ================= */
+function makePool(factory) { const free = []; return { get() { const m = free.pop() || factory(); m.visible = true; if (!m.parent) scene.add(m); return m; }, put(m) { m.visible = false; free.push(m); } }; }
+const bulletGeo = Bx(0.13, 0.13, 0.9), bulletMat = new THREE.MeshBasicMaterial({ color: 0xffe27a });
+const poolBullet = makePool(() => new THREE.Mesh(bulletGeo, bulletMat));
+const acidGeo = new THREE.IcosahedronGeometry(0.3, 0), acidMat = new THREE.MeshBasicMaterial({ color: 0x9cff3a });
+const poolAcid = makePool(() => new THREE.Mesh(acidGeo, acidMat));
+const partGeo = Bx(0.16, 0.16, 0.16);
+const partMats = { goo: new THREE.MeshBasicMaterial({ color: 0x4a6a22 }), spark: new THREE.MeshBasicMaterial({ color: 0xffe080 }), fire: new THREE.MeshBasicMaterial({ color: 0xff7a2a }), smoke: new THREE.MeshBasicMaterial({ color: 0x555550 }), acid: acidMat, chem: new THREE.MeshBasicMaterial({ color: 0x7aff5a }), orange: new THREE.MeshBasicMaterial({ color: 0xff9a2a }), toxic: new THREE.MeshBasicMaterial({ color: 0xe040e0 }), purple: new THREE.MeshBasicMaterial({ color: 0xc070ff }) };
+const poolPart = makePool(() => new THREE.Mesh(partGeo, partMats.goo));
+const ZPOOL = {}; for (const t in ZSCALE) ZPOOL[t] = makePool(() => { const m = new THREE.Mesh(GEO[t], vcMat); m.rotation.order = 'YXZ'; return m; });
+const flatCircle = new THREE.CircleGeometry(1, 24).rotateX(-Math.PI / 2);
+const flatRing = new THREE.RingGeometry(0.85, 1, 32).rotateX(-Math.PI / 2);
+const flatPlane = new THREE.PlaneGeometry(1, 1).rotateX(-Math.PI / 2);
+function decal(geo, color, opacity) { const m = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ color, transparent: true, opacity, depthWrite: false })); m.position.y = 0.04; scene.add(m); return m; }
+function killDecal(m) { scene.remove(m); m.material.dispose(); }
+function burst(x, y, z, kind, n, sp) {
+  for (let i = 0; i < n; i++) {
+    if (PARTS.length > 360) return;
+    const m = poolPart.get(); m.material = partMats[kind]; m.position.set(x, y, z); m.scale.setScalar(rand(0.6, 1.4));
+    const a = Math.random() * Math.PI * 2, s = rand(0.3, 1) * sp;
+    PARTS.push({ mesh: m, vx: Math.cos(a) * s, vy: rand(2, 6), vz: Math.sin(a) * s, t: rand(0.35, 0.7) });
+  }
+}
+function fx(o) { FX.push(o); }
+function ringFx(x, z, r, color, dur) {
+  const m = decal(flatRing, color, 0.8); m.position.set(x, 0.06, z); m.scale.setScalar(0.1);
+  fx({ t: 0, upd(dt) { this.t += dt; const k = this.t / dur; m.scale.setScalar(0.1 + r * k); m.material.opacity = 0.8 * (1 - k); return k < 1; }, kill() { killDecal(m); } });
+}
+function sphereFx(x, z, r, color, dur) {
+  const m = new THREE.Mesh(new THREE.IcosahedronGeometry(1, 1), new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.7, depthWrite: false }));
+  m.position.set(x, 0.5, z); scene.add(m);
+  fx({ t: 0, upd(dt) { this.t += dt; const k = this.t / dur; m.scale.setScalar(0.3 + r * k); m.material.opacity = 0.7 * (1 - k); return k < 1; }, kill() { scene.remove(m); m.geometry.dispose(); m.material.dispose(); } });
+}
+function arcFx(x, z, yaw, r, arc, color) {
+  const g = new THREE.RingGeometry(Math.max(0.2, r - 0.7), r, 14, 1, Math.PI / 2 - arc / 2, arc).rotateX(-Math.PI / 2);
+  const m = new THREE.Mesh(g, new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.75, depthWrite: false, side: THREE.DoubleSide }));
+  m.position.set(x, 1.0, z); m.rotation.y = yaw + Math.PI; scene.add(m);
+  fx({ t: 0, upd(dt) { this.t += dt; m.material.opacity = 0.75 * (1 - this.t / 0.15); return this.t < 0.15; }, kill() { scene.remove(m); g.dispose(); m.material.dispose(); } });
+}
+function stripFx(x, z, dx, dz, len, w, color, dur) {
+  const m = decal(flatPlane, color, 0.6); m.position.set(x + dx * len / 2, 0.07, z + dz * len / 2); m.rotation.y = Math.atan2(dx, dz); m.scale.set(w, 1, len);
+  fx({ t: 0, upd(dt) { this.t += dt; m.material.opacity = 0.6 * (1 - this.t / dur); return this.t < dur; }, kill() { killDecal(m); } });
+}
+let bannerT = 0;
+function banner(txt, dur) { const b = $('banner'); b.textContent = txt; b.style.opacity = 1; bannerT = dur; }
+function addShake(v) { if (SET.shake) shake = Math.max(shake, v); }
+
+/* ================= 狀態 ================= */
+let state = 'title', mode = 'campaign', charId = 'soldier', stage = 1, T = 0, shake = 0;
+let Z = [], BUL = [], ACID = [], PARTS = [], FX = [], POOLS = [], FISTS = [], PICKS = [], DNUM = [];
+let P = null, furthest = 0, leaked = 0, spawnAcc = 0, bossSpawned = false, bossAlive = null, clearT = 0, zid = 0, pendingLv = 0;
+let stageKills = 0, pushZ = 0, pushOn = false, backLimit = 0, HAZ = [], RESULTS = [];
+const flameMesh = new THREE.Mesh(new THREE.RingGeometry(0.4, 1, 16, 1, Math.PI / 2 - C.chars.soldier.ult.arc / 2, C.chars.soldier.ult.arc).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ color: 0xff7a1a, transparent: true, opacity: 0.5, depthWrite: false, side: THREE.DoubleSide }));
+flameMesh.visible = false; scene.add(flameMesh);
+const DMG = {}; const SRC = { atk: '普攻', wave: '氣勁', god: '邪神拳', ult: '絕招', poison: '中毒', bomb: '爆炸殭屍誘爆' };
+const pRoot = new THREE.Group(), pPivot = new THREE.Group(); let pMesh = null;
+pPivot.position.y = 0.9; pRoot.add(pPivot); scene.add(pRoot); pRoot.visible = false;
+const faceMark = decal(new THREE.ConeGeometry(0.35, 0.8, 3).rotateX(-Math.PI / 2).rotateY(Math.PI), 0xffffff, 0.5);
+const pRing = decal(flatRing, 0x8fd16b, 0.7);
+const prayRing = decal(flatCircle, 0xa040ff, 0.0);
+const ultAura = decal(flatRing, 0xd080ff, 0.0);
+const lineMesh = decal(flatPlane, 0xff2a1a, 0.55), retreatMesh = decal(flatPlane, 0xffffff, 0.12);
+for (const m of [faceMark, pRing, prayRing, ultAura, lineMesh, retreatMesh]) m.visible = false;
+
+const CH = () => C.chars[charId];
+function lv(id) { return P.lv[id] || 0; }
+function S() { // 目前的有效數值
+  const ch = CH(), a = ch.attack, u = ch.ult;
+  const s = {
+    maxHp: ch.hp + UP.hp.maxHp * lv('hp'),
+    speed: ch.speed * (1 + UP.speed.speedPct * lv('speed')),
+    rollCd: C.roll.cooldown * (1 - UP.rollcd.cooldownPct * lv('rollcd')),
+    ultNeed: Math.round(u.killsNeeded * (1 - UP.charge.killsPct * lv('charge'))),
+    regen: UP.regen.perSec * lv('regen'),
+  };
+  if (charId === 'soldier') Object.assign(s, {
+    dmg: a.damage * (1 + UP.s_dmg.damagePct * lv('s_dmg')), lines: a.lines + UP.s_lines.lines * lv('s_lines'),
+    interval: a.interval * Math.pow(UP.s_rate.intervalMul, lv('s_rate')), range: a.range + UP.s_range.range * lv('s_range'),
+    flameDps: u.dps * (1 + UP.s_flame.dpsPct * lv('s_flame')), flameRange: u.range + UP.s_flame.range * lv('s_flame'), flameDur: u.duration + UP.s_flame2.duration * lv('s_flame2') });
+  if (charId === 'martial') Object.assign(s, {
+    dmg: a.damage * (1 + UP.m_dmg.damagePct * lv('m_dmg')), range: a.range + UP.m_range.range * lv('m_range'), finRange: a.finisherRange + UP.m_range.range * lv('m_range'),
+    interval: a.interval * Math.pow(UP.m_speed.intervalMul, lv('m_speed')), finInterval: a.finisherInterval * Math.pow(UP.m_speed.intervalMul, lv('m_speed')),
+    waveLen: UP.m_wave.length * lv('m_wave'), quakeR: u.radius + UP.m_quake.radius * lv('m_quake'), quakeDmg: u.damage * (1 + UP.m_quake.damagePct * lv('m_quake')), heal: UP.m_heal.healPerKill * lv('m_heal') });
+  if (charId === 'scientist') Object.assign(s, {
+    dps: a.dps * (1 + UP.c_dmg.dpsPct * lv('c_dmg')), radius: a.radius + UP.c_radius.radius * lv('c_radius'), dur: a.duration + UP.c_dur.duration * lv('c_dur'),
+    flasks: a.flasks + UP.c_flask.flasks * lv('c_flask'), interval: a.interval * Math.pow(UP.c_rate.intervalMul, lv('c_rate')),
+    ultR: u.radius + UP.c_ult.radius * lv('c_ult'), ultStun: u.stun + UP.c_ult.stun * lv('c_ult') });
+  if (charId === 'cultist') Object.assign(s, {
+    prayTime: a.prayTime * Math.pow(UP.k_pray.prayMul, lv('k_pray')), godDmg: a.damage * (1 + UP.k_dmg.damagePct * lv('k_dmg')), godR: a.radius + UP.k_radius.radius * lv('k_radius'),
+    punches: a.punches + UP.k_punch.punches * lv('k_punch'), prays: a.praysNeeded - UP.k_fewer.prays * lv('k_fewer'), ultDur: u.duration + UP.k_ult.duration * lv('k_ult') });
+  return s;
+}
+function xpNeed(l) { const c = C.levelUp; return Math.round(c.base + c.perLevel * (l - 1) + c.perLevelSq * (l - 1) * (l - 1)); }
+const stHp = () => 1 + C.stage.hpMul * (stage - 1), stSpd = () => 1 + C.stage.speedMul * (stage - 1), stDen = () => 1 + C.stage.densityMul * (stage - 1);
+
+function clearEntities() {
+  for (const z of Z) { ZPOOL[z.type].put(z.mesh); if (z.tele) killDecal(z.tele); }
+  for (const b of BUL) poolBullet.put(b.mesh);
+  for (const a of ACID) poolAcid.put(a.mesh);
+  for (const p of PARTS) poolPart.put(p.mesh);
+  for (const f of FX) f.kill();
+  for (const p of POOLS) killDecal(p.mesh);
+  for (const f of FISTS) { scene.remove(f.mesh); killDecal(f.shadow); }
+  for (const p of PICKS) { scene.remove(p.mesh); p.mesh.geometry.dispose(); }
+  for (const h of HAZ) killDecal(h.mesh); HAZ = []; flameMesh.visible = false;
+  for (const d of DNUM) d.el.remove();
+  Z = []; BUL = []; ACID = []; PARTS = []; FX = []; POOLS = []; FISTS = []; PICKS = []; DNUM = [];
+}
+function newRun(c, m) {
+  charId = c; mode = m; stage = 1;
+  if (pMesh) { pPivot.remove(pMesh); pMesh.geometry.dispose(); }
+  pMesh = new THREE.Mesh(HERO[c](), vcMat); pMesh.position.y = -0.9; pPivot.add(pMesh);
+  P = { hp: 0, lv: {}, level: 1, xp: 0, kills: 0, ult: 0 };
+  P.hp = S().maxHp; RESULTS = [];
+  for (const k in SRC) DMG[k] = 0;
+  startStage();
+}
+function startStage() {
+  clearEntities(); buildStage(stage);
+  Object.assign(P, { x: 0, z: 0, vx: 0, vz: 0, fx: 0, fz: -1, cd: 0, combo: 0, comboT: 0, rollT: 0, rollCd: 0, rdx: 0, rdz: -1, iframe: 0, hurtT: 0,
+    prayT: 0, prays: 0, quake: null, flameT: 0, flameTick: 0, ultInv: 0, stepT: 0, walk: 0 });
+  furthest = 0; leaked = 0; spawnAcc = 0; pushZ = C.game.retreatLimit; pushOn = false; backLimit = pushZ; bossSpawned = false; bossAlive = null; clearT = 0; T = 0; stageKills = 0; pendingLv = 0;
+  gridBuild();
+  for (let i = 0; i < C.spawn.startRows; i++) spawnRows(1, -16 - i * 4);
+  pRoot.visible = true; for (const m of [faceMark, pRing, lineMesh, retreatMesh]) m.visible = true;
+  prayRing.visible = ultAura.visible = charId === 'cultist';
+  state = 'play'; showScr(null); $('hud').style.display = 'block';
+  banner((mode === 'endless' ? '無盡 ' : '') + '第 ' + stage + ' 關', 1.6);
+}
+
+/* ================= 網格 ================= */
+const GS = 2.5; let grid = new Map();
+const gkey = (ix, iz) => (ix + 2000) * 8192 + (iz + 2000);
+function gridBuild() { grid = new Map(); for (const z of Z) { if (z.dead) continue; const k = gkey(Math.floor(z.x / GS), Math.floor(z.z / GS)); let a = grid.get(k); if (!a) grid.set(k, a = []); a.push(z); } }
+const _q1 = [];
+function gridQuery(x, z, r, out = _q1) {
+  out.length = 0;
+  const x0 = Math.floor((x - r) / GS), x1 = Math.floor((x + r) / GS), z0 = Math.floor((z - r) / GS), z1 = Math.floor((z + r) / GS);
+  for (let i = x0; i <= x1; i++) for (let j = z0; j <= z1; j++) { const a = grid.get(gkey(i, j)); if (a) for (const q of a) if (!q.dead) out.push(q); }
+  return out;
+}
+
+/* ================= 出怪 ================= */
+function spawnZombie(type, x, z) {
+  const d = C.zombies[type];
+  let hp = d.hp * stHp();
+  if (type === 'boss') hp = d.hp * (1 + d.hpPerStage * (stage - 1));
+  const mesh = ZPOOL[type].get();
+  mesh.material = vcMat; mesh.rotation.set(0, Math.PI, 0); if (type === 'shield') mesh.geometry = GEO.shield; mesh.position.set(x, 0, z); mesh.scale.setScalar(ZSCALE[type]);
+  const zz = { id: ++zid, type, d, x, z, hp, maxHp: hp, r: d.radius, spd: d.speed * stSpd(), kvx: 0, kvz: 0, atkCd: 0, stun: 0, flashT: 0, dead: false, deathT: 0,
+    mesh, phase: Math.random() * 6, st: 'walk', stT: 0, cd: rand(0.5, 1.5) * (d.spitInterval || d.attackInterval || 1), ldx: 0, ldz: 0, tele: null, poisonT: 0, poisonDps: 0, poisonTick: 0, hitTag: 0, broken: false };
+  Z.push(zz); return zz;
+}
+function pickType() {
+  let tot = 0; const ws = [];
+  for (const t in C.zombies) { const d = C.zombies[t]; if (t === 'boss' || t === 'shield' || stage < d.fromStage || !d.weight) continue; ws.push([t, d.weight]); tot += d.weight; }
+  let r = Math.random() * tot; for (const [t, w] of ws) if ((r -= w) <= 0) return t; return 'walker';
+}
+function spawnRows(n, baseZ) {
+  const cs = C.spawn.colSpacing;
+  for (let r = 0; r < n; r++) {
+    const z = Math.max(gateZ + 3, baseZ - r * C.spawn.rowSpacing);
+    const width = rand(0.45, 1) * (RH * 2 - 2), cx = rand(-(RH - 1 - width / 2), RH - 1 - width / 2);
+    for (let x = cx - width / 2; x <= cx + width / 2; x += cs) {
+      if (Z.length >= C.game.maxZombies) return;
+      spawnZombie(pickType(), x + rand(-0.25, 0.25), z + rand(-0.35, 0.35));
+    }
+  }
+  const sd = C.zombies.shield;
+  if (stage >= sd.fromStage && Math.random() < sd.groupChance) {
+    const n = sd.groupSize[0] + (Math.random() * (sd.groupSize[1] - sd.groupSize[0] + 1) | 0), cx = rand(-RH + 2, RH - 2), z = Math.max(gateZ + 3, baseZ + 1.5);
+    for (let i = 0; i < n; i++) spawnZombie('shield', clamp(cx + (i - (n - 1) / 2) * 1.12, -RH + 0.6, RH - 0.6), z);
+  }
+}
+function updateSpawns(dt) {
+  let interval = C.spawn.rowInterval / stDen(); if (bossSpawned) interval /= C.spawn.bossSpawnMul;
+  spawnAcc += dt;
+  if (spawnAcc >= interval) { spawnAcc -= interval; if (furthest - C.spawn.ahead > gateZ + 3 || P.z > gateZ + 14) spawnRows(C.spawn.rows[0] + (Math.random() * (C.spawn.rows[1] - C.spawn.rows[0] + 1) | 0), furthest - C.spawn.ahead); }
+  if (!bossSpawned && P.z < gateZ + C.stage.bossTrigger) {
+    bossSpawned = true; bossAlive = spawnZombie('boss', 0, gateZ + 5);
+    banner('屍王出現！', 2); play('bossroar'); addShake(0.6);
+  }
+}
+
+/* ================= 傷害 ================= */
+function dmgNumber(x, y, z, val, cls) {
+  if (!SET.numbers || DNUM.length > 40) return;
+  const el = document.createElement('div'); el.className = 'dn' + (cls ? ' ' + cls : ''); el.textContent = Math.round(val);
+  $('dmg').appendChild(el); DNUM.push({ el, x: x + rand(-0.3, 0.3), y, z, t: 0 });
+}
+function shieldBlocks(z, sx, sz, src) {
+  if (z.type !== 'shield' || z.broken || sx === undefined || src === 'ult' || src === 'bomb' || src === 'poison') return false;
+  const dx = sx - z.x, dz = sz - z.z, d = Math.hypot(dx, dz) || 1;
+  return dz / d > Math.cos(C.zombies.shield.blockAngle * Math.PI / 180);
+}
+function hurtZombie(z, dmg, src, kx = 0, kz = 0, sx, sz) {
+  if (z.dead) return false;
+  if (shieldBlocks(z, sx, sz, src)) { if (canPlay('block', 0.06)) { sTone(1400, 900, 0.05, 'square', 0.05); } burst(z.x, 1.1, z.z + 0.55, 'spark', 2, 2); return false; }
+  if (z.type === 'shield' && !z.broken && (src === 'ult' || src === 'bomb')) { z.broken = true; z.mesh.geometry = GEO.shieldBroken; burst(z.x, 1, z.z + 0.5, 'smoke', 6, 4); }
+  DMG[src] = (DMG[src] || 0) + Math.min(dmg, z.hp);
+  z.hp -= dmg;
+  const kr = 1 - z.d.knockResist; z.kvx += kx * kr; z.kvz += kz * kr; z.flashT = 0.07;
+  if (z.type === 'boss' || z.type === 'brute') dmgNumber(z.x, 2.2 * ZSCALE[z.type], z.z, dmg, z.type === 'boss' ? 'b' : '');
+  if (z.hp <= 0) killZombie(z); else play('hit');
+  return true;
+}
+function bomberBlast(x, z) {
+  const d = C.zombies.bomber, R = d.blastRadius;
+  sphereFx(x, z, R, 0xff6a20, 0.35); burst(x, 0.6, z, 'fire', 22, 9); burst(x, 0.6, z, 'smoke', 12, 6); play('boom'); addShake(0.5);
+  for (const q of gridQuery(x, z, R + 2, [])) { const dx = q.x - x, dz = q.z - z, dd = Math.hypot(dx, dz) || 1; if (dd < R + q.r) hurtZombie(q, d.blastDamage, 'bomb', dx / dd * 9, dz / dd * 9); }
+  if (Math.hypot(P.x - x, P.z - z) < R + C.player.radius) hurtPlayer(d.blastPlayerDamage, x, z);
+  const gone = new Set(OBST.filter(o => o.obj && Math.hypot(o.x - x, o.z - z) < R + o.r).map(o => o.obj));
+  for (const ob of gone) { stageGroup.remove(ob.mesh); ob.mesh.geometry.dispose(); burst(ob.x, 0.8, ob.z, 'smoke', 14, 6); }
+  if (gone.size) OBST = OBST.filter(o => !gone.has(o.obj));
+}
+function killZombie(z) {
+  z.dead = true; z.deathT = 0; P.kills++; stageKills++;
+  if (z.tele) { killDecal(z.tele); z.tele = null; }
+  burst(z.x, 1, z.z, 'goo', z.type === 'boss' ? 30 : 4, 5);
+  const s = S();
+  P.ult = Math.min(s.ultNeed, P.ult + (z.type === 'boss' ? 10 : 1));
+  if (s.heal) P.hp = Math.min(s.maxHp, P.hp + s.heal);
+  P.xp += z.d.xp; while (P.xp >= xpNeed(P.level)) { P.xp -= xpNeed(P.level); P.level++; pendingLv++; }
+  if (z.type === 'bomber') bomberBlast(z.x, z.z);
+  if (z.type === 'boss') { bossAlive = null; clearT = 1.6; banner('屍王倒下！', 2); addShake(0.8); play('boom'); }
+  else if (Math.random() < C.drops.medkitChance) dropMedkit(z.x, z.z);
+  play('kill');
+}
+function hurtPlayer(dmg, sx, sz) {
+  if (state !== 'play' || clearT > 0) return;
+  if (P.iframe > 0 || P.ultInv > 0 || P.quake || P.hurtT > 0) return;
+  P.hp -= dmg; P.hurtT = C.player.hurtInvuln; addShake(0.35);
+  dmgNumber(P.x, 2.4, P.z, dmg, 'p'); $('hurt').style.opacity = 1; play('hurt');
+  if (sx !== undefined) { const dx = P.x - sx, dz = P.z - sz, l = Math.hypot(dx, dz) || 1; P.vx += dx / l * 6; P.vz += dz / l * 6; }
+  if (P.hp <= 0) { P.hp = 0; gameOver('你倒下了'); }
+}
+function dropMedkit(x, z) {
+  const mesh = new THREE.Mesh(merge([part(Bx(0.6, 0.35, 0.45), 0xeeeeee, 0, 0.2, 0), part(Bx(0.36, 0.06, 0.1), 0xd02020, 0, 0.4, 0), part(Bx(0.1, 0.06, 0.3), 0xd02020, 0, 0.4, 0)]), vcMat);
+  mesh.position.set(x, 0, z); scene.add(mesh); PICKS.push({ mesh, x, z });
+}
+function inRect(z, sx, sz, dx, dz, len, halfW) { // 點是否在從 (sx,sz) 沿 (dx,dz) 長 len、半寬 halfW 的長方形內
+  const rx = z.x - sx, rz = z.z - sz, along = rx * dx + rz * dz, perp = Math.abs(rx * dz - rz * dx);
+  return along > -z.r && along < len + z.r && perp < halfW + z.r;
+}
+
+/* ================= 動作 ================= */
+function tryRoll() {
+  if (P.rollCd > 0 || P.rollT > 0 || P.quake || clearT > 0) return;
+  let [dx, dz] = moveInput(); if (!dx && !dz) { dx = P.fx; dz = P.fz; }
+  P.rdx = dx; P.rdz = dz; P.rollT = C.roll.duration; P.iframe = C.roll.invuln; P.rollCd = S().rollCd;
+  if (P.prayT > 0) breakPrayer();
+  play('roll'); burst(P.x, 0.2, P.z, 'smoke', 4, 2);
+}
+function breakPrayer() { P.prayT = 0; play('prayBreak'); }
+function tryUlt() {
+  const s = S(); if (P.ult < s.ultNeed || P.quake || P.flameT > 0 || clearT > 0) return;
+  P.ult = 0; play('ult'); banner({ soldier: '火焰放射器！', martial: '集氣…', scientist: '化學藥劑！', cultist: '邪神庇護' }[charId], 0.9);
+  const fx_ = P.fx, fz_ = P.fz;
+  if (charId === 'soldier') {
+    P.flameT = s.flameDur; P.flameTick = 0;
+  } else if (charId === 'martial') {
+    P.quake = { t: 0 }; P.prayT = 0; play('kick');
+  } else if (charId === 'scientist') {
+    const u = CH().ult;
+    lob(P.x, P.z, P.x + fx_ * u.throwDist, P.z + fz_ * u.throwDist, u.flight, 0xb050ff, 0.5, (x, z) => {
+      play('glass'); play('boom'); addShake(0.5); burst(x, 0.5, z, 'chem', 30, 9); ringFx(x, z, s.ultR, 0xb0ff60, 0.4);
+      for (const q of gridQuery(x, z, s.ultR + 1, [])) if ((q.x - x) ** 2 + (q.z - z) ** 2 < (s.ultR + q.r) ** 2) { q.stun = Math.max(q.stun, s.ultStun); q.poisonT = u.poisonTime; q.poisonDps = u.poisonDps; hurtZombie(q, u.impactDamage, 'ult'); }
+      const m = decal(flatCircle, 0x9a50ff, 0.4); m.position.set(x, 0.05, z); m.scale.setScalar(s.ultR);
+      POOLS.push({ x, z, r: s.ultR, dps: 0, t: s.ultStun, tick: 0, mesh: m, ult: true, stun: s.ultStun, base: 0.4 });
+    });
+  } else if (charId === 'cultist') {
+    P.ultInv = s.ultDur;
+  }
+}
+function lob(sx, sz, ex, ez, flight, color, size, onLand) {
+  ex = clamp(ex, -RH + 0.5, RH - 0.5);
+  const m = new THREE.Mesh(Bx(size * 0.6, size, size * 0.6), new THREE.MeshBasicMaterial({ color })); scene.add(m); play('throw');
+  fx({ t: 0, upd(dt) {
+    this.t += dt; const k = Math.min(1, this.t / flight);
+    m.position.set(sx + (ex - sx) * k, 1.2 + Math.sin(k * Math.PI) * 3, sz + (ez - sz) * k); m.rotation.x += dt * 14;
+    if (k >= 1) { onLand(ex, ez); return false; } return true; }, kill() { scene.remove(m); m.geometry.dispose(); m.material.dispose(); } });
+}
+function explode(x, z, R, dmg, src) {
+  for (const q of gridQuery(x, z, R + 2, [])) { const dx = q.x - x, dz = q.z - z, d = Math.hypot(dx, dz) || 1; if (d < R + q.r) hurtZombie(q, dmg, src, dx / d * 8, dz / d * 8); }
+  sphereFx(x, z, R, 0xffa040, 0.35); burst(x, 0.5, z, 'fire', 18, 8); burst(x, 0.5, z, 'smoke', 10, 5); play('boom'); addShake(0.45);
+}
+function bestCluster(R, maxDist, avoid) { // 找殭屍最密集的位置
+  let best = null, bn = -1;
+  const cands = Z.filter(z => !z.dead && Math.hypot(z.x - P.x, z.z - P.z) < maxDist);
+  for (let i = 0; i < Math.min(24, cands.length); i++) {
+    const c = cands[Math.random() * cands.length | 0];
+    if (avoid && avoid.some(a => Math.hypot(a.x - c.x, a.z - c.z) < R)) continue;
+    const n = gridQuery(c.x, c.z, R).filter(q => (q.x - c.x) ** 2 + (q.z - c.z) ** 2 < R * R).length;
+    if (n > bn) { bn = n; best = { x: c.x, z: c.z }; }
+  }
+  return best;
+}
+function summonGod(count, gap, s) {
+  $('godfx').style.opacity = 1; play('god'); banner('邪神降臨', 1.0);
+  const used = [];
+  for (let i = 0; i < count; i++) {
+    let tgt = i === 0 ? { x: P.x + P.fx * CH().attack.punchDist, z: P.z + P.fz * CH().attack.punchDist } : bestCluster(s.godR, 22, used);
+    if (!tgt) tgt = { x: P.x + P.fx * (CH().attack.punchDist + 5 * i) + rand(-4, 4), z: P.z + P.fz * (CH().attack.punchDist + 5 * i) };
+    tgt.x = clamp(tgt.x, -RH, RH); used.push(tgt);
+    const shadow = decal(flatCircle, 0x3a0a5a, 0.0); shadow.position.set(tgt.x, 0.06, tgt.z); shadow.scale.setScalar(s.godR);
+    const mesh = new THREE.Mesh(fistGeo, vcMat); mesh.scale.setScalar(s.godR / 3.2); mesh.visible = false; scene.add(mesh);
+    FISTS.push({ x: tgt.x, z: tgt.z, t: -i * gap, R: s.godR, dmg: s.godDmg, shadow, mesh, hit: false });
+  }
+}
+
+/* ================= 玩家更新 ================= */
+function updatePlayer(dt) {
+  const s = S(), ch = CH();
+  for (const k of ['rollCd', 'cd', 'hurtT', 'iframe', 'ultInv', 'comboT']) P[k] -= dt;
+  if (s.regen && P.hp < s.maxHp) P.hp = Math.min(s.maxHp, P.hp + s.regen * dt);
+  const [mx, mz] = moveInput(), moving = mx || mz;
+  let lift = 0;
+  if (P.quake) {
+    const u = ch.ult, q = P.quake; q.t += dt; const k = Math.min(1, q.t / u.chargeTime);
+    pPivot.rotation.x = -0.2; lift = Math.sin(k * Math.PI) * 0.3;
+    if (Math.random() < dt * 40) burst(P.x + rand(-1.5, 1.5), 0.2, P.z + rand(-1.5, 1.5), 'spark', 1, 1);
+    if (k >= 1) {
+      P.quake = null; pPivot.rotation.x = 0; P.iframe = u.invulnAfter;
+      for (const z of gridQuery(P.x, P.z, s.quakeR + 2, [])) { const dx = z.x - P.x, dz = z.z - P.z, d = Math.hypot(dx, dz) || 1; if (d < s.quakeR + z.r) { z.stun = Math.max(z.stun, u.stun); hurtZombie(z, s.quakeDmg, 'ult', dx / d * u.knockback, dz / d * u.knockback); } }
+      ringFx(P.x, P.z, s.quakeR, 0xffd27a, 0.45); ringFx(P.x, P.z, s.quakeR * 0.6, 0xffffff, 0.3); burst(P.x, 0.3, P.z, 'smoke', 30, 10); play('slam'); play('boom'); addShake(0.9);
+    }
+  } else if (P.rollT > 0) {
+    P.rollT -= dt; const v = C.roll.distance / C.roll.duration;
+    P.x += P.rdx * v * dt; P.z += P.rdz * v * dt;
+    pPivot.rotation.x = (1 - Math.max(0, P.rollT) / C.roll.duration) * Math.PI * 2; pRoot.rotation.y = Math.atan2(P.rdx, P.rdz);
+    if (P.rollT <= 0) pPivot.rotation.x = 0;
+  } else {
+    const held = attackHeld();
+    if (moving && !held) { P.fx = mx; P.fz = mz; }
+    // 邪教：禱告中不能移動，移動就中斷
+    if (charId === 'cultist' && P.prayT > 0 && moving) breakPrayer();
+    let sp = s.speed * (held && charId !== 'cultist' ? 0.8 : 1);
+    if (moving) { P.x += mx * sp * dt; P.z += mz * sp * dt; P.walk += dt * 10; }
+    pRoot.rotation.y = Math.atan2(P.fx, P.fz);
+    pPivot.rotation.x = P.stepT > 0 ? 0.25 : 0;
+    if (held || (charId === 'cultist' && P.prayT > 0)) doAttack(s, ch, moving);
+  }
+  // 士兵絕招：火焰放射器
+  if (P.flameT > 0) {
+    const u = ch.ult; P.flameT -= dt; P.flameTick -= dt;
+    const yaw = Math.atan2(P.fx, P.fz);
+    flameMesh.visible = true; flameMesh.position.set(P.x, 1.0, P.z); flameMesh.rotation.y = yaw + Math.PI; flameMesh.scale.setScalar(s.flameRange); flameMesh.material.opacity = 0.35 + Math.random() * 0.25;
+    for (let i = 0; i < 3; i++) { const a = yaw + rand(-u.arc / 2, u.arc / 2), d = rand(1, s.flameRange); burst(P.x + Math.sin(a) * d, 1.0, P.z + Math.cos(a) * d, 'fire', 1, 1.5); }
+    if (P.flameTick <= 0) {
+      P.flameTick = u.tick;
+      for (const z of gridQuery(P.x + P.fx * s.flameRange / 2, P.z + P.fz * s.flameRange / 2, s.flameRange / 2 + 2, [])) {
+        const dx = z.x - P.x, dz = z.z - P.z, d = Math.hypot(dx, dz) || 0.01;
+        if (d > s.flameRange + z.r) continue; if (d > 0.8 && (dx * P.fx + dz * P.fz) / d < Math.cos(u.arc / 2)) continue;
+        hurtZombie(z, s.flameDps * u.tick, 'ult', P.fx * 1.5, P.fz * 1.5);
+      }
+      if (canPlay('flame', 0.1)) sNoise(0.2, 600, 'lowpass', 0.25);
+    }
+    if (P.flameT <= 0) flameMesh.visible = false;
+  }
+  if (P.stepT > 0) { P.stepT -= dt; }
+  if (charId === 'martial' && P.comboT <= 0) P.combo = 0;
+  P.x += P.vx * dt; P.z += P.vz * dt; const kd = Math.exp(-10 * dt); P.vx *= kd; P.vz *= kd;
+  for (const b of OBST) { const dx = P.x - b.x, dz = P.z - b.z, rr = C.player.radius + b.r, d2 = dx * dx + dz * dz; if (d2 < rr * rr && d2 > 1e-6) { const d = Math.sqrt(d2), k = (rr - d) / d; P.x += dx * k; P.z += dz * k; } }
+  P.x = clamp(P.x, -RH + 0.5, RH - 0.5);
+  backLimit = Math.min(furthest + C.game.retreatLimit, pushZ);
+  P.z = clamp(P.z, gateZ + 2, backLimit);
+  furthest = Math.min(furthest, P.z);
+  // 模型與標示
+  pRoot.position.set(P.x, lift + (moving && P.rollT <= 0 && !P.quake ? Math.abs(Math.sin(P.walk)) * 0.08 : 0), P.z);
+  pMesh.visible = !(P.hurtT > 0 && P.rollT <= 0 && Math.floor(P.hurtT * 20) % 2);
+  plight.position.set(P.x, 3, P.z); plight.intensity += (0.8 - plight.intensity) * Math.min(1, dt * 20);
+  faceMark.position.set(P.x + P.fx * 1.3, 0.06, P.z + P.fz * 1.3); faceMark.rotation.y = Math.atan2(P.fx, P.fz);
+  pRing.position.set(P.x, 0.05, P.z); pRing.scale.setScalar(0.75); pRing.material.color.setHex(P.iframe > 0 || P.quake ? 0x9fd8ff : 0x8fd16b);
+  if (charId === 'cultist') {
+    prayRing.position.set(P.x, 0.05, P.z); const pr = P.prayT > 0 ? 1 - P.prayT / s.prayTime : 0;
+    prayRing.scale.setScalar(0.4 + pr * 1.4); prayRing.material.opacity = P.prayT > 0 ? 0.25 + pr * 0.35 : 0;
+    ultAura.position.set(P.x, 0.08, P.z); ultAura.scale.setScalar(1.3 + Math.sin(T * 8) * 0.1); ultAura.material.opacity = P.ultInv > 0 ? 0.8 : 0;
+  }
+  const lineZ = backLimit + C.game.lineBehind;
+  lineMesh.position.set(0, 0.06, lineZ); lineMesh.scale.set(RH * 2 + 1, 1, 0.35);
+  retreatMesh.position.set(0, 0.05, backLimit + 0.45); retreatMesh.scale.set(RH * 2 + 1, 1, pushOn ? 0.3 : 0.12);
+  retreatMesh.material.color.setHex(pushOn ? 0xffb040 : 0xffffff); retreatMesh.material.opacity = pushOn ? 0.45 : 0.12;
+  if (P.quake && charId === 'martial') { const k = Math.min(1, P.quake.t / ch.ult.chargeTime); pRing.scale.setScalar(0.75 + k * (s.quakeR - 0.75)); pRing.material.color.setHex(0xffd27a); }
+  for (let i = PICKS.length - 1; i >= 0; i--) { const p = PICKS[i]; p.mesh.rotation.y += dt * 1.5; if (Math.hypot(P.x - p.x, P.z - p.z) < 1.3) { P.hp = Math.min(s.maxHp, P.hp + C.drops.medkitHeal); banner('+' + C.drops.medkitHeal + ' 血量', 0.8); scene.remove(p.mesh); p.mesh.geometry.dispose(); PICKS.splice(i, 1); } }
+}
+function doAttack(s, ch, moving) {
+  const a = ch.attack, fx_ = P.fx, fz_ = P.fz, yaw = Math.atan2(fx_, fz_);
+  if (charId === 'soldier') {
+    if (P.cd > 0) return; P.cd = s.interval;
+    for (let i = 0; i < s.lines; i++) {
+      const off = (i - (s.lines - 1) / 2) * a.lineGap, x = P.x + fx_ * 0.8 - fz_ * off, z = P.z + fz_ * 0.8 + fx_ * off;
+      const m = poolBullet.get(); m.position.set(x, 1.2, z); m.rotation.set(0, yaw, 0);
+      BUL.push({ mesh: m, x, z, vx: fx_ * a.bulletSpeed, vz: fz_ * a.bulletSpeed, life: s.range / a.bulletSpeed, dmg: s.dmg, hit: new Set(), kb: a.knockback });
+    }
+    plight.intensity = 2.2; play('shot');
+  } else if (charId === 'martial') {
+    if (P.cd > 0) return;
+    const fin = P.combo === 2, R = fin ? s.finRange : s.range, dmg = s.dmg * (fin ? a.finisherMul : 1);
+    P.cd = fin ? s.finInterval : s.interval; P.combo = fin ? 0 : P.combo + 1; P.comboT = 0.7;
+    P.vx += fx_ * a.step * 10; P.vz += fz_ * a.step * 10; P.stepT = 0.1;
+    let hits = 0;
+    for (const q of gridQuery(P.x, P.z, R + 2, [])) {
+      const dx = q.x - P.x, dz = q.z - P.z, d = Math.hypot(dx, dz) || 0.01;
+      if (d > R + q.r) continue;
+      const arc = fin ? a.finisherArc : a.arc, dot = (dx * fx_ + dz * fz_) / d; if (arc < 6.2 && d > q.r + 0.6 && dot < Math.cos(arc / 2)) continue;
+      if (hurtZombie(q, dmg, 'atk', dx / d * a.knockback * (fin ? 2 : 1), dz / d * a.knockback * (fin ? 2 : 1), P.x, P.z)) hits++;
+    }
+    arcFx(P.x, P.z, yaw, R, fin ? Math.min(a.finisherArc, 6.28) : a.arc, fin ? 0xffd27a : 0xffffff);
+    if (fin && s.waveLen > 0) {
+      const wd = dmg * UP.m_wave.damagePct;
+      for (const q of gridQuery(P.x + fx_ * s.waveLen / 2, P.z + fz_ * s.waveLen / 2, s.waveLen / 2 + 2, [])) if (inRect(q, P.x, P.z, fx_, fz_, s.waveLen, 1)) hurtZombie(q, wd, 'wave', fx_ * 3, fz_ * 3, P.x, P.z);
+      stripFx(P.x, P.z, fx_, fz_, s.waveLen, 2, 0xffd27a, 0.25);
+    }
+    if (fin) { play('heavy'); if (hits) addShake(0.2); } else play('punch');
+  } else if (charId === 'scientist') {
+    if (P.cd > 0) return; P.cd = s.interval;
+    for (let i = 0; i < s.flasks; i++) {
+      const off = s.flasks > 1 ? (i - (s.flasks - 1) / 2) * a.spread : rand(-0.6, 0.6), dist = a.throwDist + rand(-1, 1);
+      lob(P.x, P.z, P.x + fx_ * dist - fz_ * off, P.z + fz_ * dist + fx_ * off, a.flight + i * 0.05, 0xffa030, 0.32, (x, z) => {
+        play('glass'); burst(x, 0.4, z, 'orange', 6, 3);
+        for (const q of gridQuery(x, z, s.radius + 1, [])) if ((q.x - x) ** 2 + (q.z - z) ** 2 < (s.radius + q.r) ** 2) hurtZombie(q, a.impactDamage, 'atk', 0, 0, x, z);
+        const m = decal(flatCircle, 0xff8a1a, 0.45); m.position.set(x, 0.05, z); m.scale.setScalar(s.radius);
+        POOLS.push({ x, z, r: s.radius, dps: s.dps, t: s.dur, tick: 0, mesh: m, base: 0.45 });
+      });
+    }
+  } else if (charId === 'cultist') {
+    if (P.prayT <= 0) { if (moving || P.cd > 0) return; P.prayT = s.prayTime; play('pray'); return; }
+    P.prayT -= 1 / 60 * 0; // 進度在 updatePrayer
+  }
+}
+function updatePrayer(dt, s) {
+  if (charId !== 'cultist' || P.prayT <= 0) return;
+  P.prayT -= dt; if (Math.random() < dt * 20) burst(P.x + rand(-1, 1), 0.2, P.z + rand(-1, 1), 'purple', 1, 0.5);
+  if (P.prayT <= 0) {
+    P.prayT = 0; P.prays++; P.cd = 0.12; play('prayFull');
+    if (P.prays >= s.prays) { P.prays = 0; summonGod(s.punches, CH().attack.punchGap, s); }
+  }
+}
+
+/* ================= 殭屍與其他更新 ================= */
+function updateZombies(dt) {
+  const PR = C.player.radius, aggro = C.aggroRange, lineZ = backLimit + C.game.lineBehind, leave = C.game.leaveDistance;
+  for (let i = Z.length - 1; i >= 0; i--) {
+    const z = Z[i];
+    if (z.dead) {
+      z.deathT += dt; z.mesh.rotation.x = -Math.min(1, z.deathT / 0.3) * Math.PI / 2;
+      z.mesh.position.y = z.deathT > 0.5 ? -(z.deathT - 0.5) * 1.5 : 0; z.mesh.material = vcMat;
+      if (z.deathT > 1.0) { ZPOOL[z.type].put(z.mesh); Z.splice(i, 1); }
+      continue;
+    }
+    if (z.poisonT > 0) { z.poisonT -= dt; if ((z.poisonTick -= dt) <= 0) { z.poisonTick = 0.5; hurtZombie(z, z.poisonDps * 0.5, 'poison'); if (z.dead) continue; } }
+    const d = z.d, dx = P.x - z.x, dz = P.z - z.z, dist = Math.hypot(dx, dz) || 0.001, nx = dx / dist, nz = dz / dist;
+    z.atkCd -= dt; z.cd -= dt; z.stT -= dt;
+    let vx = 0, vz = 0, face = true, fdx = nx, fdz = nz;
+    if (z.stun > 0) { z.stun -= dt; face = false; }
+    else if (z.type === 'boss') {
+      if (z.st === 'walk') {
+        vx = nx * z.spd; vz = nz * z.spd;
+        if (z.cd <= 0 && dist < 14) {
+          if (dist < d.slamRadius + 1 || Math.random() < 0.5) { z.st = 'slamw'; z.stT = d.slamWindup; z.tele = decal(flatCircle, 0xff2a1a, 0.25); z.tele.position.set(z.x, 0.05, z.z); z.tele.scale.setScalar(d.slamRadius); }
+          else { z.st = 'chargew'; z.stT = d.chargeWindup; z.ldx = nx; z.ldz = nz; const Ln = d.chargeSpeed * d.chargeTime; z.tele = decal(flatPlane, 0xff2a1a, 0.25); z.tele.position.set(z.x + nx * Ln / 2, 0.05, z.z + nz * Ln / 2); z.tele.rotation.y = Math.atan2(nx, nz); z.tele.scale.set(z.r * 2, 1, Ln); }
+          play('growl');
+        }
+      } else if (z.st === 'slamw') {
+        face = false; z.tele.material.opacity = 0.2 + 0.4 * (1 - z.stT / d.slamWindup);
+        if (z.stT <= 0) { killDecal(z.tele); z.tele = null; z.st = 'rec'; z.stT = 0.6; z.cd = d.attackInterval; ringFx(z.x, z.z, d.slamRadius, 0xff7a4a, 0.4); burst(z.x, 0.3, z.z, 'smoke', 20, 8); play('slam'); addShake(0.7); if (dist < d.slamRadius + PR) hurtPlayer(d.slamDamage, z.x, z.z); }
+      } else if (z.st === 'chargew') {
+        face = false; z.mesh.rotation.y = Math.atan2(z.ldx, z.ldz); z.tele.material.opacity = 0.2 + 0.4 * (1 - z.stT / d.chargeWindup);
+        if (z.stT <= 0) { killDecal(z.tele); z.tele = null; z.st = 'charge'; z.stT = d.chargeTime; play('bossroar'); }
+      } else if (z.st === 'charge') {
+        face = false; vx = z.ldx * d.chargeSpeed; vz = z.ldz * d.chargeSpeed;
+        if (dist < z.r * 1.4 + PR && z.atkCd <= 0) { z.atkCd = 0.5; hurtPlayer(d.chargeDamage, z.x, z.z); }
+        if (z.stT <= 0) { z.st = 'rec'; z.stT = 0.7; z.cd = d.attackInterval; }
+      } else if (z.st === 'rec') { face = false; if (z.stT <= 0) z.st = 'walk'; }
+    } else if (z.type === 'spitter' && z.st === 'wind') {
+      if (z.stT <= 0) { z.st = 'walk'; z.cd = d.spitInterval; const m = poolAcid.get(); m.position.set(z.x, 1.4, z.z); ACID.push({ mesh: m, x: z.x, z: z.z, vx: nx * d.acidSpeed, vz: nz * d.acidSpeed, t: 2.2, dmg: d.acidDamage }); play('spit'); }
+    } else if (z.type === 'toxic' && z.st === 'wind') {
+      if (z.stT <= 0) {
+        z.st = 'walk'; z.cd = d.spitInterval; play('spit');
+        lob(z.x, z.z, P.x + rand(-0.6, 0.6), P.z + rand(-0.6, 0.6), d.flight, 0xe040e0, 0.35, (x, zz) => {
+          const m = decal(flatCircle, 0xc030c0, 0.5); m.position.set(x, 0.045, zz); m.scale.setScalar(d.puddleRadius);
+          HAZ.push({ x, z: zz, r: d.puddleRadius, dps: d.puddleDps, t: d.puddleTime, tick: 0, mesh: m }); burst(x, 0.3, zz, 'toxic', 8, 3);
+        });
+      }
+    } else if (z.type === 'laser' && (z.st === 'aim' || z.st === 'beam')) {
+      face = false;
+      if (z.st === 'aim') {
+        z.tele.material.opacity = 0.25 + 0.5 * Math.abs(Math.sin(T * 20));
+        if (z.stT <= 0) {
+          killDecal(z.tele); z.tele = null; z.st = 'beam'; z.stT = d.beamTime;
+          const Ln = d.laserRange, bm = new THREE.Mesh(Bx(d.laserWidth * 0.6, 0.25, Ln), new THREE.MeshBasicMaterial({ color: 0xff4a4a, transparent: true, opacity: 0.9 }));
+          bm.position.set(z.x + z.ldx * Ln / 2, 1.2, z.z + z.ldz * Ln / 2); bm.rotation.y = Math.atan2(z.ldx, z.ldz); scene.add(bm);
+          fx({ t: 0, upd(dt2) { this.t += dt2; bm.material.opacity = 0.9 * (1 - this.t / 0.3); bm.scale.x = 1 + this.t * 2; return this.t < 0.3; }, kill() { scene.remove(bm); bm.geometry.dispose(); bm.material.dispose(); } });
+          if (canPlay('laser', 0.05)) { sTone(1800, 300, 0.3, 'sawtooth', 0.12); sNoise(0.25, 3000, 'highpass', 0.15); }
+          if (inRect({ x: P.x, z: P.z, r: PR }, z.x, z.z, z.ldx, z.ldz, Ln, d.laserWidth / 2)) hurtPlayer(d.laserDamage, z.x, z.z);
+        }
+      } else if (z.stT <= 0) { z.st = 'walk'; z.cd = d.laserInterval; }
+    } else if (z.type === 'shield') {
+      vx = 0; vz = z.spd; fdx = 0; fdz = 1;
+    } else {
+      const passed = z.z > P.z + leave;
+      if (!passed && dist < aggro) { vx = nx * z.spd; vz = nz * z.spd; }
+      else { vx = 0; vz = z.spd; fdx = 0; fdz = 1; }
+      if ((z.type === 'spitter' || z.type === 'toxic') && !passed && z.cd <= 0 && dist < d.spitRange) { z.st = 'wind'; z.stT = d.spitWindup; }
+      if (z.type === 'laser' && !passed) {
+        if (dist < d.keepRange) { vx = 0; vz = 0; }
+        if (z.cd <= 0 && dist < d.laserRange - 2) {
+          z.st = 'aim'; z.stT = d.aimTime; z.ldx = nx; z.ldz = nz; const Ln = d.laserRange;
+          z.tele = decal(flatPlane, 0xff2020, 0.4); z.tele.position.set(z.x + nx * Ln / 2, 0.06, z.z + nz * Ln / 2); z.tele.rotation.y = Math.atan2(nx, nz); z.tele.scale.set(d.laserWidth, 1, Ln);
+          z.mesh.rotation.y = Math.atan2(nx, nz);
+        }
+      }
+    }
+    z.x += (vx + z.kvx) * dt; z.z += (vz + z.kvz) * dt;
+    const kd = Math.exp(-7 * dt); z.kvx *= kd; z.kvz *= kd;
+    for (const o of gridQuery(z.x, z.z, z.r + 1.8)) {
+      if (o.id <= z.id) continue;
+      const ex = o.x - z.x, ez = o.z - z.z, rr = z.r * ZSCALE[z.type] ** 0.2 + o.r, d2 = ex * ex + ez * ez;
+      if (d2 < rr * rr && d2 > 1e-6) { const dd = Math.sqrt(d2), push = (rr - dd) / dd, ma = z.r * z.r, mb = o.r * o.r, wa = mb / (ma + mb), wb = ma / (ma + mb); z.x -= ex * push * wa; z.z -= ez * push * wa; o.x += ex * push * wb; o.z += ez * push * wb; }
+    }
+    for (const b of OBST) { const ex = z.x - b.x, ez = z.z - b.z, rr = z.r * 0.8 + b.r, d2 = ex * ex + ez * ez; if (d2 < rr * rr && d2 > 1e-6) { const dd = Math.sqrt(d2), k = (rr - dd) / dd; z.x += ex * k; z.z += ez * k; } }
+    z.x = clamp(z.x, -RH + 0.4, RH - 0.4); z.z = Math.max(z.z, gateZ + 1);
+    // 與玩家碰撞（互推）
+    const ex = P.x - z.x, ez = P.z - z.z, ed = Math.hypot(ex, ez), rr = z.r * (z.type === 'boss' ? 1.3 : 1) + PR;
+    if (ed < rr && ed > 1e-4 && P.rollT <= 0) { const push = (rr - ed) / ed; const w = z.type === 'boss' || z.type === 'brute' || (z.type === 'shield' && !z.broken) ? 0.9 : 0.35; P.x += ex * push * w; P.z += ez * push * w; z.x -= ex * push * (1 - w); z.z -= ez * push * (1 - w); }
+    if (ed < rr + 0.15 && z.atkCd <= 0 && z.stun <= 0 && z.st !== 'slamw' && z.st !== 'chargew') { z.atkCd = C.attackCooldown; hurtPlayer(d.damage, z.x, z.z); }
+    // 漏過防線
+    if (z.type !== 'boss' && z.z > lineZ) {
+      leaked++; play('leak'); burst(z.x, 0.5, lineZ, 'spark', 6, 3); if (z.tele) { killDecal(z.tele); z.tele = null; } ZPOOL[z.type].put(z.mesh); Z.splice(i, 1);
+      continue;
+    }
+    if (z.type === 'boss') z.z = Math.min(z.z, lineZ - 3);
+    const m = z.mesh; m.position.set(z.x, 0, z.z);
+    if (face) m.rotation.y = Math.atan2(fdx, fdz);
+    m.rotation.z = Math.sin(T * 6 + z.phase) * 0.08; m.rotation.x = z.st === 'wind' ? 0.35 : 0;
+    const sc = ZSCALE[z.type]; m.scale.set(sc, sc * (z.st === 'slamw' ? 1 + 0.12 * Math.sin(T * 30) : 1), sc);
+    if (z.flashT > 0) { z.flashT -= dt; m.material = flashMat; }
+    else if (z.stun > 0) m.material = stunMat;
+    else m.material = (z.st === 'wind' || z.st === 'slamw' || z.st === 'chargew' || z.st === 'aim') && Math.floor(T * 12) % 2 ? windupMat : vcMat;
+  }
+  if (Math.random() < dt * 0.4 && Z.length) play('growl');
+}
+function updateProjectiles(dt) {
+  for (let i = BUL.length - 1; i >= 0; i--) {
+    const b = BUL[i], ox = b.x, oz = b.z;
+    b.x += b.vx * dt; b.z += b.vz * dt; b.life -= dt;
+    let dead = b.life <= 0 || Math.abs(b.x) > RH + 1;
+    if (!dead) for (const o of OBST) if ((b.x - o.x) ** 2 + (b.z - o.z) ** 2 < o.r * o.r) { dead = true; burst(b.x, 1.2, b.z, 'spark', 2, 2); break; }
+    if (!dead) {
+      const sx = b.x - ox, sz = b.z - oz, sl2 = sx * sx + sz * sz;
+      for (const z of gridQuery((b.x + ox) / 2, (b.z + oz) / 2, Math.sqrt(sl2) / 2 + 2.2, [])) {
+        if (b.hit.has(z.id)) continue;
+        let t = sl2 ? ((z.x - ox) * sx + (z.z - oz) * sz) / sl2 : 0; t = clamp(t, 0, 1);
+        const cx = ox + sx * t - z.x, cz = oz + sz * t - z.z, rr = z.r * Math.pow(ZSCALE[z.type], 0.4) + 0.15;
+        if (cx * cx + cz * cz < rr * rr) { b.hit.add(z.id); const sp = Math.hypot(b.vx, b.vz); if (hurtZombie(z, b.dmg, 'atk', b.vx / sp * b.kb, b.vz / sp * b.kb, ox, oz)) burst(z.x, 1.2, z.z, 'goo', 1, 2); else { dead = true; break; } }
+      }
+    }
+    if (dead) { poolBullet.put(b.mesh); BUL.splice(i, 1); } else b.mesh.position.set(b.x, 1.2, b.z);
+  }
+  for (let i = ACID.length - 1; i >= 0; i--) {
+    const a = ACID[i]; a.x += a.vx * dt; a.z += a.vz * dt; a.t -= dt; a.mesh.position.set(a.x, 1.2, a.z); a.mesh.rotation.y += dt * 8;
+    let dead = a.t <= 0;
+    if (!dead && (a.x - P.x) ** 2 + (a.z - P.z) ** 2 < (C.player.radius + 0.35) ** 2) { if (!(P.iframe > 0 || P.quake || P.ultInv > 0)) { hurtPlayer(a.dmg, a.x, a.z); dead = true; } }
+    if (dead) { burst(a.x, 0.6, a.z, 'acid', 4, 3); poolAcid.put(a.mesh); ACID.splice(i, 1); }
+  }
+  for (let i = POOLS.length - 1; i >= 0; i--) {
+    const f = POOLS[i]; f.t -= dt; f.tick -= dt;
+    f.mesh.material.opacity = f.base * Math.min(1, f.t * 2) * (0.85 + Math.random() * 0.15);
+    if (Math.random() < dt * 10) burst(f.x + rand(-f.r, f.r) * 0.7, 0.15, f.z + rand(-f.r, f.r) * 0.7, f.ult ? 'purple' : 'orange', 1, 0.4);
+    if (f.tick <= 0) {
+      f.tick = 0.25;
+      for (const z of gridQuery(f.x, f.z, f.r + 1, [])) if ((z.x - f.x) ** 2 + (z.z - f.z) ** 2 < (f.r + z.r) ** 2) {
+        if (f.ult) { z.stun = Math.max(z.stun, 0.3); z.poisonT = Math.max(z.poisonT, CH().ult.poisonTime); z.poisonDps = CH().ult.poisonDps; }
+        else hurtZombie(z, f.dps * 0.25, 'atk', 0, 0, f.x, f.z);
+      }
+    }
+    if (f.t <= 0) { killDecal(f.mesh); POOLS.splice(i, 1); }
+  }
+  for (let i = HAZ.length - 1; i >= 0; i--) {
+    const h = HAZ[i]; h.t -= dt; h.tick -= dt; h.mesh.material.opacity = 0.5 * Math.min(1, h.t);
+    if (Math.random() < dt * 6) burst(h.x + rand(-h.r, h.r) * 0.6, 0.15, h.z + rand(-h.r, h.r) * 0.6, 'toxic', 1, 0.3);
+    if (h.tick <= 0 && Math.hypot(P.x - h.x, P.z - h.z) < h.r + C.player.radius * 0.5) { h.tick = 0.5; hurtPlayer(h.dps * 0.5); }
+    if (h.t <= 0) { killDecal(h.mesh); HAZ.splice(i, 1); }
+  }
+  for (let i = FISTS.length - 1; i >= 0; i--) {
+    const f = FISTS[i]; f.t += dt; const tel = CH().attack.telegraph;
+    if (f.t < 0) continue;
+    if (f.t < tel) { f.shadow.material.opacity = 0.15 + 0.4 * f.t / tel; f.mesh.visible = true; f.mesh.position.set(f.x, 18 * (1 - f.t / tel) + 1.5, f.z); }
+    else if (!f.hit) {
+      f.hit = true; f.mesh.position.set(f.x, 1.5, f.z);
+      for (const q of gridQuery(f.x, f.z, f.R + 2, [])) { const dx = q.x - f.x, dz = q.z - f.z, d = Math.hypot(dx, dz) || 1; if (d < f.R + q.r) hurtZombie(q, f.dmg, 'god', dx / d * 12, dz / d * 12, f.x, f.z); }
+      ringFx(f.x, f.z, f.R * 1.2, 0xc070ff, 0.45); burst(f.x, 0.4, f.z, 'purple', 26, 10); burst(f.x, 0.4, f.z, 'smoke', 14, 7); play('slam'); addShake(0.8);
+    } else if (f.t > tel + 0.45) {
+      f.mesh.position.y += dt * 30; f.shadow.material.opacity *= 0.85;
+      if (f.t > tel + 1.0) { scene.remove(f.mesh); killDecal(f.shadow); FISTS.splice(i, 1); }
+    }
+  }
+  for (let i = PARTS.length - 1; i >= 0; i--) { const p = PARTS[i]; p.t -= dt; p.vy -= 18 * dt; p.mesh.position.x += p.vx * dt; p.mesh.position.y = Math.max(0.05, p.mesh.position.y + p.vy * dt); p.mesh.position.z += p.vz * dt; if (p.t <= 0) { poolPart.put(p.mesh); PARTS.splice(i, 1); } }
+  for (let i = FX.length - 1; i >= 0; i--) if (!FX[i].upd(dt)) { FX[i].kill(); FX.splice(i, 1); }
+}
+
+/* ================= 升級 ================= */
+const pct = v => Math.round(v * 100) + '%';
+const UPG = [
+  { id: 'hp', who: '*', ic: '❤️', nm: '強健體魄', ds: () => `最大血量 +${UP.hp.maxHp}，並回復 ${UP.hp.maxHp}` },
+  { id: 'speed', who: '*', ic: '👟', nm: '輕裝', ds: () => `移動速度 +${pct(UP.speed.speedPct)}` },
+  { id: 'rollcd', who: '*', ic: '🌀', nm: '戰術翻滾', ds: () => `翻滾冷卻 -${pct(UP.rollcd.cooldownPct)}` },
+  { id: 'charge', who: '*', ic: '⭐', nm: '殺意', ds: () => `絕招所需擊殺 -${pct(UP.charge.killsPct)}` },
+  { id: 'regen', who: '*', ic: '🩹', nm: '急救包', ds: () => `每秒回復 ${UP.regen.perSec} 血` },
+  { id: 's_dmg', who: 'soldier', ic: '🎯', nm: '強裝彈', ds: () => `子彈傷害 +${pct(UP.s_dmg.damagePct)}` },
+  { id: 's_lines', who: 'soldier', ic: '🔫', nm: '並列槍管', ds: () => `多一道平行彈道（一次穿透兩列以上）` },
+  { id: 's_rate', who: 'soldier', ic: '⏩', nm: '快速扳機', ds: () => `射擊間隔 x${UP.s_rate.intervalMul}` },
+  { id: 's_range', who: 'soldier', ic: '📏', nm: '長槍管', ds: () => `射程 +${UP.s_range.range}` },
+  { id: 's_flame', who: 'soldier', ic: '🔥', nm: '高壓燃料', ds: () => `火焰傷害 +${pct(UP.s_flame.dpsPct)}、距離 +${UP.s_flame.range}` },
+  { id: 's_flame2', who: 'soldier', ic: '🛢️', nm: '大容量油箱', ds: () => `火焰持續 +${UP.s_flame2.duration} 秒` },
+  { id: 'm_dmg', who: 'martial', ic: '👊', nm: '鐵拳', ds: () => `拳腳傷害 +${pct(UP.m_dmg.damagePct)}` },
+  { id: 'm_range', who: 'martial', ic: '🦵', nm: '長腿', ds: () => `攻擊距離 +${UP.m_range.range}` },
+  { id: 'm_speed', who: 'martial', ic: '💨', nm: '連打', ds: () => `出拳間隔 x${UP.m_speed.intervalMul}` },
+  { id: 'm_wave', who: 'martial', ic: '🌊', nm: '氣勁', ds: l => `第三段重擊放出直線氣勁，長度 ${UP.m_wave.length * l}，傷害為重擊的 ${pct(UP.m_wave.damagePct)}` },
+  { id: 'm_quake', who: 'martial', ic: '🌋', nm: '天崩地裂', ds: () => `震地半徑 +${UP.m_quake.radius}、傷害 +${pct(UP.m_quake.damagePct)}` },
+  { id: 'm_heal', who: 'martial', ic: '🍵', nm: '調息', ds: () => `每擊殺一隻回 ${UP.m_heal.healPerKill} 血` },
+  { id: 'c_dmg', who: 'scientist', ic: '☣️', nm: '高濃度', ds: () => `藥池傷害 +${pct(UP.c_dmg.dpsPct)}` },
+  { id: 'c_radius', who: 'scientist', ic: '⭕', nm: '擴散配方', ds: () => `藥池半徑 +${UP.c_radius.radius}` },
+  { id: 'c_dur', who: 'scientist', ic: '⏳', nm: '緩釋配方', ds: () => `藥池持續 +${UP.c_dur.duration} 秒` },
+  { id: 'c_flask', who: 'scientist', ic: '🧪', nm: '雙手投擲', ds: () => `一次多丟 ${UP.c_flask.flasks} 瓶` },
+  { id: 'c_rate', who: 'scientist', ic: '⚗️', nm: '量產', ds: () => `投擲間隔 x${UP.c_rate.intervalMul}` },
+  { id: 'c_ult', who: 'scientist', ic: '🧊', nm: '強效凝固劑', ds: () => `絕招半徑 +${UP.c_ult.radius}、定身 +${UP.c_ult.stun} 秒` },
+  { id: 'k_pray', who: 'cultist', ic: '📿', nm: '虔誠', ds: () => `禱告時間 x${UP.k_pray.prayMul}` },
+  { id: 'k_dmg', who: 'cultist', ic: '👹', nm: '邪神之怒', ds: () => `邪神拳傷害 +${pct(UP.k_dmg.damagePct)}` },
+  { id: 'k_radius', who: 'cultist', ic: '🌑', nm: '巨拳', ds: () => `邪神拳範圍 +${UP.k_radius.radius}` },
+  { id: 'k_punch', who: 'cultist', ic: '✊', nm: '連打', ds: () => `邪神多揍 ${UP.k_punch.punches} 拳` },
+  { id: 'k_fewer', who: 'cultist', ic: '🕯️', nm: '獻祭', ds: () => `召喚邪神需要的禱告次數 -${UP.k_fewer.prays}` },
+  { id: 'k_ult', who: 'cultist', ic: '🛡️', nm: '深層庇護', ds: () => `絕招無敵時間 +${UP.k_ult.duration} 秒` },
+];
+let cardOpts = [];
+function openLevel() {
+  state = 'level'; mouseL = false;
+  const pool = UPG.filter(u => (u.who === '*' || u.who === charId) && lv(u.id) < UP[u.id].max);
+  cardOpts = [];
+  while (cardOpts.length < 3 && pool.length) { const w = u => u.who === '*' ? 1 : 1.8; let tot = pool.reduce((a, u) => a + w(u), 0), r = Math.random() * tot, k = 0; for (; k < pool.length - 1; k++) if ((r -= w(pool[k])) <= 0) break; cardOpts.push(pool.splice(k, 1)[0]); }
+  if (!cardOpts.length) cardOpts.push({ id: '_heal', who: '*', ic: '🍖', nm: '補給', ds: () => '回復 40 血' });
+  $('cards').innerHTML = '';
+  cardOpts.forEach((u, i) => {
+    const l = lv(u.id) + 1, max = UP[u.id] ? UP[u.id].max : 0, el = document.createElement('div'); el.className = 'up';
+    el.innerHTML = `<div class="tag">${i + 1}．${u.who === '*' ? '通用' : CH().name + '專屬'}</div><div class="ic">${u.ic}</div><div class="nm">${u.nm}</div><div class="lv">${max ? (l === 1 ? '新！' : 'Lv ' + (l - 1) + ' → ' + l) + ' ／ 最高 ' + max : ''}</div><div class="ds">${u.ds(l)}</div>`;
+    el.onclick = () => pickCard(i); $('cards').appendChild(el);
+  });
+  $('lvPending').textContent = pendingLv > 1 ? `（還有 ${pendingLv - 1} 次）` : '';
+  showScr('sLevel'); play('level');
+}
+function pickCard(i) {
+  const u = cardOpts[i]; if (!u || state !== 'level') return;
+  if (u.id === '_heal') P.hp = Math.min(S().maxHp, P.hp + 40);
+  else { P.lv[u.id] = lv(u.id) + 1; if (u.id === 'hp') P.hp += UP.hp.maxHp; }
+  pendingLv--; showScr(null); state = 'play';
+}
+
+/* ================= 畫面 ================= */
+let settingsBack = 'sTitle';
+function showScr(id) { for (const s of ['sTitle', 'sSelect', 'sSettings', 'sHelp', 'sLevel', 'sPause', 'sClear', 'sOver']) $(s).style.display = s === id ? 'flex' : 'none'; }
+function buildText() { return UPG.filter(u => lv(u.id)).map(u => `${u.ic} ${u.nm} <b>Lv${lv(u.id)}</b>`).join('<br>'); }
+function statTable() {
+  const rows = Object.keys(SRC).filter(k => DMG[k] > 0).sort((a, b) => DMG[b] - DMG[a]).map(k => `<tr><td>${SRC[k]}</td><td>${Math.round(DMG[k]).toLocaleString()}</td></tr>`).join('');
+  return `<table class="stat"><tr><td>傭兵</td><td>${CH().name}</td></tr><tr><td>到達關卡</td><td>${(mode === 'endless' ? '無盡 ' : '') + '第 ' + stage + ' 關'}</td></tr><tr><td>等級</td><td>${P.level}</td></tr><tr><td>總擊殺</td><td>${P.kills}</td></tr><tr><td>本關放跑</td><td>${leaked}</td></tr></table>` +
+    (rows ? `<div style="color:var(--dim);font-size:13px">總傷害</div><table class="stat">${rows}</table>` : '');
+}
+function setPause(on) {
+  if (on) { state = 'pause'; mouseL = false; $('pauseInfo').innerHTML = statTable() + `<div style="font-size:14px;line-height:1.6;margin-bottom:12px">${buildText() || '還沒有升級'}</div>`; showScr('sPause'); }
+  else { state = 'play'; showScr(null); }
+}
+function gameOver(reason) {
+  if (state === 'over') return;
+  state = 'over'; mouseL = false;
+  $('overTitle').textContent = '任務失敗：' + reason;
+  recordBest();
+  $('overInfo').innerHTML = statTable(); showScr('sOver');
+}
+function recordBest() {
+  if (mode !== 'endless') return;
+  const b = loadBest(); const cleared = stage - 1;
+  if (!b[charId] || cleared > b[charId]) { b[charId] = cleared; saveBest(b); }
+}
+function stageResult() {
+  const sc = C.score, par = sc.parTime + sc.parTimePerStage * (stage - 1);
+  const killPts = stageKills * sc.killPoints, leakPts = leaked * sc.leakPenalty, timePts = Math.max(0, Math.round((par - T) * sc.timePoints));
+  const total = Math.max(0, killPts - leakPts + timePts), mul = 1 + sc.rankPerStage * (stage - 1);
+  const rank = total >= sc.rankS * mul ? 'S' : total >= sc.rankA * mul ? 'A' : total >= sc.rankB * mul ? 'B' : 'C';
+  return { stage, time: T, par, kills: stageKills, leaked, killPts, leakPts, timePts, total, rank };
+}
+const fmtT = t => Math.floor(t / 60) + ':' + String(Math.floor(t % 60)).padStart(2, '0');
+const RCOL = { S: '#f0c04a', A: '#8fd16b', B: '#7fd6ff', C: '#9a9682' };
+function resultTable(r) {
+  return `<div style="display:flex;align-items:center;gap:22px"><div style="font-size:78px;font-weight:900;color:${RCOL[r.rank]};text-shadow:0 4px 0 #000">${r.rank}</div>
+  <table class="stat" style="flex:1"><tr><td>過關時間</td><td>${fmtT(r.time)}（標準 ${fmtT(r.par)}）</td></tr>
+  <tr><td>擊殺</td><td>${r.kills}　+${r.killPts}</td></tr><tr><td>放跑</td><td>${r.leaked}　−${r.leakPts}</td></tr>
+  <tr><td>時間獎勵</td><td>+${r.timePts}</td></tr><tr><td><b>分數</b></td><td><b>${r.total}</b></td></tr></table></div>`;
+}
+function stageCleared() {
+  play('clear'); flameMesh.visible = false;
+  const r = stageResult(); RESULTS.push(r);
+  if (mode === 'campaign' && stage >= C.game.campaignStages) {
+    state = 'over'; $('overTitle').textContent = '任務完成！傭兵團突破了屍潮';
+    const sum = RESULTS.reduce((a, x) => a + x.total, 0);
+    $('overInfo').innerHTML = resultTable(r) + `<table class="stat">${RESULTS.map(x => `<tr><td>第 ${x.stage} 關</td><td><b style="color:${RCOL[x.rank]}">${x.rank}</b>　${fmtT(x.time)}　擊殺 ${x.kills}　放跑 ${x.leaked}　${x.total} 分</td></tr>`).join('')}<tr><td><b>總分</b></td><td><b>${sum}</b></td></tr></table>` + statTable();
+    showScr('sOver'); return;
+  }
+  state = 'clear'; mouseL = false;
+  $('clearTitle').textContent = `第 ${stage} 關 突破！`;
+  $('clearInfo').innerHTML = resultTable(r) + `<div style="color:var(--dim);font-size:13px;margin-bottom:10px">過關回復 ${pct(C.game.stageClearHealPct)} 血量</div>`;
+  showScr('sClear');
+}
+function toTitle() {
+  state = 'title'; clearEntities(); $('hud').style.display = 'none'; pRoot.visible = false;
+  for (const m of [faceMark, pRing, prayRing, ultAura, lineMesh, retreatMesh]) m.visible = false;
+  const b = loadBest(), names = Object.keys(C.chars).filter(k => b[k]).map(k => `${C.chars[k].name} ${b[k]} 關`);
+  $('bestTxt').textContent = names.length ? '無盡模式最佳紀錄：' + names.join('、') : '';
+  showScr('sTitle');
+}
+const ICON = { soldier: '🪖', martial: '🥋', scientist: '🧪', cultist: '🕯️' };
+const DESC = {
+  soldier: '槍械射擊，兩道子彈各穿透一整列。<br>絕招：火焰放射器，近距離大範圍扇形，持續 3 秒。',
+  martial: '近身三段連擊，距離短、傷害高。<br>絕招：集氣 1 秒後大範圍震地，全程無敵。',
+  scientist: '拋出藥瓶，延遲落地留下持續傷害的藥池。<br>絕招：大範圍化學藥劑，定身＋中毒＋傷害。',
+  cultist: '不能直接攻擊，攻擊鍵是禱告（移動會中斷）。4 次禱告後邪神揍一拳，大範圍重創。<br>絕招：短時間無敵。',
+};
+function openSelect(m) {
+  mode = m; audioInit();
+  $('selTitle').textContent = (m === 'campaign' ? `破關模式（${C.game.campaignStages} 關）` : '無盡模式') + '：選擇傭兵';
+  $('chars').innerHTML = '';
+  for (const k in C.chars) {
+    const c = C.chars[k], el = document.createElement('div'); el.className = 'ch';
+    el.innerHTML = `<div class="ic">${ICON[k]}</div><div class="nm">${c.name}</div>${DESC[k]}<div class="st">血量 ${c.hp}　移速 ${c.speed}　絕招需 ${c.ult.killsNeeded} 殺</div>`;
+    el.onclick = () => newRun(k, mode); $('chars').appendChild(el);
+  }
+  showScr('sSelect');
+}
+function openSettings(back) {
+  settingsBack = back;
+  $('vMaster').value = SET.master; $('vSfx').value = SET.sfx; $('vMusic').value = SET.music; $('vShake').checked = SET.shake; $('vNums').checked = SET.numbers; $('vPixel').value = SET.pixel;
+  syncSetText(); showScr('sSettings');
+}
+function syncSetText() { $('tMaster').textContent = SET.master; $('tSfx').textContent = SET.sfx; $('tMusic').textContent = SET.music; }
+$('vMaster').oninput = e => { SET.master = +e.target.value; syncSetText(); applyVolume(); saveSet(); };
+$('vSfx').oninput = e => { SET.sfx = +e.target.value; syncSetText(); applyVolume(); saveSet(); };
+$('vSfx').onchange = () => { audioInit(); play('punch'); };
+$('vShake').onchange = e => { SET.shake = e.target.checked; saveSet(); };
+$('vNums').onchange = e => { SET.numbers = e.target.checked; saveSet(); };
+$('vPixel').onchange = e => { SET.pixel = e.target.value; saveSet(); resize(); };
+$('bCampaign').onclick = () => openSelect('campaign');
+$('bEndless').onclick = () => openSelect('endless');
+$('bSettings').onclick = () => openSettings('sTitle');
+$('bHelp').onclick = () => showScr('sHelp');
+$('bHelpBack').onclick = () => showScr('sTitle');
+$('bSelBack').onclick = () => showScr('sTitle');
+$('bSetBack').onclick = () => showScr(settingsBack);
+$('bResume').onclick = () => setPause(false);
+$('bPauseSet').onclick = () => openSettings('sPause');
+$('bQuit').onclick = toTitle; $('bToTitle').onclick = toTitle;
+$('bRetry').onclick = () => newRun(charId, mode);
+$('bNext').onclick = () => { stage++; const s = S(); P.hp = Math.min(s.maxHp, P.hp + s.maxHp * C.game.stageClearHealPct); startStage(); };
+
+/* ================= HUD ================= */
+const _pv = new THREE.Vector3();
+function updateHud(rdt) {
+  const s = S();
+  $('xpfill').style.width = (P.xp / xpNeed(P.level) * 100) + '%'; $('lvtxt').textContent = 'Lv ' + P.level;
+  $('stageTxt').textContent = (mode === 'endless' ? '無盡 ' : '') + '第 ' + stage + ' 關' + (mode === 'campaign' ? ' / ' + C.game.campaignStages : '');
+  $('build').innerHTML = buildText();
+  $('leak').innerHTML = `⏱ ${fmtT(T)}<small>💀 ${stageKills}　放跑 ${leaked}${pushOn ? '　<span style="color:#ffb040">後退線推進中</span>' : ''}</small>`;
+  $('progfill').style.height = clamp(-furthest / L * 100, 0, 100) + '%';
+  $('charTxt').textContent = ICON[charId] + ' ' + CH().name + (P.ultInv > 0 ? '　🛡️ 無敵 ' + P.ultInv.toFixed(1) : '');
+  $('hpfill').style.width = (P.hp / s.maxHp * 100) + '%'; $('hptxt').textContent = Math.ceil(P.hp) + ' / ' + s.maxHp;
+  const rc = $('skR'); rc.querySelector('.cd').style.setProperty('--p', (P.rollCd > 0 ? P.rollCd / s.rollCd * 100 : 0) + '%'); rc.querySelector('.cdt').textContent = P.rollCd > 0 ? P.rollCd.toFixed(1) : '';
+  const ready = P.ult >= s.ultNeed; $('ultbox').classList.toggle('ready', ready);
+  $('ultbox').querySelector('.bar').style.width = (P.ult / s.ultNeed * 100) + '%';
+  $('ultName').textContent = { soldier: '火焰放射器', martial: '震地', scientist: '化學藥劑', cultist: '邪神庇護' }[charId];
+  $('ultTxt').textContent = ready ? '可以使用！' : P.ult + ' / ' + s.ultNeed;
+  if (charId === 'cultist') { const pp = $('pips'); pp.style.display = 'flex'; let h = ''; for (let i = 0; i < s.prays; i++) h += `<i class="${i < P.prays ? 'on' : ''}"></i>`; if (pp.innerHTML !== h) pp.innerHTML = h; } else $('pips').style.display = 'none';
+  if (bossAlive && !bossAlive.dead) { $('bossbar').style.display = 'block'; $('bossfill').style.width = (bossAlive.hp / bossAlive.maxHp * 100) + '%'; } else $('bossbar').style.display = 'none';
+  const hu = $('hurt'); hu.style.opacity = Math.max(0, +hu.style.opacity - rdt * 2.5);
+  const gf = $('godfx'); gf.style.opacity = Math.max(0, +gf.style.opacity - rdt * 1.2);
+  if (bannerT > 0 && (bannerT -= rdt) <= 0) $('banner').style.opacity = 0;
+  for (let i = DNUM.length - 1; i >= 0; i--) {
+    const d = DNUM[i]; d.t += rdt;
+    if (d.t > 0.6) { d.el.remove(); DNUM.splice(i, 1); continue; }
+    _pv.set(d.x, d.y + d.t * 1.5, d.z).project(camera);
+    d.el.style.left = ((_pv.x + 1) / 2 * VW) + 'px'; d.el.style.top = ((1 - _pv.y) / 2 * VH) + 'px'; d.el.style.opacity = d.t > 0.4 ? (0.6 - d.t) * 5 : 1;
+  }
+}
+
+/* ================= 迴圈 ================= */
+let last = performance.now();
+function frame(now) {
+  requestAnimationFrame(frame);
+  const rdt = Math.min(0.05, (now - last) / 1000); last = now;
+  if (state === 'play') step(rdt);
+  if (P && state !== 'title') {
+    const tx = P.x * 0.45, tz = P.z + 12;
+    camera.position.x += (tx - camera.position.x) * Math.min(1, rdt * 6);
+    camera.position.z += (tz - camera.position.z) * Math.min(1, rdt * 6);
+    camera.position.y = 17;
+    const sk = shake * shake * 0.8;
+    camera.lookAt(camera.position.x + rand(-sk, sk), 0, camera.position.z - 18 + rand(-sk, sk));
+  } else { camera.position.set(Math.sin(now / 7000) * 6, 14, 14 - (now / 400) % 200); camera.lookAt(camera.position.x, 0, camera.position.z - 20); }
+  renderer.render(scene, camera);
+}
+function step(dt) {
+  T += dt; shake = Math.max(0, shake - dt * 1.6);
+  pushZ = Math.min(pushZ, furthest + C.game.retreatLimit);
+  if (T > C.game.pushDelay && clearT <= 0 && !bossSpawned) { if (!pushOn) { pushOn = true; banner('後退線開始往前推！', 1.6); } pushZ = Math.max(gateZ + C.stage.bossTrigger, pushZ - C.game.pushSpeed * dt); }
+  if (bossSpawned && pushOn) pushOn = false;
+  const s = S();
+  gridBuild();
+  updatePlayer(dt);
+  updatePrayer(dt, s);
+  if (clearT <= 0) updateSpawns(dt);
+  updateZombies(dt);
+  if (state !== 'play') return;
+  gridBuild();
+  updateProjectiles(dt);
+  updateHud(dt);
+  if (clearT > 0) { clearT -= dt; if (clearT <= 0) { stageCleared(); return; } }
+  if (state === 'play' && pendingLv > 0 && clearT <= 0) openLevel();
+}
+buildStage(1); toTitle();
+requestAnimationFrame(frame);
+window.__game = { get P() { return P; }, get Z() { return Z; }, get state() { return state; }, get stage() { return stage; }, get leaked() { return leaked; }, get furthest() { return furthest; }, newRun, step, pickCard, tryUlt, tryRoll, keys, setMouse(v) { mouseL = v; }, setLv(id, n) { P.lv[id] = n; }, resetLeak() { leaked = 0; }, setStage(n) { stage = n; startStage(); }, next() { $('bNext').click(); } };
+</script>
+</body>
+</html>
