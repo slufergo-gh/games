@@ -397,7 +397,7 @@
       const back = [];
       for (let p = 0; p < 2; p++) for (let g = 0; g < NG; g++) if (prevV && prevV.offer[p][g]) { const ch = chipEl(p, g); if (ch) back.push({ g, r: R(ch) }); }
       if (back.length) { const dr = deckRect(); await Promise.all(back.map((b, i) => flyTo(ghost(cardHTML(b.g), b.r), dr, 500, { delay: i * 40, fade: true }))); }
-      banner(`第 ${v.round} 回合`); sfx.card();
+      sfx.card();
       render(v);
       // 發牌
       const els = $$('#hand [data-hi]'); els.forEach(el => el.style.opacity = '0');
@@ -407,8 +407,9 @@
       els.forEach((el, i) => { const r = R(el); jobs.push(wait(i * 170).then(() => { const d = ghost(cardHTML(E.HIDDEN), deckRect()); return flyTo(d, r, 380).then(() => { el.style.opacity = ''; sfx.tap(); return tween(el, [{ transform: 'scaleX(0)' }, { transform: 'scaleX(1)' }], 200); }); })); });
       for (let i = 0; i < v.hands[o].length; i++) jobs.push(wait(i * 170 + 85).then(() => flyTo(ghost(cardHTML(E.HIDDEN), deckRect()), oppHandRect(), 380)));
       await Promise.all(jobs); els.forEach(el => el.style.opacity = '');
+      if (mode !== 'local') { const a = actor(v); await announce(a === m ? '你先手' : `${esc(nameOf(a))} 先手`, `第 ${v.round} 回合`, a === m ? 'me' : 'opp'); }
     } else if (ev.type === 'secret' || ev.type === 'burn') {
-      if (ev.p !== m) toast(`${esc(nameOf(o))} 使用了 ${A(ev.type).icon}「${A(ev.type).name}」`);
+      if (ev.p !== m && mode !== 'local') await announce(`${esc(nameOf(ev.p))} 選擇了`, `${A(ev.type).icon} ${A(ev.type).name}`, 'opp');
       const n = ev.type === 'secret' ? 1 : 2;
       const cards = mode === 'local' || ev.p !== m ? new Array(n).fill(E.HIDDEN) : (ev.type === 'secret' ? [v.secret[m]] : v.burned[m].slice());
       const from = ev.p === m ? takeRects(hr, ev.type === 'secret' ? [v.secret[m]] : v.burned[m], playedIdx) : cards.map(oppHandRect);
@@ -424,7 +425,7 @@
       if (!ev.roundEnd) { render(v); await animateDraw(prevV, v, hr); }
     } else if (ev.type === 'offer') {
       const groups = pendGroups(v.pending), rs = rowRects(groups), flat = groups.flat();
-      if (ev.p !== m) { banner(A(ev.kind).name); sfx.offer(); vibrate(60); respHidden = false; }
+      if (ev.p !== m) { if (mode !== 'local') await announce(`${esc(nameOf(ev.p))} 選擇了`, `${A(ev.kind).icon} ${A(ev.kind).name}`, 'opp'); sfx.offer(); vibrate(60); respHidden = false; }
       const from = ev.p === m ? takeRects(hr, flat.slice().sort((a, b) => a - b), null) : flat.map(oppHandRect);
       // takeRects 依手牌順序配對；重新對應到 flat 順序
       const fromByCard = ev.p === m ? (() => { const used = new Set(); return flat.map(g => { const k = hr.findIndex((h, i) => !used.has(i) && h.g === g && (!playedIdx || playedIdx.includes(i))); const kk = k >= 0 ? k : hr.findIndex((h, i) => !used.has(i) && h.g === g); used.add(kk); return kk >= 0 ? hr[kk].r : deckRect(); }); })() : from;
@@ -438,6 +439,7 @@
     } else if (ev.type === 'picked') {
       const its = cs => cs.map(c => G[c].itemName).join('＋');
       if (ev.from === m) toast(`${esc(nameOf(o))} 挑走 ${its(ev.mine)}，你得到 ${its(ev.theirs)}`, 3400);
+      if (ev.p !== m && mode !== 'local') await announce(`${esc(nameOf(ev.p))} 挑好了`, '', 'opp');
       // 中央的牌：挑走的那份標上顏色，停一下再飛到兩邊
       const groups = ev.kind === 'oracle' ? [ev.mine, ev.theirs] : [ev.mine, ev.theirs];
       const rs = rowRects(groups);
@@ -456,6 +458,7 @@
     } else render(v);
 
     if (ev.roundEnd) await playRoundEnd(roundV);
+    else if (ev.type !== 'round') await announceTurn(prevV, v);
     else if (prevV && v.deck.length !== oldDeck && ev.type !== 'round') countTo($('#deckN'), oldDeck, v.deck.length, 300);
   }
 
@@ -522,6 +525,24 @@
     }
     render(v);
     if (v.phase === 'over') await victory(v.winner === m || mode === 'local');
+  }
+
+  // 大字提示：誰做了什麼、輪到誰（可點一下跳過）
+  async function announce(title, sub = '', cls = '') {
+    if (instant()) return;
+    const W = window.innerWidth, H = window.innerHeight;
+    const d = ghost(`<div class="ann ${cls}"><b>${title}</b>${sub ? `<small>${sub}</small>` : ''}</div>`, { left: 0, top: H * 0.17, width: W, height: 96 }, 'annwrap');
+    await tween(d, [{ opacity: 0, transform: 'translateX(-36px)' }, { opacity: 1, transform: 'none' }], 260, { keep: true });
+    await wait(820);
+    await tween(d, [{ opacity: 1, transform: 'none' }, { opacity: 0, transform: 'translateX(36px)' }], 240, { keep: true });
+    d.remove();
+  }
+  async function announceTurn(prevV, v) {
+    if (mode === 'local' || !prevV) return;
+    const a = actor(v), b = actor(prevV), m = me();
+    if (a == null || (a === b && prevV.phase === v.phase)) return;
+    if (a === m) await announce('輪到你', v.phase === 'respond' ? '挑選對手獻上的祭品' : '選一種行動獻祭', 'me');
+    else await announce(`換 ${esc(nameOf(a))}`, v.phase === 'respond' ? '等待對方挑選' : (mode === 'ai' ? '電腦思考中…' : '等待對方行動'), 'opp');
   }
 
   async function victory(good) {
@@ -661,20 +682,20 @@
       playedIdx = null;
       if (v !== shown) return; // 後面還有新的狀態在排隊
       if (seqChanged && actor(v) === m && v.phase === 'act') { sfx.myturn(); vibrate(40); }
-      postEvent(v);
+      await postEvent(v);
     });
   }
-  function postEvent(v) {
+  async function postEvent(v) {
     const m = me();
     if (mode === 'local') { const a = actor(v); if (a != null && a !== viewer) { askPass(a); return; } }
     render(v);
     if (v.phase === 'respond' && actor(v) === m && !respHidden && !isOpen('ovPass')) openRespond();
-    if ((v.phase === 'roundEnd' || v.phase === 'over') && lastRoundShown !== v.round + ':' + v.phase) showRound(false);
+    if ((v.phase === 'roundEnd' || v.phase === 'over') && lastRoundShown !== v.round + ':' + v.phase) await showRound(false, true);
     scheduleAI();
   }
 
   // ---------- 回合結算 ----------
-  function showRound(force) {
+  async function showRound(force, animate) {
     const v = V(); if (!v || !v.result) return;
     const R = v.result, m = me(), o = 1 - m;
     lastRoundShown = v.round + ':' + v.phase;
@@ -685,19 +706,19 @@
     for (let g = 0; g < NG; g++) {
       const a = R.after[g], b = R.before[g], moved = a !== b;
       const lbl = a == null ? '<span class="muted">無</span>' : (a === m ? '<b style="color:var(--me)">你</b>' : '<b style="color:var(--opp)">對手</b>');
-      h += `<div class="res-row ${fam() ? 'fam' : ''}" style="--gc:${G[g].color}"><img src="${gImg(g)}" alt=""><span>${esc(gName(g))} <small class="muted">${G[g].value} 分</small></span><span class="n" style="color:var(--me)">${R.offer[m][g]}</span><span class="n" style="color:var(--opp)">${R.offer[o][g]}</span><span style="text-align:center">${lbl}${moved ? ' ✦' : ''}</span></div>`;
+      h += `<div class="res-row ${fam() ? 'fam' : ''}" style="--gc:${G[g].color}"><img src="${gImg(g)}" alt=""><span>${esc(gName(g))} <small class="muted">${G[g].value} 分</small></span><span class="n" style="color:var(--me)" data-to="${R.offer[m][g]}">${R.offer[m][g]}</span><span class="n" style="color:var(--opp)" data-to="${R.offer[o][g]}">${R.offer[o][g]}</span><span class="fv" style="text-align:center">${lbl}${moved ? ' ✦' : ''}</span></div>`;
     }
-    h += `<div class="sumline"><div>你<b style="color:var(--me)">${R.pts[m]} 分</b>${R.cnt[m]} 位神</div><div>對手<b style="color:var(--opp)">${R.pts[o]} 分</b>${R.cnt[o]} 位神</div></div>`;
+    h += `<div class="sumline"><div>你<b style="color:var(--me)"><span id="rsMeP">${R.pts[m]}</span> 分</b><span id="rsMeG">${R.cnt[m]}</span> 位神</div><div>對手<b style="color:var(--opp)"><span id="rsOpP">${R.pts[o]}</span> 分</b><span id="rsOpG">${R.cnt[o]}</span> 位神</div></div>`;
     h += `<div class="muted" style="text-align:center;font-size:13px">✦＝這回合眷顧換人或新得到　目標：${C.winPoints} 分或 ${C.winGods} 位神</div>`;
     let btns = '';
     if (v.phase === 'over') {
       const iWin = R.winner === m;
       $('#roundTitle').textContent = mode === 'local' ? `${nameOf(R.winner)} 獲勝！` : (iWin ? '眾神眷顧你！' : `${nameOf(R.winner)} 獲勝`);
-      h = `<p style="text-align:center;font-size:17px">${esc(nameOf(R.winner))} ${R.why === 'points' ? `得到 ${R.pts[R.winner]} 分眷顧` : `得到 ${R.cnt[R.winner]} 位神的眷顧`}，贏得這場獻祭。</p>` + h;
+      h = `<p id="rsWin" style="text-align:center;font-size:17px">${esc(nameOf(R.winner))} ${R.why === 'points' ? `得到 ${R.pts[R.winner]} 分眷顧` : `得到 ${R.cnt[R.winner]} 位神的眷顧`}，贏得這場獻祭。</p>` + h;
       if (mode !== 'guest') btns += `<button class="btn primary" id="bAgain">再玩一局</button>`;
       else btns += `<div class="muted" style="text-align:center">等房主開新的一局…</div>`;
       btns += `<button class="btn" id="bLook">看看神殿</button><button class="btn ghost" id="bHome">回封面</button>`;
-      if (!force) { if (mode === 'local' || iWin) sfx.win(); else sfx.lose(); }
+      if (!force && !animate) { if (mode === 'local' || iWin) sfx.win(); else sfx.lose(); }
     } else {
       $('#roundTitle').textContent = `第 ${R.round} 回合結算`;
       btns += `<button class="btn primary" id="bNext">開始第 ${R.round + 1} 回合</button><button class="btn" id="bLook">看看神殿</button>`;
@@ -708,6 +729,45 @@
     const ba = $('#bAgain'); if (ba) ba.onclick = () => { close('ovRound'); rematch(); };
     const bh = $('#bHome'); if (bh) bh.onclick = () => quitGame(true);
     open('ovRound');
+    if (animate && !instant()) await tallyRound(v);
+  }
+  // 結算表：一位一位神清點，分數跟著累加，最後才公布結果
+  async function tallyRound(v) {
+    const R = v.result, m = me(), o = 1 - m;
+    const title = $('#roundTitle'), finalTitle = title.textContent;
+    const rows = $$('#roundBody .res-row:not(.res-head)'), win = $('#rsWin'), btns = $('#roundBtns');
+    const ids = ['rsMeP', 'rsMeG', 'rsOpP', 'rsOpG'].map(i => $('#' + i));
+    title.textContent = '清點眾神的眷顧…';
+    rows.forEach(r => { r.style.opacity = '0'; r.querySelectorAll('.n').forEach(n => n.textContent = '0'); r.querySelector('.fv').style.visibility = 'hidden'; });
+    ids.forEach(x => x && (x.textContent = '0'));
+    if (win) win.style.visibility = 'hidden';
+    btns.style.visibility = 'hidden';
+    const tot = { p: [0, 0], c: [0, 0] };
+    for (let g = 0; g < rows.length; g++) {
+      const r = rows[g];
+      r.scrollIntoView({ block: 'nearest' });
+      await tween(r, [{ opacity: 0, transform: 'translateX(-24px)' }, { opacity: 1, transform: 'none' }], 240);
+      r.style.opacity = '';
+      const ns = Array.from(r.querySelectorAll('.n'));
+      await Promise.all(ns.map(n => countTo(n, 0, +n.dataset.to, 380)));
+      const fv = r.querySelector('.fv'); fv.style.visibility = '';
+      const a = R.after[g];
+      if (a != null) {
+        sfx.tap(); await bump(fv);
+        const side = a === m ? 0 : 1, op = tot.p[side], oc = tot.c[side];
+        tot.p[side] += G[g].value; tot.c[side]++;
+        await Promise.all([countTo(ids[side * 2], op, tot.p[side], 300), countTo(ids[side * 2 + 1], oc, tot.c[side], 200)]);
+      } else await wait(160);
+    }
+    ids[0].textContent = R.pts[m]; ids[1].textContent = R.cnt[m]; ids[2].textContent = R.pts[o]; ids[3].textContent = R.cnt[o];
+    await wait(300);
+    title.textContent = finalTitle; bump(title);
+    if (win) { win.style.visibility = ''; win.scrollIntoView({ block: 'nearest' }); await tween(win, [{ opacity: 0, transform: 'scale(.8)' }, { opacity: 1, transform: 'none' }], 320); }
+    if (v.phase === 'over') { if (mode === 'local' || R.winner === m) sfx.win(); else sfx.lose(); } else sfx.favor();
+    rows.forEach(r => { r.style.opacity = ''; r.querySelector('.fv').style.visibility = ''; r.querySelectorAll('.n').forEach(n => n.textContent = n.dataset.to); });
+    if (win) win.style.visibility = '';
+    btns.style.visibility = '';
+    $('#roundBody').scrollTop = 0;
   }
 
   // ---------- 電腦 ----------
