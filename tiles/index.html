@@ -170,6 +170,16 @@ input[type=range]{width:100%;accent-color:var(--red)}
 .flyer .t{box-shadow:0 6px 14px rgba(0,0,0,.45)}
 .flyer{animation:flylift calc(var(--spd,1) * .52s) ease-in-out}
 @keyframes flylift{50%{transform:scale(1.25)}}
+
+.choice{position:fixed;left:50%;top:calc(58px + env(safe-area-inset-top));transform:translate(-50%,-8px);z-index:46;background:#fff3da;color:#3b2a1e;border:3px solid var(--gold);border-radius:14px;padding:8px 14px;font-weight:700;font-size:15px;box-shadow:0 6px 18px rgba(0,0,0,.45);opacity:0;pointer-events:none;transition:all .2s;display:flex;align-items:center;gap:4px;white-space:nowrap;max-width:calc(100vw - 24px)}
+.choice.on{opacity:1;transform:translate(-50%,0)}
+.line.target,.floor.target{background:rgba(255,215,106,.55);box-shadow:0 0 0 2px #fff,0 0 12px #ffd76a;animation:glow .6s ease-in-out infinite}
+.opp.turn{animation:thinking 1.2s ease-in-out infinite}
+@keyframes thinking{50%{box-shadow:0 0 0 3px #f3c868,0 0 16px #f3c868}}
+.tally .ts{opacity:.15;transition:opacity .25s}
+.tally .ts.on{opacity:1;color:var(--ink);font-weight:700}
+.tally.now{outline:3px solid var(--gold)}
+.tally .tsc{display:inline-block;min-width:1.5em;text-align:right}
 </style>
 </head>
 <body>
@@ -247,6 +257,7 @@ input[type=range]{width:100%;accent-color:var(--red)}
     <button class="btn primary" id="bHost">開房間（手機連線）</button>
     <button class="btn gold" id="bJoin">加入房間</button>
     <button class="btn" id="bResume" style="display:none">恢復上次的房間</button>
+    <button class="btn" id="bAI">對戰電腦</button>
     <button class="btn" id="bLocal">同一支手機輪流玩</button>
     <div class="row">
       <button class="btn ghost" style="flex:1" id="bHelp">說明</button>
@@ -295,6 +306,24 @@ input[type=range]{width:100%;accent-color:var(--red)}
   </div>
 </section>
 
+<!-- 對戰電腦設定 -->
+<section id="aiSetup" class="screen">
+  <div class="panel">
+    <h2>對戰電腦</h2>
+    <div class="set-row"><label>電腦人數</label>
+      <div class="seg" id="aiCount"><button data-n="1" class="on">1 位</button><button data-n="2">2 位</button><button data-n="3">3 位</button></div>
+    </div>
+    <div class="set-row"><label>難度</label>
+      <div class="seg" id="aiLevel"><button data-v="1">簡單</button><button data-v="2" class="on">普通</button><button data-v="3">困難</button></div>
+      <div class="muted" id="aiLevelNote" style="margin-top:6px"></div>
+    </div>
+  </div>
+  <div class="menu" style="padding:0 16px 24px">
+    <button class="btn primary" id="bAIStart">開始</button>
+    <button class="btn ghost" id="bAIBack">返回</button>
+  </div>
+</section>
+
 <!-- 遊戲 -->
 <section id="game" class="screen">
   <div class="topbar">
@@ -313,6 +342,7 @@ input[type=range]{width:100%;accent-color:var(--red)}
 </section>
 
 <div id="skipLayer"></div>
+<div class="choice" id="choice"></div>
 <div class="toasts" id="toasts"></div>
 <div class="banner" id="banner"></div>
 
@@ -383,6 +413,7 @@ input[type=range]{width:100%;accent-color:var(--red)}
   <ul>
     <li>點窯或中央的花磚 → 同色會一起亮起來 → 點下面你要放的那一排（發光的排才能放）。點同一塊磚可以取消。</li>
     <li>上面的小牆面是對手的，點一下可以放大看。每個人的動作會跳通知、花磚會飛過去，回合結算會一排一排貼磚計分。</li>
+    <li>「對戰電腦」可以跟 1～3 位電腦玩，有簡單、普通、困難三種難度；暫停或結算畫面開著時，電腦會等你。</li>
     <li>動畫播放中<b>點一下畫面</b>就能直接跳到結果；設定裡可以調動畫速度或關掉。</li>
     <li>連線時房主的手機負責整局遊戲，房主不要關掉網頁。別人斷線再打開連結會自動回到座位；房主不小心關掉的話，封面按「恢復上次的房間」。</li>
   </ul>
@@ -432,6 +463,7 @@ input[type=range]{width:100%;accent-color:var(--red)}
 <audio id="bgm" src="assets/audio/play.mp3" loop preload="none"></audio>
 <script src="config.js"></script>
 <script src="engine.js"></script>
+<script src="ai.js"></script>
 <script src="lib/peerjs.min.js"></script>
 <script src="lib/qrcode.js"></script>
 <script src="app.js"></script>

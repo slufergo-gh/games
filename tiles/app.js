@@ -17,7 +17,9 @@
 
   // ---------- 狀態 ----------
   let S = null;            // 遊戲狀態
-  let mode = null;         // 'local' | 'host' | 'guest'
+  let mode = null;         // 'local' | 'ai' | 'host' | 'guest'
+  let aiLevels = {};       // 電腦座位 → 難度
+  let aiTimer = 0;
   let mySeat = 0;
   let sel = null;          // {src, color}
   let seatInfo = [];       // [{name, online}]
@@ -105,7 +107,7 @@
   let bannerT = 0;
   function banner(text) {
     const b = $('#banner'); b.textContent = text; b.classList.add('on');
-    clearTimeout(bannerT); bannerT = setTimeout(() => b.classList.remove('on'), 1300);
+    clearTimeout(bannerT); bannerT = setTimeout(() => b.classList.remove('on'), C.anim.bannerMs * Math.max(spd(), 0.5));
   }
   function vibrate(ms) { if (settings.vib) try { navigator.vibrate && navigator.vibrate(ms); } catch (e) {} }
 
@@ -174,7 +176,7 @@
     const tl = $('#turnLbl');
     if (S.phase === 'over') { tl.textContent = '遊戲結束'; tl.classList.remove('me'); }
     else if (mode === 'local') { tl.textContent = `輪到 ${turnName}`; tl.classList.add('me'); }
-    else { tl.textContent = S.turn === mySeat ? '輪到你了！' : `等待 ${turnName}…`; tl.classList.toggle('me', S.turn === mySeat); }
+    else { tl.textContent = S.turn === mySeat ? '輪到你了！' : (mode === 'ai' ? `${turnName} 思考中…` : `等待 ${turnName}…`); tl.classList.toggle('me', S.turn === mySeat); }
 
     // 對手
     const order = [];
@@ -271,7 +273,7 @@
     const next = S; S = prev;
     receiveState(next);
     if (mode === 'host') { host.broadcast(); host.save(); }
-    if (mode === 'local') saveLocal();
+    if (mode === 'local' || mode === 'ai') saveLocal();
   }
 
   // ---------- 過程動畫（點一下畫面可跳過） ----------
@@ -373,13 +375,13 @@
     if (isNew) toast(T(a.color) + esc(describe(a, next)));
     if (isNew && spd() > 0) {
       setAnimating(true);
-      render();
+      V = prev; render();
       try { await animTake(prev, a, roundEnded ? next : null); } catch (e) { console.error(e); }
     } else if (isNew) {
       sfx.place(a.count);
       if (roundEnded) next.roundSummary.items.forEach(it => it.placed.forEach(pl => newCells[it.player + '-' + pl.r + '-' + pl.c] = 1));
     }
-    $$('.flyer,.pop').forEach(e => e.remove());
+    $$('.flyer,.pop').forEach(e => e.remove()); hideChoice();
     scoreRolls.forEach(f => f()); scoreRolls = [];
     V = (next === S) ? null : next; // 佇列裡還有後續狀態時，先停在這一步的結果
     setAnimating(false); skipFlag = false;
@@ -391,11 +393,16 @@
       showSummary();
       if (next.phase === 'over' && !wasOver) pendingEnd = true;
     } else if (next.phase === 'over' && !wasOver && prev) setTimeout(showEnd, 300);
+    setTimeout(maybeAI, 0);
     if (turnChanged && next.phase === 'pick') {
       if (mode === 'local') banner(`輪到 ${next.players[next.turn].name}`);
       else if (next.turn === mySeat) { banner('輪到你了'); sfx.myturn(); vibrate(120); }
+      else if (!roundEnded) { banner(`換 ${next.players[next.turn].name}`); if (live()) tone(520, 0.12, 'sine', 0.12); }
     }
   }
+
+  function showChoice(html) { const c = $('#choice'); c.innerHTML = html; c.classList.add('on'); }
+  function hideChoice() { $('#choice').classList.remove('on'); }
 
   // 拿磚：亮起 → 飛到備料列／破磚列，同窯剩下的滑進中央
   async function animTake(prev, a, endState) {
@@ -408,7 +415,19 @@
     takenEls.forEach(e => e.classList.add('sel'));
     if (markerEl) markerEl.classList.add('sel');
     if (live()) sfx.pick();
-    await wait(A.highlightMs);
+    const others = mode !== 'local' && pi !== mySeat;
+    let tgtEl = null;
+    if (others && live()) {
+      const nm = prev.players[pi].name;
+      const where = a.src === 'c' ? '中央' : `第 ${a.src + 1} 座窯`;
+      const to = a.line < 5 ? `第 ${a.line + 1} 排` : '破磚列';
+      showChoice(`${esc(nm)} 選了：${where}的 ${T(a.color, '', 'style="width:22px;height:22px"')}${tname(a.color)} ×${a.count} → ${to}`);
+      tgtEl = document.querySelector(`.board[data-player="${pi}"] [data-line="${a.line}"]`);
+      if (tgtEl) tgtEl.classList.add('target');
+      await wait(A.choiceMs);
+    } else await wait(A.highlightMs);
+    hideChoice();
+    if (tgtEl) tgtEl.classList.remove('target');
     const takenR = takenEls.map(rectOf);
     const restR = restEls.map(e => ({ k: +e.dataset.color, r: rectOf(e) }));
     const markR = rectOf(markerEl);
@@ -578,18 +597,75 @@
     open('ovSum');
   }
 
+  let endTimers = [];
   function showEnd() {
     if (!S || !S.result) return;
+    endTimers.forEach(clearTimeout); endTimers = [];
     const res = S.result, me = mode === 'local' ? -1 : mySeat;
     const win = res.winners.map(i => S.players[i].name).join('、');
-    $('#endTitle').textContent = res.winners.includes(me) ? '你贏了！' : `${win} 獲勝！`;
-    const sorted = res.items.slice().sort((a, b) => b.final - a.final || b.rows - a.rows);
-    $('#endList').innerHTML = sorted.map((r, idx) => `<div class="sumrow ${res.winners.includes(r.player) ? 'win' : ''}">
-      <div class="nm"><span>${idx + 1}. ${esc(S.players[r.player].name)}</span><span style="font-size:20px">${r.final} 分</span></div>
-      <div class="det">牆面 ${r.before} 分 ＋ 橫排 ${r.rows}×${C.bonusRow} ＋ 直排 ${r.cols}×${C.bonusColumn} ＋ 集色 ${r.colors}×${C.bonusColor}</div></div>`).join('');
-    $('#bAgain').style.display = (mode === 'guest') ? 'none' : '';
-    if (mode === 'guest') $('#endList').insertAdjacentHTML('beforeend', '<div class="muted" style="text-align:center">等房主按「再玩一局」</div>');
-    open('ovEnd'); sfx.win();
+    const finalTitle = res.winners.includes(me) ? '你贏了！' : `${win} 獲勝！`;
+    // 依座位順序逐一清點，最後才排名、公布贏家
+    const order = res.items.slice().sort((x, y) => x.player - y.player);
+    $('#endTitle').textContent = '清點分數…';
+    $('#endList').innerHTML = order.map(r => `<div class="sumrow tally" data-p="${r.player}">
+      <div class="nm"><span>${esc(S.players[r.player].name)}</span><span style="font-size:20px"><b class="tsc">0</b> 分</span></div>
+      <div class="det tsteps">
+        <span class="ts" data-add="${r.before}">牆面 ${r.before}</span>
+        <span class="ts" data-add="${r.rows * C.bonusRow}">＋ 橫排 ${r.rows}×${C.bonusRow}</span>
+        <span class="ts" data-add="${r.cols * C.bonusColumn}">＋ 直排 ${r.cols}×${C.bonusColumn}</span>
+        <span class="ts" data-add="${r.colors * C.bonusColor}">＋ 集色 ${r.colors}×${C.bonusColor}</span>
+      </div></div>`).join('') + '<div class="muted" id="endSkip" style="text-align:center">點一下清單可以直接看結果</div>';
+    const btns = ['#bAgain', '#eView', '#bHome'];
+    btns.forEach(id => $(id).style.visibility = 'hidden');
+    open('ovEnd');
+    const step = (spd() || 0) * 1;
+    const finish = () => {
+      endTimers.forEach(clearTimeout); endTimers = [];
+      // 排名
+      const rows = $$('#endList .tally');
+      const byP = {}; rows.forEach(el => byP[el.dataset.p] = el);
+      const sorted = res.items.slice().sort((x, y) => y.final - x.final || y.rows - x.rows);
+      const list = $('#endList');
+      sorted.forEach((r, idx) => {
+        const el = byP[r.player];
+        el.querySelectorAll('.ts').forEach(t => t.classList.add('on'));
+        el.querySelector('.tsc').textContent = r.final;
+        el.querySelector('.nm span').textContent = `${idx + 1}. ${S.players[r.player].name}`;
+        if (res.winners.includes(r.player)) el.classList.add('win');
+        list.appendChild(el);
+      });
+      const sk = $('#endSkip'); if (sk) sk.remove();
+      if (mode === 'guest') list.insertAdjacentHTML('beforeend', '<div class="muted" style="text-align:center">等房主按「再玩一局」</div>');
+      $('#endTitle').textContent = finalTitle;
+      btns.forEach(id => $(id).style.visibility = '');
+      $('#bAgain').style.display = (mode === 'guest') ? 'none' : '';
+      sfx.win();
+      $('#endList').onclick = null;
+    };
+    $('#endList').onclick = finish;
+    if (!step) { finish(); return; }
+    let t = 400;
+    order.forEach(r => {
+      const el = $(`#endList .tally[data-p="${r.player}"]`);
+      let sum = 0;
+      endTimers.push(setTimeout(() => el.classList.add('now'), t * step));
+      el.querySelectorAll('.ts').forEach(ts => {
+        const add = +ts.dataset.add;
+        t += A.tallyMs;
+        endTimers.push(setTimeout(() => {
+          ts.classList.add('on');
+          const from = sum; sum += add; const to = sum;
+          const sc = el.querySelector('.tsc');
+          const t0 = performance.now(), dur = 400 * step;
+          const roll = now => { const q = Math.min(1, (now - t0) / dur); sc.textContent = Math.round(from + (to - from) * q); if (q < 1) requestAnimationFrame(roll); };
+          requestAnimationFrame(roll);
+          if (add > 0) tone(500 + Math.min(add, 40) * 12, 0.15, 'triangle', 0.18); else clack();
+        }, t * step));
+      });
+      t += A.tallyMs;
+      endTimers.push(setTimeout(() => el.classList.remove('now'), t * step));
+    });
+    endTimers.push(setTimeout(finish, (t + A.tallyMs) * step));
   }
   $('#eView').onclick = () => close('ovEnd');
   $('#bAgain').onclick = () => {
@@ -597,6 +673,7 @@
     const names = S.players.map(p => p.name);
     newCells = {}; sel = null;
     if (mode === 'local') { S = E.newGame(names); saveLocal(); render(); banner(`輪到 ${S.players[S.turn].name}`); }
+    if (mode === 'ai') { S = E.newGame(names); saveLocal(); render(); announceFirst(); maybeAI(); }
     if (mode === 'host') { S = E.newGame(names); host.broadcast(); host.save(); render(); announceFirst(); }
   };
   function announceFirst() {
@@ -609,7 +686,7 @@
 
   // ---------- 暫停、設定、說明、紀錄 ----------
   $('#bPause').onclick = () => {
-    $('#pauseNote').textContent = mode === 'local' ? '' : '連線遊戲不會暫停其他人的畫面；輪到你時會震動提醒。';
+    $('#pauseNote').textContent = (mode === 'local' || mode === 'ai') ? '' : '連線遊戲不會暫停其他人的畫面；輪到你時會震動提醒。';
     open('ovPause');
   };
   $('#pSet').onclick = () => openSettings();
@@ -681,7 +758,41 @@
     S = E.newGame(names);
     saveLocal(); show('game'); render(); keepAwake(); announceFirst();
   };
-  function saveLocal() { store.set('save', { mode: 'local', S, ts: Date.now() }); }
+  function saveLocal() { store.set('save', { mode, S, aiLevels, ts: Date.now() }); }
+
+  // ---------- 對戰電腦 ----------
+  let aiN = 1, aiLv = store.get('aiLevel', 2);
+  const LV_NOTE = { 1: '電腦常常亂拿，適合剛學規則。', 2: '電腦會挑對自己最有利的拿法。', 3: '電腦會想終局加分，也會考慮不讓你拿到好磚。' };
+  function drawAISetup() {
+    $$('#aiLevel button').forEach(b => b.classList.toggle('on', +b.dataset.v === aiLv));
+    $$('#aiCount button').forEach(b => b.classList.toggle('on', +b.dataset.n === aiN));
+    $('#aiLevelNote').textContent = LV_NOTE[aiLv];
+  }
+  $('#bAI').onclick = () => { drawAISetup(); show('aiSetup'); };
+  $('#aiCount').onclick = e => { const n = e.target.dataset.n; if (!n) return; aiN = +n; drawAISetup(); };
+  $('#aiLevel').onclick = e => { const v = e.target.dataset.v; if (!v) return; aiLv = +v; store.set('aiLevel', aiLv); drawAISetup(); };
+  $('#bAIBack').onclick = () => show('cover');
+  $('#bAIStart').onclick = () => {
+    unlockAudio();
+    const names = [myName('你')];
+    aiLevels = {};
+    for (let i = 1; i <= aiN; i++) { names.push(C.ai.names[i - 1] || ('電腦' + i)); aiLevels[i] = aiLv; }
+    mode = 'ai'; mySeat = 0; seatInfo = []; newCells = {}; sel = null; V = null;
+    S = E.newGame(names);
+    saveLocal(); show('game'); render(); keepAwake(); announceFirst(); maybeAI();
+  };
+  function aiBusy() { return animating || pending > 0 || $$('.overlay.on').length > 0; }
+  function maybeAI() {
+    if (mode !== 'ai' || !S || S.phase !== 'pick' || S.turn === mySeat || aiTimer) return;
+    if (aiBusy()) { aiTimer = setTimeout(() => { aiTimer = 0; maybeAI(); }, 400); return; }
+    aiTimer = setTimeout(() => {
+      aiTimer = 0;
+      if (mode !== 'ai' || !S || S.phase !== 'pick' || S.turn === mySeat) return;
+      if (aiBusy()) { maybeAI(); return; }
+      const m = AI.choose(S, S.turn, aiLevels[S.turn] || 2);
+      if (m) doMove(m);
+    }, C.ai.thinkMs * Math.max(spd(), 0.25));
+  }
 
   // ---------- 連線：共用 ----------
   // PeerJS（WebRTC），房主手機就是伺服器；用 JSON 序列化避免 iOS Safari 的二進位相容問題
@@ -957,7 +1068,8 @@
     $$('.overlay').forEach(o => o.classList.remove('on'));
     if (mode === 'host') { try { host.peer && host.peer.destroy(); } catch (e) {} host.peer = null; if (clear) store.del('save'); }
     if (mode === 'guest') net.leave();
-    if (mode === 'local' && clear) store.del('save');
+    if ((mode === 'local' || mode === 'ai') && clear) store.del('save');
+    clearTimeout(aiTimer); aiTimer = 0;
     skipAnim(); V = null; setAnimating(false);
     mode = null; S = null; sel = null; netStatus(false);
     show('cover'); refreshResume();
@@ -968,14 +1080,14 @@
     const sv = store.get('save', null), b = $('#bResume');
     if (sv && Date.now() - sv.ts < 12 * 3600 * 1000 && (sv.S || sv.mode === 'host')) {
       b.style.display = '';
-      b.textContent = sv.mode === 'host' ? `恢復上次的房間（代碼 ${sv.code}）` : '繼續上次同機的那一局';
+      b.textContent = sv.mode === 'host' ? `恢復上次的房間（代碼 ${sv.code}）` : (sv.mode === 'ai' ? '繼續上次對戰電腦的那一局' : '繼續上次同機的那一局');
     } else b.style.display = 'none';
   }
   $('#bResume').onclick = () => {
     const sv = store.get('save', null); if (!sv) return;
     unlockAudio();
     if (sv.mode === 'host') host.start(sv.code, sv);
-    else { mode = 'local'; S = sv.S; seatInfo = []; newCells = {}; sel = null; show('game'); render(); keepAwake(); }
+    else { mode = sv.mode === 'ai' ? 'ai' : 'local'; aiLevels = sv.aiLevels || {}; mySeat = 0; S = sv.S; seatInfo = []; newCells = {}; sel = null; show('game'); render(); keepAwake(); maybeAI(); }
   };
 
   // ---------- 手機切到背景再回來 ----------
