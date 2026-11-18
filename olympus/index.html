@@ -1,0 +1,370 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#14110f">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="format-detection" content="telephone=no">
+<title>奧林帕斯的獻祭</title>
+<style>
+:root{
+  --bg:#14110f; --panel:#1f1a16; --panel2:#2a231d; --line:#5a3b25;
+  --terra:#d9824a; --terra2:#b8612e; --cream:#f3e6cf; --ink:#f3e6cf; --muted:#b9a68c;
+  --me:#e3b84f; --opp:#d0644f; --ok:#7fb069;
+  --W:min(100vw,480px);
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font-family:"Noto Serif TC","Songti TC","PMingLiU",serif,system-ui;overscroll-behavior:none}
+body{touch-action:manipulation;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+button{font-family:inherit;color:inherit;touch-action:manipulation}
+img{-webkit-user-drag:none;user-select:none}
+.screen{display:none;min-height:100vh;min-height:100dvh;width:var(--W);margin:0 auto;padding:max(10px,env(safe-area-inset-top)) 10px max(10px,env(safe-area-inset-bottom));position:relative}
+.screen.on{display:flex;flex-direction:column}
+.meander{background-image:repeating-linear-gradient(90deg,var(--terra) 0 6px,transparent 6px 8px,var(--terra) 8px 10px,transparent 10px 16px);height:6px;opacity:.75;border-radius:2px}
+.btn{display:block;width:100%;padding:13px 14px;border-radius:12px;border:2px solid var(--line);background:var(--panel2);font-size:17px;font-weight:700;letter-spacing:1px;cursor:pointer}
+.btn:active{transform:scale(.98)}
+.btn.primary{background:linear-gradient(180deg,#e2925a,#b8612e);border-color:#f0b07f;color:#1a0f08}
+.btn.gold{background:linear-gradient(180deg,#f0cf74,#c79a2f);border-color:#ffe39c;color:#241703}
+.btn.ghost{background:transparent}
+.btn.small{display:inline-block;width:auto;padding:8px 14px;font-size:15px}
+.btn:disabled{opacity:.4}
+.menu{display:flex;flex-direction:column;gap:10px;margin-top:14px}
+.row{display:flex;gap:10px;align-items:center}
+.muted{color:var(--muted)}
+.txt{width:100%;padding:11px 12px;border-radius:10px;border:2px solid var(--line);background:#0e0c0a;color:var(--ink);font-size:18px;font-family:inherit;-webkit-user-select:text;user-select:text}
+h1,h2,h3{margin:0}
+/* 封面 */
+#cover{justify-content:flex-start;overflow:hidden}
+.cover-art{position:relative;height:min(46vh,320px);margin:-10px -10px 0;overflow:hidden}
+.cover-art .fan{position:absolute;left:50%;top:18%;width:0;height:0}
+.cover-art .fan img{position:absolute;width:min(24vw,104px);aspect-ratio:2/3;object-fit:cover;border-radius:6px;border:2px solid #2b1a0e;box-shadow:0 6px 18px #000a;left:calc(min(24vw,104px)/-2);top:0}
+.cover-art::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,transparent 62%,var(--bg) 98%)}
+.title{text-align:center;font-size:clamp(30px,9vw,42px);font-weight:900;letter-spacing:6px;color:var(--cream);text-shadow:0 0 18px #d9824a88,0 2px 0 #6b3a1a;margin:0 0 6px}
+.cover-body{position:relative;z-index:2;margin-top:-14px}
+/* 大廳 */
+.panel{background:var(--panel);border:2px solid var(--line);border-radius:14px;padding:14px;margin-bottom:12px}
+.code{font-size:44px;letter-spacing:12px;text-align:center;font-weight:900;color:var(--me);margin:4px 0 10px}
+#qr{width:190px;height:190px;margin:0 auto 10px;background:#fff;padding:10px;border-radius:10px}
+#qr svg{width:100%;height:100%;display:block}
+.plist{list-style:none;padding:0;margin:8px 0;font-size:18px}
+.plist li{padding:6px 0;border-bottom:1px dashed var(--line)}
+.dot{display:inline-block;width:10px;height:10px;border-radius:50%;background:var(--ok);margin-right:8px}
+.dot.off{background:#777}
+/* 遊戲 */
+#game{padding-top:max(6px,env(safe-area-inset-top));padding-bottom:max(6px,env(safe-area-inset-bottom));gap:6px;min-height:100vh;min-height:100dvh}
+.top{display:flex;align-items:center;gap:8px;height:34px}
+.top .round{font-weight:900;color:var(--terra);font-size:15px;white-space:nowrap}
+.top .turn{flex:1;text-align:center;font-size:15px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.iconbtn{width:38px;height:34px;border-radius:9px;border:2px solid var(--line);background:var(--panel2);font-size:14px;font-weight:900;cursor:pointer;flex:none}
+.netstat{display:none;background:#5a2a1a;color:#ffd9c2;text-align:center;font-size:13px;padding:5px;border-radius:8px}
+.netstat.on{display:block}
+.strip{display:flex;align-items:center;gap:6px;background:var(--panel);border:2px solid var(--line);border-radius:12px;padding:5px 8px;min-height:46px}
+.strip.opp{border-color:#6b3326}
+.strip.me{border-color:#7a5d1f}
+.strip .who{font-weight:900;font-size:15px;min-width:0;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.strip .who small{font-weight:400;color:var(--muted);font-size:12px;display:block}
+.strip.active{box-shadow:0 0 0 2px var(--me),0 0 14px #e3b84f66}
+.strip.opp.active{box-shadow:0 0 0 2px var(--opp),0 0 14px #d0644f66}
+.toks{display:flex;gap:4px}
+.tok{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;font-size:15px;background:#3a2c20;border:2px solid #8a6a40;position:relative}
+.tok.used{opacity:.28;filter:grayscale(1)}
+.mini-backs{display:flex}
+.mini-backs i{width:12px;height:18px;border-radius:2px;background:var(--terra2);border:1px solid #f0b07f;margin-left:-4px;display:block}
+.mini-backs i:first-child{margin-left:0}
+.hid{display:flex;gap:4px;align-items:center;font-size:12px;color:var(--muted)}
+.hid .slot{width:24px;height:34px;border-radius:3px;border:1px dashed #6a5440;display:grid;place-items:center;overflow:hidden;font-size:11px}
+.hid .slot img{width:100%;height:100%;object-fit:cover}
+.hid .slot.back{background:repeating-linear-gradient(45deg,#8a4520 0 4px,#6b3216 4px 8px);border:1px solid #f0b07f}
+/* 神殿 */
+.temple{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;flex:1;min-height:0;align-content:center}
+.col{display:flex;flex-direction:column;align-items:center;gap:3px;position:relative}
+.offers{display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:2px;height:calc(var(--c)*1.25);width:100%}
+.offers.mine{justify-content:flex-start}
+.chip{position:relative;width:calc(var(--c)*.72);height:calc(var(--c)*.72);border-radius:50%;overflow:hidden;border:2px solid var(--gc);background:#000}
+.chip img{width:100%;height:100%;object-fit:cover}
+.chip.empty{border-style:dashed;opacity:.18;background:transparent}
+.chip.flash{animation:flash 1.2s ease-out}
+@keyframes flash{0%{box-shadow:0 0 0 0 #fff}30%{box-shadow:0 0 0 6px #ffe39c}100%{box-shadow:0 0 0 0 transparent}}
+.cnt{font-size:clamp(14px,4.5vw,20px);font-weight:900;line-height:1}
+.cnt.zero{opacity:.25}
+.god{position:relative;width:100%;aspect-ratio:2/3;border-radius:6px;overflow:hidden;border:2px solid var(--gc);background:#000;cursor:pointer}
+.god img{width:100%;height:100%;object-fit:cover;object-position:50% 15%}
+.god.fam img{object-fit:contain;object-position:50% 60%;background:radial-gradient(circle at 50% 40%,#3b2a1c,#120d0a)}
+.god .val{position:absolute;left:2px;top:2px;min-width:18px;height:18px;border-radius:9px;background:var(--gc);color:#1a1006;font-size:12px;font-weight:900;display:grid;place-items:center;padding:0 3px;box-shadow:0 1px 3px #000}
+.god .gname{position:absolute;left:0;right:0;bottom:0;background:linear-gradient(transparent,#000d 40%);font-size:10px;text-align:center;padding:8px 0 2px;white-space:nowrap;overflow:hidden}
+.marker{height:16px;display:flex;align-items:center;justify-content:center}
+.coin{width:18px;height:18px;border-radius:50%;display:grid;place-items:center;font-size:11px;font-weight:900;color:#1a1006;box-shadow:0 1px 4px #000}
+.coin.me{background:radial-gradient(circle at 35% 30%,#fff3c4,var(--me) 60%,#8a6a1a)}
+.coin.opp{background:radial-gradient(circle at 35% 30%,#ffd2c6,var(--opp) 60%,#7a2a1a)}
+.coin.move{animation:pop .6s ease-out}
+@keyframes pop{0%{transform:scale(2.2)}100%{transform:scale(1)}}
+/* 手牌 */
+.handwrap{background:linear-gradient(180deg,#1f1a16,#17120e);border:2px solid var(--line);border-radius:12px;padding:8px 6px 6px}
+.acts{display:grid;grid-template-columns:repeat(4,1fr);gap:5px;margin-bottom:8px}
+.act{border:2px solid #8a6a40;background:#2c2219;border-radius:10px;padding:5px 2px;font-size:13px;font-weight:800;line-height:1.15;cursor:pointer;text-align:center}
+.act b{display:block;font-size:19px;line-height:1.2}
+.act small{display:block;font-weight:400;color:var(--muted);font-size:11px}
+.act.on{background:linear-gradient(180deg,#e2925a,#b8612e);border-color:#ffd0a8;color:#1a0f08}
+.act.on small{color:#3a1f0c}
+.act.used{opacity:.25;text-decoration:line-through}
+.act:disabled{cursor:default}
+.hand{display:flex;justify-content:center;min-height:calc(var(--hc) * 1.5 + 12px);padding-top:12px}
+.card{position:relative;width:var(--hc);aspect-ratio:2/3;border-radius:7px;overflow:hidden;border:2px solid var(--gc);background:#000;flex:none;transition:transform .15s;cursor:pointer;box-shadow:0 2px 6px #000a}
+.card img{width:100%;height:100%;object-fit:cover}
+.card .val{position:absolute;left:2px;top:2px;width:18px;height:18px;border-radius:50%;background:var(--gc);color:#1a1006;font-size:11px;font-weight:900;display:grid;place-items:center}
+.card .nm{position:absolute;left:0;right:0;bottom:0;font-size:11px;text-align:center;background:linear-gradient(transparent,#000e 45%);padding:10px 0 2px;font-weight:700}
+.card.sel{transform:translateY(-12px);box-shadow:0 0 0 3px #fff,0 8px 16px #000}
+.card.new{animation:newcard 1s ease-out}
+@keyframes newcard{0%{box-shadow:0 0 0 4px #ffe39c}100%{box-shadow:0 2px 6px #000a}}
+.card.back{background:repeating-linear-gradient(45deg,#8a4520 0 6px,#6b3216 6px 12px);border-color:#f0b07f}
+.card.big{--hc:min(26vw,110px)}
+.hint{text-align:center;font-size:14px;min-height:22px;color:var(--cream);padding:2px 4px}
+.hint b{color:var(--me)}
+.confirm{display:none;margin-top:6px}
+.confirm.on{display:flex;gap:8px}
+/* 覆蓋視窗 */
+.overlay{position:fixed;inset:0;background:#000b;display:none;align-items:center;justify-content:center;z-index:50;padding:14px}
+.overlay.on{display:flex}
+.modal{background:var(--panel);border:2px solid var(--terra2);border-radius:16px;padding:16px;width:min(440px,100%);max-height:calc(100dvh - 28px);max-height:calc(100vh - 28px);overflow:auto;-webkit-overflow-scrolling:touch}
+.modal h2{text-align:center;color:var(--terra);margin-bottom:10px;letter-spacing:2px}
+.set-row{margin:12px 0}
+.set-row label{display:flex;justify-content:space-between;font-weight:700;margin-bottom:6px}
+input[type=range]{width:100%;accent-color:var(--terra)}
+.seg{display:flex;border:2px solid var(--line);border-radius:10px;overflow:hidden}
+.seg button{flex:1;padding:9px 4px;border:0;background:transparent;font-size:15px;font-weight:700;cursor:pointer}
+.seg button.on{background:var(--terra);color:#1a0f08}
+.help p,.help li{line-height:1.65;font-size:15px}
+.help h3{color:var(--me);margin:14px 0 4px;font-size:17px}
+.help ul{padding-left:20px;margin:4px 0}
+.godtable{width:100%;border-collapse:collapse;font-size:14px}
+.godtable td{padding:4px;border-bottom:1px solid #3a2c20}
+.choices{display:flex;justify-content:center;gap:10px;flex-wrap:wrap;margin:10px 0}
+.choice{border:3px solid transparent;border-radius:12px;padding:6px;display:flex;gap:4px;background:#2a2119;cursor:pointer}
+.choice.on{border-color:#fff;background:#4a3420}
+.choice .card{--hc:min(22vw,92px)}
+.choice .lbl{font-size:12px;color:var(--muted);text-align:center}
+.split{display:flex;gap:8px;justify-content:center;margin:8px 0}
+.pile{flex:1;min-height:120px;border:2px dashed var(--line);border-radius:12px;padding:6px;display:flex;flex-direction:column;align-items:center;gap:4px}
+.pile .cards{display:flex;gap:4px;justify-content:center;min-height:90px}
+.pile .card{--hc:min(17vw,70px)}
+.pile.a{border-color:#7a5d1f}.pile.b{border-color:#6b3326}
+.res-row{display:grid;grid-template-columns:44px 1fr 46px 46px 70px;gap:4px;align-items:center;padding:4px 0;border-bottom:1px solid #3a2c20;font-size:14px}
+.res-row img{width:40px;height:54px;object-fit:cover;border-radius:4px;border:2px solid var(--gc)}
+.res-row.fam img{object-fit:contain;background:#2a1d14}
+.res-row .n{text-align:center;font-weight:900;font-size:18px}
+.res-head{font-size:12px;color:var(--muted)}
+.sumline{display:flex;justify-content:space-around;text-align:center;margin:12px 0;font-size:15px}
+.sumline b{font-size:26px;display:block}
+.log{font-size:14px;line-height:1.6;max-height:60vh;overflow:auto}
+.log div{border-bottom:1px dashed #3a2c20;padding:3px 0}
+.bigcard{display:block;width:min(70vw,300px);margin:0 auto 10px;border-radius:12px;border:3px solid var(--gc)}
+.bigcard.fam{background:radial-gradient(circle at 50% 40%,#3b2a1c,#120d0a);aspect-ratio:2/3;object-fit:contain;padding:12px}
+.toasts{position:fixed;left:0;right:0;top:max(48px,calc(env(safe-area-inset-top) + 44px));display:flex;flex-direction:column;align-items:center;gap:6px;z-index:60;pointer-events:none}
+.toast{background:#2a1d14ee;border:1px solid var(--terra2);color:var(--cream);padding:8px 14px;border-radius:20px;font-size:14px;max-width:92vw;animation:tin .25s ease-out;box-shadow:0 4px 12px #000a}
+@keyframes tin{from{opacity:0;transform:translateY(-8px)}}
+.banner{position:fixed;left:50%;top:40%;transform:translate(-50%,-50%) scale(.8);background:linear-gradient(180deg,#e2925a,#b8612e);color:#1a0f08;font-weight:900;font-size:24px;padding:14px 26px;border-radius:14px;border:3px solid #ffd0a8;opacity:0;pointer-events:none;transition:all .25s;z-index:70;white-space:nowrap;letter-spacing:2px}
+.banner.on{opacity:1;transform:translate(-50%,-50%) scale(1)}
+.pass{text-align:center}
+.pass .big{font-size:28px;font-weight:900;color:var(--me);margin:14px 0}
+@media (min-height:760px){ .offers{height:calc(var(--c)*1.6)} }
+</style>
+</head>
+<body>
+
+<section id="cover" class="screen on">
+  <div class="cover-art"><div class="fan" id="coverFan"></div></div>
+  <div class="cover-body">
+    <h1 class="title">奧林帕斯的獻祭</h1>
+    <div class="meander" style="width:70%;margin:0 auto 10px"></div>
+    <div id="inappWarn" class="muted" style="display:none;color:#ffd98a;font-size:14px;line-height:1.5;margin-bottom:8px"></div>
+    <div class="row"><span class="muted" style="white-space:nowrap">你的名字</span><input id="myName" class="txt" maxlength="8" placeholder="輸入名字"></div>
+    <div class="menu">
+      <button class="btn primary" id="bHost">開房間（兩支手機連線）</button>
+      <button class="btn gold" id="bJoin">加入房間</button>
+      <button class="btn" id="bResume" style="display:none">恢復上次的房間</button>
+      <div class="row">
+        <button class="btn" style="flex:1" id="bAI">對戰電腦</button>
+        <button class="btn" style="flex:1" id="bLocal">同機輪流</button>
+      </div>
+      <div class="row">
+        <button class="btn ghost" style="flex:1" id="bHelp">說明</button>
+        <button class="btn ghost" style="flex:1" id="bSet">設定</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="lobby" class="screen">
+  <div class="panel" id="lobbyHost">
+    <h2 style="text-align:center">請對手掃描加入</h2>
+    <div class="muted" style="text-align:center;font-size:14px;margin:4px 0">或在「加入房間」輸入代碼</div>
+    <div class="code" id="roomCode">----</div>
+    <div id="qr"></div>
+    <div class="row" style="justify-content:center"><button class="btn small" id="bCopy">傳送邀請連結</button></div>
+  </div>
+  <div class="panel" id="lobbyGuest" style="display:none">
+    <h2>已加入房間 <span id="guestCode" style="color:var(--me)"></span></h2>
+  </div>
+  <div class="panel">
+    <h2>玩家 <span class="muted" id="pcount"></span></h2>
+    <ul class="plist" id="plist"></ul>
+    <div class="muted" id="lobbyMsg">等待對手加入…</div>
+  </div>
+  <div class="menu">
+    <button class="btn primary" id="bStart" disabled>開始遊戲</button>
+    <button class="btn ghost" id="bLeaveLobby">離開</button>
+  </div>
+  <p class="muted" style="font-size:13px;line-height:1.6">小提醒：遊戲中請讓畫面保持開著。如果手機鎖屏或切到別的 App 斷線了，重新打開這個網頁就會自動連回去。</p>
+</section>
+
+<section id="game" class="screen">
+  <div class="top">
+    <div class="round" id="roundLbl">第 1 回合</div>
+    <div class="turn" id="turnLbl"></div>
+    <button class="iconbtn" id="bPause" aria-label="暫停">❚❚</button>
+  </div>
+  <div class="netstat" id="netstat">連線中斷，正在重新連線…</div>
+  <div class="strip opp" id="oppStrip"></div>
+  <div class="temple" id="temple"></div>
+  <div class="strip me" id="meStrip"></div>
+  <div class="handwrap">
+    <div class="acts" id="acts"></div>
+    <div class="hint" id="hint"></div>
+    <div class="hand" id="hand"></div>
+    <div class="confirm" id="confirm">
+      <button class="btn ghost" style="flex:1" id="bCancel">取消</button>
+      <button class="btn primary" style="flex:2" id="bConfirm">確定</button>
+    </div>
+  </div>
+</section>
+
+<div class="toasts" id="toasts"></div>
+<div class="banner" id="banner"></div>
+
+<div class="overlay" id="ovPause"><div class="modal">
+  <h2>暫停</h2>
+  <div class="muted" id="pauseNote" style="text-align:center;margin-bottom:8px"></div>
+  <div class="menu">
+    <button class="btn primary" data-close>繼續遊戲</button>
+    <button class="btn" id="pSet">設定</button>
+    <button class="btn" id="pHelp">說明</button>
+    <button class="btn" id="pLog">紀錄</button>
+    <button class="btn ghost" style="color:var(--opp);border-color:var(--opp)" id="pQuit">離開遊戲</button>
+  </div>
+</div></div>
+
+<div class="overlay" id="ovSet"><div class="modal">
+  <h2>設定</h2>
+  <div class="set-row"><label>音樂 <span id="vMusicV"></span></label><input type="range" id="vMusic" min="0" max="100"></div>
+  <div class="set-row"><label>音效 <span id="vSfxV"></span></label><input type="range" id="vSfx" min="0" max="100"></div>
+  <div class="set-row"><label>外觀</label>
+    <div class="seg" id="sStyle"><button data-v="greek">正統希臘風</button><button data-v="fam">我們這一家</button></div></div>
+  <div class="set-row"><label>操作提示</label>
+    <div class="seg" id="sHints"><button data-v="1">開</button><button data-v="0">關</button></div></div>
+  <div class="set-row"><label>震動（支援的手機）</label>
+    <div class="seg" id="sVib"><button data-v="1">開</button><button data-v="0">關</button></div></div>
+  <div class="menu"><button class="btn primary" data-close>完成</button></div>
+</div></div>
+
+<div class="overlay" id="ovHelp"><div class="modal help">
+  <h2>說明</h2>
+  <p>兩位祭司向奧林帕斯七位神獻上祭品，爭取眾神的眷顧。</p>
+  <h3>勝利條件</h3>
+  <ul><li>回合結束時，得到眷顧的神分數加起來 <b id="hWinP">11</b> 分以上就獲勝。</li>
+  <li>如果沒人達到，得到 <b id="hWinG">4</b> 位以上神眷顧的人獲勝。</li>
+  <li>都沒有就進入下一回合，眷顧會保留，祭品重新來過。</li></ul>
+  <h3>眾神與祭品</h3>
+  <p class="muted" style="margin:0">每位神的分數也是祂的祭品張數。</p>
+  <table class="godtable" id="helpGods"></table>
+  <h3>每一回合</h3>
+  <ul><li>洗牌後蓋掉 1 張不用，每人發 6 張祭品。</li>
+  <li>輪到你時先抽 1 張，再從四種行動選一種沒用過的執行。</li>
+  <li>兩人輪流，直到各自四種行動都用完。</li></ul>
+  <h3>四種行動（每回合各用一次）</h3>
+  <ul id="helpActs"></ul>
+  <h3>回合結算</h3>
+  <ul><li>翻開秘密祈禱的牌，加到自己那邊。</li>
+  <li>每位神由祭品比較多的人得到眷顧（神殿上的金幣會移到那一邊）。</li>
+  <li>一樣多的話，眷顧留在原本的位置不動。</li></ul>
+  <h3>畫面</h3>
+  <ul><li>神殿上方是對手獻的祭品，下方是你的。</li>
+  <li>點神的卡片可以看大圖與詳細數字。</li>
+  <li>金幣「眷」在誰那邊，就代表那位神目前眷顧誰。</li></ul>
+  <div class="menu"><button class="btn primary" data-close>知道了</button></div>
+</div></div>
+
+<div class="overlay" id="ovLog"><div class="modal">
+  <h2>紀錄</h2>
+  <div class="log" id="logList"></div>
+  <div class="menu"><button class="btn primary" data-close>關閉</button></div>
+</div></div>
+
+<div class="overlay" id="ovGod"><div class="modal" style="text-align:center">
+  <img id="gImg" class="bigcard" alt="">
+  <h2 id="gName"></h2>
+  <div id="gInfo" style="line-height:1.7"></div>
+  <div class="menu"><button class="btn primary" data-close>關閉</button></div>
+</div></div>
+
+<div class="overlay" id="ovSplit"><div class="modal">
+  <h2>雙份供桌</h2>
+  <div class="muted" style="text-align:center">點祭品在兩份之間移動，每份兩張。<br>對手會先挑走一份。</div>
+  <div class="split">
+    <div class="pile a"><div class="muted">第一份</div><div class="cards" id="pileA"></div></div>
+    <div class="pile b"><div class="muted">第二份</div><div class="cards" id="pileB"></div></div>
+  </div>
+  <div class="menu"><button class="btn primary" id="bSplitOk">獻上</button><button class="btn ghost" id="bSplitCancel">取消</button></div>
+</div></div>
+
+<div class="overlay" id="ovRespond"><div class="modal">
+  <h2 id="rTitle">挑選</h2>
+  <div class="muted" id="rDesc" style="text-align:center"></div>
+  <div class="choices" id="rChoices"></div>
+  <div class="menu"><button class="btn primary" id="bRespond" disabled>選這個</button><button class="btn ghost" id="bRespondLook">先看一下神殿</button></div>
+</div></div>
+
+<div class="overlay" id="ovRound"><div class="modal">
+  <h2 id="roundTitle">回合結算</h2>
+  <div id="roundBody"></div>
+  <div class="menu" id="roundBtns"></div>
+</div></div>
+
+<div class="overlay" id="ovJoin"><div class="modal">
+  <h2>加入房間</h2>
+  <div class="muted" style="margin:4px 0">你的名字</div>
+  <input id="joinName" class="txt" maxlength="8" style="margin-bottom:10px" placeholder="輸入名字">
+  <div class="muted" style="margin:4px 0">房間代碼（英文字母）</div>
+  <input id="joinCode" class="txt" maxlength="6" style="text-transform:uppercase;letter-spacing:8px;text-align:center;font-size:28px" autocomplete="off" autocapitalize="characters" spellcheck="false">
+  <div class="menu"><button class="btn primary" id="bJoinGo">加入</button><button class="btn ghost" data-close>取消</button></div>
+</div></div>
+
+<div class="overlay" id="ovAI"><div class="modal">
+  <h2>對戰電腦</h2>
+  <div class="seg" id="aiLevel"><button data-v="easy">簡單</button><button data-v="normal">普通</button><button data-v="hard">困難</button></div>
+  <div class="menu"><button class="btn primary" id="bAIGo">開始</button><button class="btn ghost" data-close>取消</button></div>
+</div></div>
+
+<div class="overlay" id="ovLocal"><div class="modal">
+  <h2>同一支手機輪流</h2>
+  <div class="muted" style="margin-bottom:8px">換人時會先遮住畫面，把手機交給對方再翻開。</div>
+  <input id="ln0" class="txt" maxlength="8" placeholder="玩家一" style="margin-bottom:8px">
+  <input id="ln1" class="txt" maxlength="8" placeholder="玩家二">
+  <div class="menu"><button class="btn primary" id="bLocalGo">開始</button><button class="btn ghost" data-close>取消</button></div>
+</div></div>
+
+<div class="overlay" id="ovPass" style="background:#000"><div class="modal pass">
+  <div class="muted">請把手機交給</div>
+  <div class="big" id="passName"></div>
+  <div class="muted" id="passWhy" style="margin-bottom:12px"></div>
+  <button class="btn primary" id="bPassGo">我是 <span id="passName2"></span>，翻開</button>
+</div></div>
+
+<script src="config.js"></script>
+<script src="engine.js"></script>
+<script src="lib/peerjs.min.js"></script>
+<script src="lib/qrcode.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
