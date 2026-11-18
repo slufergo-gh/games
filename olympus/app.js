@@ -27,7 +27,7 @@
   let split = null;      // {a:[cards], b:[cards]}
   let respPick = null, respHidden = false;
   let lastSeq = -1, lastRoundShown = null, prevHand = null, newCard = null;
-  let paused = false, aiTimer = 0;
+  let paused = false, aiTimer = 0, animUntil = 0;
 
   const me = () => mode === 'local' ? viewer : (mode === 'guest' || mode === 'host' ? mySeat : 0);
   const V = () => !S ? null : (mode === 'guest' ? S : E.view(S, me()));
@@ -170,7 +170,7 @@
     $('#oppStrip').className = 'strip opp' + (act === o ? ' active' : '');
     $('#oppStrip').innerHTML = `<div class="who">${esc(nameOf(o))}<small>${oppTag}・手牌 ${oh}</small></div>
       <div class="hid">${hidSlots(v, o, false)}</div>
-      <div class="toks">${C.actions.map((a, i) => `<span class="tok ${v.used[o][i] ? 'used' : ''}" title="${a.name}">${a.icon}</span>`).join('')}</div>`;
+      <div class="toks">${C.actions.map((a, i) => `<span class="tok ${v.used[o][i] ? 'used' : ''}" data-tip="${i}">${a.icon}</span>`).join('')}</div>`;
 
     // 神殿
     let t = '';
@@ -195,7 +195,7 @@
 
     // 行動按鈕
     const canAct = v.phase === 'act' && act === m;
-    $('#acts').innerHTML = C.actions.map((a, i) => `<button class="act ${v.used[m][i] ? 'used' : ''} ${sel && sel.action === a.key ? 'on' : ''}" data-act="${a.key}" ${!canAct || v.used[m][i] ? 'disabled' : ''}><b>${a.icon}</b>${a.name}<small>${a.cards} 張</small></button>`).join('');
+    $('#acts').innerHTML = C.actions.map((a, i) => `<button class="act ${v.used[m][i] ? 'used' : ''} ${sel && sel.action === a.key ? 'on' : ''}" data-act="${a.key}" data-tip="${i}" ${!canAct || v.used[m][i] ? 'aria-disabled="true"' : ''}><b>${a.icon}</b>${a.name}<small>${a.cards} 張</small></button>`).join('');
 
     // 手牌
     const hand = v.hands[m];
@@ -207,7 +207,7 @@
     let hint = '', showConfirm = false, confirmOk = false;
     if (sel) {
       const A = C.actions[E.ACT[sel.action]];
-      hint = `${A.icon} <b>${A.name}</b>：選 ${A.cards} 張（已選 ${sel.idx.length}）`;
+      hint = `${A.icon} <b>${A.name}</b>：選 ${A.cards} 張（已選 ${sel.idx.length}）<br><small class="muted">${A.desc}</small>`;
       showConfirm = true; confirmOk = sel.idx.length === A.cards;
       $('#bConfirm').textContent = sel.action === 'tables' ? '下一步：分成兩份' : '確定獻上';
     } else if (v.phase === 'act' && act === m) hint = settings.hints ? '先點上面的一種行動，再選祭品' : '輪到你';
@@ -232,9 +232,90 @@
     return h;
   }
 
+  // ---------- 滑鼠移上去顯示行動效果（手機：長按） ----------
+  const tip = document.createElement('div'); tip.className = 'tip'; document.body.appendChild(tip);
+  function showTip(el) {
+    const A = C.actions[+el.dataset.tip]; if (!A) return;
+    const used = el.classList.contains('used');
+    tip.innerHTML = `<b>${A.icon} ${A.name}</b>（拿出 ${A.cards} 張）<br>${A.desc}${used ? '<br><span class="muted">這回合已經用過</span>' : ''}`;
+    tip.classList.add('on');
+    const r = el.getBoundingClientRect(), tw = tip.offsetWidth, th = tip.offsetHeight;
+    let x = r.left + r.width / 2 - tw / 2; x = Math.max(6, Math.min(window.innerWidth - tw - 6, x));
+    let y = r.top - th - 8; if (y < 6) y = r.bottom + 8;
+    tip.style.left = x + 'px'; tip.style.top = y + 'px';
+  }
+  document.addEventListener('pointerover', e => {
+    if (e.pointerType && e.pointerType !== 'mouse') return;
+    const el = e.target.closest('[data-tip]'); if (el) showTip(el); else tip.classList.remove('on');
+  });
+  document.addEventListener('pointerdown', e => { if (e.pointerType !== 'mouse') tip.classList.remove('on'); });
+  let lpT = 0;
+  document.addEventListener('touchstart', e => { const el = e.target.closest('[data-tip]'); clearTimeout(lpT); if (el) lpT = setTimeout(() => { showTip(el); setTimeout(() => tip.classList.remove('on'), 2500); }, 450); }, { passive: true });
+  document.addEventListener('touchend', () => clearTimeout(lpT), { passive: true });
+
+  // ---------- 卡片飛行動畫 ----------
+  function flyLayer() { let L = $('#flyLayer'); if (!L) { L = document.createElement('div'); L.id = 'flyLayer'; document.body.appendChild(L); } return L; }
+  // items: [{g, grp, to, glow}]：先在畫面中央排開，停一下再飛到各自的位置
+  function flyCards(items, caption, hold = 750) {
+    const L = flyLayer(); L.innerHTML = '';
+    const W = window.innerWidth, H = window.innerHeight;
+    const cw = Math.min(74, (Math.min(W, 480) - 40) / Math.max(items.length, 3) - 8), ch = cw * 1.5;
+    const gaps = items.map((it, i) => i && items[i - 1].grp !== it.grp ? 26 : 8);
+    const total = items.length * cw + gaps.slice(1).reduce((a, b) => a + b, 0);
+    let x = W / 2 - total / 2; const y = H * 0.42 - ch / 2;
+    if (caption) { const c = document.createElement('div'); c.className = 'flycap'; c.innerHTML = caption; c.style.top = (y - 40) + 'px'; L.appendChild(c); setTimeout(() => c.classList.add('out'), hold + 200); }
+    const els = items.map((it, i) => {
+      if (i) x += gaps[i];
+      const d = document.createElement('div');
+      d.className = 'flycard' + (it.glow ? ' ' + it.glow : '');
+      d.innerHTML = cardHTML(it.g);
+      Object.assign(d.style, { left: x + 'px', top: y + 'px', width: cw + 'px', height: ch + 'px' });
+      L.appendChild(d); x += cw;
+      return d;
+    });
+    // 飛到之前，目的地先顯示舊的數量，抵達時才加上去
+    const cntOf = to => to && to.dataset.chip && to.parentElement ? to.parentElement.querySelector('.cnt') : null;
+    const dec = new Set();
+    animUntil = Date.now() + hold + 900 + items.length * 70;
+    items.forEach(it => { const c = cntOf(it.to); if (c) { dec.add(it.to); c.textContent = (+c.textContent) - 1; if (+c.textContent <= 0) { c.classList.add('zero'); it.to.style.opacity = '.15'; } } });
+    requestAnimationFrame(() => requestAnimationFrame(() => els.forEach(d => d.classList.add('in'))));
+    setTimeout(() => {
+      els.forEach((d, i) => {
+        const old = items[i].to, to = old && old.isConnected ? old : (items[i].sel && document.querySelector(items[i].sel)); if (!to) { d.classList.add('fade'); return; }
+        const r = to.getBoundingClientRect(), s = d.getBoundingClientRect();
+        const dx = r.left + r.width / 2 - (s.left + s.width / 2), dy = r.top + r.height / 2 - (s.top + s.height / 2);
+        const sc = Math.max(0.25, r.width / s.width);
+        d.style.transitionDelay = (i * 70) + 'ms';
+        d.style.transform = `translate(${dx}px,${dy}px) scale(${sc})`;
+        d.classList.add('go');
+        setTimeout(() => { const c = dec.has(to) && to.isConnected ? cntOf(to) : null; if (c) { c.textContent = (+c.textContent) + 1; c.classList.remove('zero'); to.style.opacity = ''; } d.style.opacity = '0'; to.classList.remove('flash'); void to.offsetWidth; to.classList.add('flash'); }, 680 + i * 70);
+      });
+      sfx.card();
+      setTimeout(() => { L.innerHTML = ''; }, 1150 + items.length * 70);
+    }, hold);
+  }
+  function animatePicked(ev) {
+    const m = me();
+    const chip = (side, g) => document.querySelector(`[data-chip="${side}-${g}"]`);
+    const items = ev.mine.map(g => ({ g, grp: 0, to: chip(ev.p, g), sel: `[data-chip="${ev.p}-${g}"]`, glow: ev.p === m ? 'gme' : 'gop' }))
+      .concat(ev.theirs.map(g => ({ g, grp: 1, to: chip(ev.from, g), sel: `[data-chip="${ev.from}-${g}"]`, glow: ev.from === m ? 'gme' : 'gop' })));
+    const who = ev.p === m ? '你' : esc(nameOf(ev.p));
+    flyCards(items, `${who} 挑了左邊${ev.mine.length > 1 ? '這份' : '這張'}`);
+    sfx.offer();
+  }
+  function animateHidden(ev) { // 秘密祈禱／焚燒：牌飛到那個人的欄位
+    const v = V(); if (!v) return;
+    const m = me(), side = ev.p === m ? '#meStrip' : '#oppStrip';
+    const slots = $$(side + ' .hid .slot'); if (!slots.length) return;
+    const to = ev.type === 'secret' ? slots[0] : slots[slots.length - 1];
+    const n = ev.type === 'secret' ? 1 : 2;
+    const cards = mode === 'local' || ev.p !== m ? new Array(n).fill(E.HIDDEN) : (ev.type === 'secret' ? [v.secret[ev.p]] : v.burned[ev.p].slice());
+    flyCards(cards.map(g => ({ g, grp: 0, to })), '', 300);
+  }
+
   // ---------- 操作 ----------
   $('#acts').addEventListener('click', e => {
-    const b = e.target.closest('[data-act]'); if (!b || b.disabled) return;
+    const b = e.target.closest('[data-act]'); if (!b || b.getAttribute('aria-disabled') === 'true') return;
     sfx.tap();
     const k = b.dataset.act;
     if (sel && sel.action === k) sel = null;
@@ -364,13 +445,12 @@
     const m = me(), o = 1 - m;
     const A = k => C.actions[E.ACT[k]];
     if (ev.type === 'round') { banner(`第 ${v.round} 回合`); sfx.card(); close('ovRound'); }
-    if ((ev.type === 'secret' || ev.type === 'burn') && ev.p !== m) { toast(`${esc(nameOf(o))} 使用了 ${A(ev.type).icon}「${A(ev.type).name}」`); sfx.card(); }
+    if (ev.type === 'secret' || ev.type === 'burn') { if (ev.p !== m) toast(`${esc(nameOf(o))} 使用了 ${A(ev.type).icon}「${A(ev.type).name}」`); setTimeout(() => animateHidden(ev), 30); }
     if (ev.type === 'offer' && ev.p !== m) { banner(A(ev.kind).name); sfx.offer(); vibrate(60); respHidden = false; }
     if (ev.type === 'picked') {
       const its = cs => cs.map(c => G[c].itemName).join('＋');
       if (ev.from === m) toast(`${esc(nameOf(o))} 挑走 ${its(ev.mine)}，你得到 ${its(ev.theirs)}`, 3400);
-      setTimeout(() => { ev.mine.concat(ev.theirs).forEach(c => { $$(`[data-chip$="-${c}"]`).forEach(x => x.classList.add('flash')); }); }, 30);
-      sfx.offer();
+      setTimeout(() => animatePicked(ev), 30);
     }
     if (actor(v) === m && (ev.type !== 'offer' || ev.p !== m) && v.phase === 'act') { sfx.myturn(); vibrate(40); }
     if (ev.type === 'roundEnd') { sfx.favor(); }
@@ -424,7 +504,7 @@
       const t0 = Date.now();
       const m = E.aiMove(E.view(S, 1), 1, aiLevel());
       setTimeout(() => { if (mode === 'ai' && !paused && actor(S) === 1) doMove(m, 1); }, Math.max(0, 250 - (Date.now() - t0)));
-    }, C.aiDelayMs);
+    }, Math.max(C.aiDelayMs, animUntil - Date.now() + 300));
   }
 
   // ---------- 同機輪流 ----------
