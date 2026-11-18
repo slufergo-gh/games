@@ -173,6 +173,25 @@ input[type=range]{width:100%;accent-color:var(--terra)}
 .flycard.gop .card{box-shadow:0 0 0 3px var(--opp),0 0 18px #d0644f}
 .flycap{position:fixed;left:0;right:0;text-align:center;font-weight:900;font-size:18px;color:var(--cream);text-shadow:0 2px 6px #000;transition:opacity .3s}
 .flycap.out{opacity:0}
+.ghost{position:fixed;transform-origin:0 0;pointer-events:none;z-index:57;will-change:transform}
+.ghost .card{width:100%!important;height:100%;--hc:100%}
+.ghost.gme .card{box-shadow:0 0 0 3px var(--me),0 0 18px #e3b84f}
+.ghost.gop .card{box-shadow:0 0 0 3px var(--opp),0 0 18px #d0644f}
+.ghost.flycap{transform-origin:50% 50%}
+.coinghost .coin{width:100%;height:100%}
+.spark{border-radius:50%;background:radial-gradient(circle,#fffbe0 0,#f2c94c 45%,transparent 70%)}
+.spark.dim{background:radial-gradient(circle,#ddd 0,#999 45%,transparent 70%)}
+#pendRow{position:fixed;inset:0;pointer-events:none;z-index:30;display:none}
+#pendRow.on{display:block}
+#pendRow.low{display:none}
+.pcard{position:fixed}
+.pcard .card{width:100%!important;height:100%;--hc:100%;box-shadow:0 6px 18px #000c}
+.pcap{position:fixed;left:0;right:0;text-align:center;font-weight:900;color:var(--cream);text-shadow:0 2px 6px #000;font-size:16px}
+.col .god{transition:transform .2s,box-shadow .2s}
+.col.judge .god{transform:scale(1.1);box-shadow:0 0 0 3px #fff,0 0 18px var(--gc);z-index:2}
+#skipHint{position:fixed;left:50%;bottom:max(8px,env(safe-area-inset-bottom));transform:translateX(-50%);background:#000a;color:var(--muted);font-size:12px;padding:4px 10px;border-radius:12px;z-index:58;pointer-events:none;opacity:0;transition:opacity .2s}
+#skipHint.on{opacity:1}
+.acts,.toks{perspective:400px}
 .toasts{position:fixed;left:0;right:0;top:max(48px,calc(env(safe-area-inset-top) + 44px));display:flex;flex-direction:column;align-items:center;gap:6px;z-index:60;pointer-events:none}
 .toast{background:#2a1d14ee;border:1px solid var(--terra2);color:var(--cream);padding:8px 14px;border-radius:20px;font-size:14px;max-width:92vw;animation:tin .25s ease-out;box-shadow:0 4px 12px #000a}
 @keyframes tin{from{opacity:0;transform:translateY(-8px)}}
@@ -252,6 +271,8 @@ input[type=range]{width:100%;accent-color:var(--terra)}
   </div>
 </section>
 
+<div id="pendRow"></div>
+<div id="skipHint">點一下畫面跳過動畫</div>
 <div class="toasts" id="toasts"></div>
 <div class="banner" id="banner"></div>
 
@@ -273,6 +294,8 @@ input[type=range]{width:100%;accent-color:var(--terra)}
   <div class="set-row"><label>音效 <span id="vSfxV"></span></label><input type="range" id="vSfx" min="0" max="100"></div>
   <div class="set-row"><label>外觀</label>
     <div class="seg" id="sStyle"><button data-v="greek">正統希臘風</button><button data-v="fam">我們這一家</button></div></div>
+  <div class="set-row"><label>動畫速度 <small class="muted">（播放中點一下可直接跳過）</small></label>
+    <div class="seg" id="sAnim"><button data-v="normal">正常</button><button data-v="fast">快</button><button data-v="off">關</button></div></div>
   <div class="set-row"><label>操作提示</label>
     <div class="seg" id="sHints"><button data-v="1">開</button><button data-v="0">關</button></div></div>
   <div class="set-row"><label>震動（支援的手機）</label>
