@@ -25,7 +25,19 @@ window.CONFIG = {
   endWhenRowsComplete: 1,     // 有人完成幾條橫排就在該回合結束後終局
 
   // 畫面與動畫
-  flyMs: 550,                 // 花磚飛行動畫時間（毫秒）
+  // 過程動畫（毫秒，「普通」速度；設定裡的慢／快會再乘上倍率，點一下畫面可跳過）
+  anim: {
+    highlightMs: 280,         // 被拿的花磚先亮起來的時間
+    flyMs: 520,               // 花磚飛行時間
+    staggerMs: 90,            // 多塊花磚一塊接一塊出發的間隔
+    roundPauseMs: 700,        // 回合結算／終局加分開始前的停頓
+    rowPauseMs: 650,          // 每一排貼上牆後的停頓（看計分）
+    floorStepMs: 260,         // 破磚列每一格扣分的間隔
+    bonusStepMs: 1100,        // 終局每一類加分的停頓
+    refillStaggerMs: 35,      // 新回合花磚落進窯裡的間隔
+    popMs: 1100,              // 飄字（+3、-2）顯示時間
+    scoreRollMs: 600,         // 分數數字滾動時間
+  },
   toastMs: 2600,              // 通知顯示時間（毫秒）
   roomCodeLength: 4,          // 房間代碼長度
   peerPrefix: 'hualaocuo-v1-',// 連線用的代碼前綴（不同版本互不干擾）

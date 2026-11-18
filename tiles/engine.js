@@ -95,6 +95,22 @@
   function apply(s, pi, src, color, line, rng = Math.random) {
     const err = validate(s, pi, src, color, line);
     if (err) return err;
+    take(s, pi, src, color, line);
+    const empty = s.center.length === 0 && s.factories.every(f => f.length === 0);
+    if (empty) endRound(s, rng);
+    else s.turn = (s.turn + 1) % s.n;
+    return null;
+  }
+
+  // 只做「拿磚＋放磚」，不進行回合結算（畫面動畫用）
+  function applyTake(s, pi, src, color, line) {
+    const err = validate(s, pi, src, color, line);
+    if (err) return err;
+    take(s, pi, src, color, line);
+    return null;
+  }
+
+  function take(s, pi, src, color, line) {
     const p = s.players[pi];
     let taken = 0, gotMarker = false, toCenter = [];
     if (src === 'c') {
@@ -124,11 +140,6 @@
     s.seq++;
     s.lastAction = { seq: s.seq, player: pi, src, color, count: taken, line, placed, overflow, gotMarker, toCenter: toCenter.length };
     s.log.push({ type: 'take', ...s.lastAction });
-
-    const empty = s.center.length === 0 && s.factories.every(f => f.length === 0);
-    if (empty) endRound(s, rng);
-    else s.turn = (s.turn + 1) % s.n;
-    return null;
   }
 
   function scoreTile(wall, r, c) {
@@ -217,7 +228,7 @@
     return out;
   }
 
-  const api = { MARK, wallColor, wallCol, newGame, apply, validate, canPlace, legalMoves, bonuses, scoreTile };
+  const api = { MARK, wallColor, wallCol, newGame, apply, applyTake, validate, canPlace, legalMoves, bonuses, scoreTile };
   root.Engine = api;
   if (typeof module !== 'undefined') module.exports = api;
 })(typeof window !== 'undefined' ? window : globalThis);

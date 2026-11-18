@@ -11,7 +11,7 @@
     set(k, v) { try { localStorage.setItem('hlc_' + k, JSON.stringify(v)); } catch (e) {} },
     del(k) { try { localStorage.removeItem('hlc_' + k); } catch (e) {} },
   };
-  const settings = Object.assign({ music: 40, sfx: 70, style: 'photo', hints: 1, vib: 1 }, store.get('settings', {}));
+  const settings = Object.assign({ music: 40, sfx: 70, style: 'photo', hints: 1, vib: 1, anim: 'normal' }, store.get('settings', {}));
   let cid = store.get('cid', null);
   if (!cid) { cid = Math.random().toString(36).slice(2, 10); store.set('cid', cid); }
 
@@ -23,6 +23,8 @@
   let seatInfo = [];       // [{name, online}]
   let pendingEnd = false;
   let newCells = {};       // 本回合剛貼上的牆格 "p-r-c"
+  let V = null;            // 動畫中顯示的中間狀態
+  let animating = false;
 
   // ---------- 花磚 ----------
   function T(k, cls = '', attrs = '') {
@@ -151,16 +153,20 @@
     return h;
   }
 
-  function myView() { return mode === 'local' ? S.turn : mySeat; }
-  function isMyTurn() { return S && S.phase === 'pick' && (mode === 'local' || S.turn === mySeat); }
+  // 畫面顯示的狀態：動畫進行中顯示中間狀態 V，否則顯示真正的狀態 S
+  function view() { return V || S; }
+  function myView() { const S = view(); return mode === 'local' ? S.turn : mySeat; }
+  function isMyTurn() { const S = view(); return !animating && S && S.phase === 'pick' && (mode === 'local' || S.turn === mySeat); }
 
   function validLines() {
+    const S = view();
     if (!sel || !settings.hints) return sel ? [0, 1, 2, 3, 4, 5] : null;
     const p = S.players[myView()];
     return [0, 1, 2, 3, 4, 5].filter(l => E.canPlace(p, l, sel.color));
   }
 
   function render() {
+    const S = view();
     if (!S) return;
     const z = sizes(), me = myView();
     $('#roundLbl').textContent = `第 ${S.round} 回合`;
@@ -173,7 +179,7 @@
     // 對手
     const order = [];
     for (let k = 1; k < S.n; k++) order.push((me + k) % S.n);
-    $('#opps').innerHTML = order.map(i => `<div class="opp ${i === S.turn && S.phase === 'pick' ? 'turn' : ''}" data-opp="${i}"><div class="nm"><span>${mode !== 'local' && seatInfo[i] && !seatInfo[i].online ? '<span style="color:#c33">●斷線 </span>' : ''}${esc(S.players[i].name)}</span><span>${S.players[i].score} 分 🔍</span></div>${boardHTML(S.players[i], i, z.mini, { mini: true })}</div>`).join('');
+    $('#opps').innerHTML = order.map(i => `<div class="opp ${i === S.turn && S.phase === 'pick' ? 'turn' : ''}" data-opp="${i}"><div class="nm"><span>${mode !== 'local' && seatInfo[i] && !seatInfo[i].online ? '<span style="color:#c33">●斷線 </span>' : ''}${esc(S.players[i].name)}</span><span><b data-sc="${i}">${S.players[i].score}</b> 分 🔍</span></div>${boardHTML(S.players[i], i, z.mini, { mini: true })}</div>`).join('');
 
     // 公共區
     const pub = $('#public');
@@ -199,13 +205,14 @@
     const mineTop = $('#mine').getBoundingClientRect().top + window.scrollY;
     const hFit = Math.floor((window.innerHeight - mineTop - 64 - 50) / 6.9);
     z.cell = Math.max(22, Math.min(z.cell, hFit));
-    $('#mine').innerHTML = `<div class="hdr"><span>${mode === 'local' ? esc(mp.name) + ' 的老厝' : '我的老厝'}</span><span class="sc">${mp.score} 分</span></div>` +
+    $('#mine').innerHTML = `<div class="hdr"><span>${mode === 'local' ? esc(mp.name) + ' 的老厝' : '我的老厝'}</span><span class="sc"><b data-sc="${me}">${mp.score}</b> 分</span></div>` +
       boardHTML(mp, me, z.cell, { valid: isMyTurn() ? validLines() : null });
 
     // 提示列
     const hint = $('#hint');
     hint.classList.toggle('me', isMyTurn());
-    if (S.phase === 'over') hint.innerHTML = `<button class="btn small gold" id="hResult">看結果</button>`;
+    if (animating) hint.innerHTML = '<span style="opacity:.8">點一下畫面可以跳過動畫</span>';
+    else if (S.phase === 'over') hint.innerHTML = `<button class="btn small gold" id="hResult">看結果</button>`;
     else if (!isMyTurn()) hint.textContent = `等待 ${turnName} 拿磚…`;
     else if (!sel) hint.textContent = (mode === 'local' ? `${turnName}：` : '輪到你！') + '點窯或中央的花磚';
     else {
@@ -249,6 +256,7 @@
     showBoard(+o.dataset.opp);
   });
   function showBoard(i) {
+    const S = view();
     const W = Math.min(window.innerWidth - 32, 420) - 36;
     $('#bvName').textContent = `${S.players[i].name}　${S.players[i].score} 分`;
     $('#bvBoard').innerHTML = boardHTML(S.players[i], i, Math.min(36, Math.floor(W / 11.4)));
@@ -266,62 +274,289 @@
     if (mode === 'local') saveLocal();
   }
 
-  // 收到新狀態：做動畫、通知、結算
-  function receiveState(next) {
-    const prev = S;
-    const a = next.lastAction;
-    const isNewAction = a && (!prev || !prev.lastAction || a.seq > prev.lastAction.seq || next.round < prev.round);
-    let fromRects = [];
-    if (isNewAction && prev && prev.round === (a ? roundOfAction(next, prev) : 0)) {
-      const sel2 = a.src === 'c' ? `#center .t[data-src="c"][data-color="${a.color}"]` : `#factories .t[data-src="${a.src}"][data-color="${a.color}"]`;
-      fromRects = $$(sel2).map(el => el.getBoundingClientRect());
-    }
-    const roundEnded = next.roundSummary && (!prev || !prev.roundSummary || next.roundSummary.round !== prev.roundSummary.round) && prev;
-    if (roundEnded) {
-      newCells = {};
-      next.roundSummary.items.forEach(it => it.placed.forEach(pl => newCells[it.player + '-' + pl.r + '-' + pl.c] = 1));
-    } else if (isNewAction) newCells = {};
-    const turnChanged = prev && (prev.turn !== next.turn || prev.round !== next.round);
-    const wasOver = prev && prev.phase === 'over';
-    S = next;
-    if (sel && !(sel.src === 'c' ? S.center : S.factories[sel.src] || []).includes(sel.color)) sel = null;
-    if (!isMyTurn()) sel = null;
-    render();
-
-    if (isNewAction && prev) {
-      // 飛行動畫
-      const tgtSel = `.board[data-player="${a.player}"] [data-line="${a.line}"]`;
-      const tgt = document.querySelector(tgtSel);
-      if (tgt && fromRects.length) fly(fromRects, tgt, a.color);
-      sfx.place(a.count);
-      toast(T(a.color) + esc(describe(a, S)));
-    }
-    if (roundEnded) {
-      setTimeout(() => { showSummary(); sfx.score(); }, fromRects.length ? C.flyMs + 150 : 50);
-      if (S.phase === 'over' && !wasOver) pendingEnd = true;
-    } else if (S.phase === 'over' && !wasOver && prev) setTimeout(showEnd, 400);
-
-    if (turnChanged && S.phase === 'pick') {
-      if (mode === 'local') setTimeout(() => banner(`輪到 ${S.players[S.turn].name}`), roundEnded ? 0 : C.flyMs);
-      else if (S.turn === mySeat) { setTimeout(() => { banner('輪到你了'); sfx.myturn(); }, C.flyMs); vibrate(120); }
-    }
+  // ---------- 過程動畫（點一下畫面可跳過） ----------
+  const SPEED = { slow: 1.6, normal: 1, fast: 0.55, off: 0 };
+  const spd = () => (SPEED[settings.anim] !== undefined ? SPEED[settings.anim] : 1);
+  const A = C.anim;
+  let skipFlag = false, waiters = [], queue = Promise.resolve(), pending = 0, scoreRolls = [];
+  function wait(ms) {
+    if (skipFlag || spd() === 0) return Promise.resolve();
+    return new Promise(r => {
+      const w = { r };
+      w.t = setTimeout(() => { waiters = waiters.filter(x => x !== w); r(); }, ms * spd());
+      waiters.push(w);
+    });
   }
-  function roundOfAction(next, prev) { return next.roundSummary && (!prev.roundSummary || next.roundSummary.round !== prev.roundSummary.round) ? next.roundSummary.round : next.round; }
+  function skipAnim() {
+    if (!animating) return;
+    skipFlag = true;
+    waiters.forEach(w => { clearTimeout(w.t); w.r(); }); waiters = [];
+    $$('.flyer,.pop').forEach(e => e.remove());
+    scoreRolls.forEach(f => f()); scoreRolls = [];
+  }
+  $('#skipLayer').addEventListener('pointerdown', e => { e.preventDefault(); skipAnim(); });
+  function setAnimating(on) {
+    animating = on;
+    $('#skipLayer').classList.toggle('on', on);
+    document.documentElement.style.setProperty('--spd', String(spd() || 0.01));
+  }
+  const rectOf = el => (el ? el.getBoundingClientRect() : null);
+  const live = () => !skipFlag && spd() > 0;
 
-  function fly(rects, tgt, color) {
-    const tr = tgt.getBoundingClientRect();
-    const slots = Array.from(tgt.querySelectorAll('.slot,.fslot'));
-    rects.forEach((r, i) => {
-      const d = document.createElement('div');
-      d.className = 'flyer'; d.innerHTML = T(color); d.firstChild.style.width = '100%'; d.firstChild.style.height = '100%';
-      Object.assign(d.style, { left: r.left + 'px', top: r.top + 'px', width: r.width + 'px', height: r.height + 'px', transitionDuration: C.flyMs + 'ms', transitionDelay: (i * 60) + 'ms' });
-      document.body.appendChild(d);
-      const sr = slots.length ? slots[Math.max(0, slots.length - 1 - i)].getBoundingClientRect() : tr;
-      requestAnimationFrame(() => requestAnimationFrame(() => Object.assign(d.style, { left: sr.left + 'px', top: sr.top + 'px', width: sr.width + 'px', height: sr.height + 'px' })));
-      setTimeout(() => d.remove(), C.flyMs + i * 60 + 80);
+  // 一塊花磚從 from 飛到 to
+  function flyTile(k, from, to, ms, delay = 0, fade = false) {
+    if (!from || !to || !live()) return;
+    const d = document.createElement('div'); d.className = 'flyer';
+    d.innerHTML = T(k); d.firstChild.style.width = '100%'; d.firstChild.style.height = '100%';
+    const dur = ms * spd(), del = delay * spd();
+    Object.assign(d.style, { left: from.left + 'px', top: from.top + 'px', width: from.width + 'px', height: from.height + 'px', transitionDuration: dur + 'ms', transitionDelay: del + 'ms' });
+    document.body.appendChild(d);
+    requestAnimationFrame(() => requestAnimationFrame(() => Object.assign(d.style, { left: to.left + 'px', top: to.top + 'px', width: to.width + 'px', height: to.height + 'px', opacity: fade ? '0' : '1' })));
+    setTimeout(() => d.remove(), dur + del + 60);
+  }
+  // 目的地的磚先藏起來，飛到了再出現
+  function arriveLater(el, ms, sound = true) {
+    const t = el && el.querySelector('.t');
+    if (t) t.style.visibility = 'hidden';
+    setTimeout(() => { if (t) t.style.visibility = ''; if (sound && live()) clack(); }, ms * spd());
+  }
+  // 飄出來的數字（+3、-2）
+  function pop(rect, text, cls = '') {
+    if (!rect || !live()) return;
+    const d = document.createElement('div'); d.className = 'pop ' + cls; d.textContent = text;
+    d.style.left = (rect.left + rect.width / 2) + 'px'; d.style.top = (rect.top + rect.height / 2) + 'px';
+    document.body.appendChild(d);
+    setTimeout(() => d.remove(), A.popMs * spd() + 50);
+  }
+  // 分數數字滾動到新值
+  function rollScores(before) {
+    const st = view();
+    st.players.forEach((p, i) => {
+      const from = before[i], to = p.score;
+      const els = $$(`[data-sc="${i}"]`);
+      if (from === to || !els.length) return;
+      if (!live()) { els.forEach(e => e.textContent = to); return; }
+      const dur = A.scoreRollMs * spd(), t0 = performance.now();
+      let done = false;
+      const fin = () => { if (done) return; done = true; els.forEach(e => { e.textContent = to; e.classList.remove('up', 'down'); }); };
+      scoreRolls.push(fin);
+      els.forEach(e => { e.textContent = from; e.classList.add(to > from ? 'up' : 'down'); });
+      const step = t => {
+        if (done) return;
+        const q = Math.min(1, (t - t0) / dur);
+        els.forEach(e => e.textContent = Math.round(from + (to - from) * q));
+        if (q < 1) requestAnimationFrame(step); else fin();
+      };
+      requestAnimationFrame(step);
     });
   }
 
+  // 收到新狀態：排進動畫佇列（真正的狀態 S 立刻更新，畫面慢慢演）
+  function receiveState(next) {
+    const prev = S;
+    S = next;
+    if (sel && !((sel.src === 'c' ? S.center : S.factories[sel.src]) || []).includes(sel.color)) sel = null;
+    pending++;
+    if (pending > 1) skipAnim(); // 後面還有動作在排隊，前一段直接跳到結果
+    queue = queue.then(() => playTransition(prev, next)).catch(e => console.error(e)).then(() => { pending--; });
+  }
+
+  async function playTransition(prev, next) {
+    skipFlag = false;
+    const a = next.lastAction;
+    const onGame = $('#game').classList.contains('on');
+    const isNew = !!(prev && a && a.seq === prev.seq + 1 && onGame);
+    const roundEnded = !!(isNew && next.roundSummary && (!prev.roundSummary || next.roundSummary.round !== prev.roundSummary.round));
+    const turnChanged = prev && (prev.turn !== next.turn || prev.round !== next.round);
+    const wasOver = prev && prev.phase === 'over';
+    newCells = {};
+    if (isNew) toast(T(a.color) + esc(describe(a, next)));
+    if (isNew && spd() > 0) {
+      setAnimating(true);
+      render();
+      try { await animTake(prev, a, roundEnded ? next : null); } catch (e) { console.error(e); }
+    } else if (isNew) {
+      sfx.place(a.count);
+      if (roundEnded) next.roundSummary.items.forEach(it => it.placed.forEach(pl => newCells[it.player + '-' + pl.r + '-' + pl.c] = 1));
+    }
+    $$('.flyer,.pop').forEach(e => e.remove());
+    scoreRolls.forEach(f => f()); scoreRolls = [];
+    V = (next === S) ? null : next; // 佇列裡還有後續狀態時，先停在這一步的結果
+    setAnimating(false); skipFlag = false;
+    if (!isMyTurn()) sel = null;
+    render();
+
+    if (roundEnded) {
+      if (spd() === 0) sfx.score();
+      showSummary();
+      if (next.phase === 'over' && !wasOver) pendingEnd = true;
+    } else if (next.phase === 'over' && !wasOver && prev) setTimeout(showEnd, 300);
+    if (turnChanged && next.phase === 'pick') {
+      if (mode === 'local') banner(`輪到 ${next.players[next.turn].name}`);
+      else if (next.turn === mySeat) { banner('輪到你了'); sfx.myturn(); vibrate(120); }
+    }
+  }
+
+  // 拿磚：亮起 → 飛到備料列／破磚列，同窯剩下的滑進中央
+  async function animTake(prev, a, endState) {
+    const pi = a.player;
+    const srcBox = a.src === 'c' ? $('#center') : $(`#factories .factory[data-src="${a.src}"]`);
+    const takenEls = srcBox ? Array.from(srcBox.querySelectorAll(`.t[data-color="${a.color}"]`)) : [];
+    const restEls = (a.src !== 'c' && srcBox) ? Array.from(srcBox.querySelectorAll('.t[data-color]')).filter(e => +e.dataset.color !== a.color) : [];
+    const markerEl = a.gotMarker ? $('#center [data-marker]') : null;
+    $('#public').classList.add('dim');
+    takenEls.forEach(e => e.classList.add('sel'));
+    if (markerEl) markerEl.classList.add('sel');
+    if (live()) sfx.pick();
+    await wait(A.highlightMs);
+    const takenR = takenEls.map(rectOf);
+    const restR = restEls.map(e => ({ k: +e.dataset.color, r: rectOf(e) }));
+    const markR = rectOf(markerEl);
+
+    const mid = JSON.parse(JSON.stringify(prev));
+    E.applyTake(mid, pi, a.src, a.color, a.line);
+    V = mid; render();
+    const board = document.querySelector(`.board[data-player="${pi}"]`);
+    if (!board) return;
+    const P0 = prev.players[pi];
+    const fslots = Array.from(board.querySelectorAll('.fslot'));
+    const dests = [];
+    if (a.line < 5) {
+      const slots = Array.from(board.querySelectorAll(`.line[data-line="${a.line}"] .slot`));
+      const oldC = P0.lines[a.line].count;
+      for (let i = 0; i < a.placed; i++) dests.push({ el: slots[a.line - oldC - i], lost: false });
+    }
+    let fi = P0.floor.length, markDest = null;
+    if (a.gotMarker && C.firstMarkerPenalty && fi < fslots.length) { markDest = fslots[fi]; fi++; }
+    for (let i = 0; i < a.overflow; i++, fi++) {
+      if (fi < fslots.length) dests.push({ el: fslots[fi], lost: false });
+      else dests.push({ el: fslots[fslots.length - 1], lost: true }); // 破磚列滿了：飛過去消失
+    }
+    const ms = A.flyMs, st = A.staggerMs;
+    dests.forEach((d, i) => {
+      flyTile(a.color, takenR[i] || takenR[takenR.length - 1], rectOf(d.el), ms, i * st, d.lost);
+      if (!d.lost) arriveLater(d.el, ms + i * st);
+    });
+    if (markDest) { flyTile(E.MARK, markR, rectOf(markDest), ms, 0); arriveLater(markDest, ms, false); }
+    // 剩下的磚滑進中央
+    const used = {};
+    restR.forEach((x, i) => {
+      const all = $$(`#center .t[data-color="${x.k}"]`);
+      used[x.k] = (used[x.k] || 0) + 1;
+      const el = all[all.length - used[x.k]];
+      if (!el) return;
+      flyTile(x.k, x.r, rectOf(el), ms, i * st * 0.6);
+      arriveLater(el, ms + i * st * 0.6, false);
+    });
+    await wait(ms + Math.max(dests.length, restR.length, 1) * st + 80);
+    if (endState) await animTiling(mid, endState);
+  }
+
+  // 回合結算：逐排貼上牆 → 計分 → 破磚扣分 →（終局加分｜補磚開新回合）
+  async function animTiling(mid, end) {
+    const W = JSON.parse(JSON.stringify(mid)); V = W;
+    const rs = end.roundSummary;
+    render();
+    if (live()) banner(`第 ${rs.round} 回合結算`);
+    await wait(A.roundPauseMs);
+    for (let r = 0; r < 5; r++) {
+      const moves = [];
+      rs.items.forEach(it => it.placed.forEach(pl => { if (pl.r === r) moves.push({ p: it.player, ...pl }); }));
+      if (!moves.length) continue;
+      const before = W.players.map(p => p.score);
+      moves.forEach(m => {
+        const b = document.querySelector(`.board[data-player="${m.p}"]`); if (!b) return;
+        const slots = Array.from(b.querySelectorAll(`.line[data-line="${r}"] .slot`));
+        const cell = b.querySelector(`.cell[data-r="${r}"][data-c="${m.c}"]`);
+        const last = slots[slots.length - 1];
+        flyTile(m.color, rectOf(last), rectOf(cell), A.flyMs);
+        const lt = last && last.querySelector('.t'); if (lt) lt.style.visibility = 'hidden';
+        slots.slice(0, -1).forEach(s => { const t = s.querySelector('.t'); if (t) t.classList.add('fadeout'); });
+      });
+      await wait(A.flyMs);
+      moves.forEach(m => { const P = W.players[m.p]; P.wall[r][m.c] = true; P.lines[r] = { color: null, count: 0 }; P.score += m.pts; });
+      render(); rollScores(before);
+      moves.forEach(m => {
+        const cell = document.querySelector(`.board[data-player="${m.p}"] .cell[data-r="${r}"][data-c="${m.c}"]`);
+        if (cell) { cell.classList.add('new'); pop(rectOf(cell), '+' + m.pts, 'plus'); }
+      });
+      if (live()) { clack(); tone(620 + r * 90, 0.18, 'triangle', 0.2); }
+      await wait(A.rowPauseMs);
+    }
+    // 先手牌的位置（之後飛回中央）
+    let markRect = null;
+    W.players.forEach((P, i) => {
+      const idx = P.floor.indexOf(E.MARK);
+      if (idx >= 0) markRect = rectOf(document.querySelectorAll(`.board[data-player="${i}"] .fslot`)[idx]);
+    });
+    // 破磚列逐格扣分
+    const pens = rs.items.filter(it => it.penalty);
+    if (pens.length) {
+      const maxN = Math.max(...pens.map(it => W.players[it.player].floor.length));
+      for (let i = 0; i < maxN; i++) {
+        const before = W.players.map(p => p.score);
+        pens.forEach(it => {
+          const P = W.players[it.player]; if (i >= P.floor.length) return;
+          const fs = document.querySelectorAll(`.board[data-player="${it.player}"] .fslot`)[i];
+          pop(rectOf(fs), String(C.floorPenalties[i]), 'minus');
+          const t = fs && fs.querySelector('.t'); if (t) t.classList.add('fadeout');
+          P.score = Math.max(0, P.score + C.floorPenalties[i]);
+        });
+        rollScores(before);
+        if (live()) tone(300 - i * 20, 0.12, 'square', 0.08);
+        await wait(A.floorStepMs);
+      }
+      await wait(200);
+    }
+    rs.items.forEach(it => { const P = W.players[it.player]; P.floor = []; P.score = it.after; });
+
+    if (end.phase === 'over') {
+      // 終局加分：橫排、直排、集色逐項演出
+      render();
+      if (live()) banner('終局加分');
+      await wait(A.roundPauseMs);
+      const kinds = [
+        { key: 'row', pts: C.bonusRow, label: '橫排' },
+        { key: 'col', pts: C.bonusColumn, label: '直排' },
+        { key: 'color', pts: C.bonusColor, label: '集色' },
+      ];
+      for (const kd of kinds) {
+        const before = W.players.map(p => p.score);
+        let any = false;
+        W.players.forEach((P, pi) => {
+          const b = document.querySelector(`.board[data-player="${pi}"]`); if (!b) return;
+          const groups = [];
+          for (let x = 0; x < 5; x++) {
+            let cells = [];
+            if (kd.key === 'row') cells = [0, 1, 2, 3, 4].map(c => [x, c]);
+            if (kd.key === 'col') cells = [0, 1, 2, 3, 4].map(r => [r, x]);
+            if (kd.key === 'color') cells = [0, 1, 2, 3, 4].map(r => [r, E.wallCol(r, x)]);
+            if (cells.every(([r, c]) => P.wall[r][c])) groups.push(cells);
+          }
+          groups.forEach(cells => {
+            any = true; P.score += kd.pts;
+            const els = cells.map(([r, c]) => b.querySelector(`.cell[data-r="${r}"][data-c="${c}"]`));
+            els.forEach(e => e && e.classList.add('glow'));
+            pop(rectOf(els[kd.key === 'row' ? 4 : kd.key === 'col' ? 4 : 2]), `${kd.label} +${kd.pts}`, 'plus');
+          });
+        });
+        if (!any) continue;
+        rollScores(before);
+        if (live()) sfx.score();
+        await wait(A.bonusStepMs);
+        $$('.cell.glow').forEach(e => e.classList.remove('glow'));
+      }
+    } else {
+      // 補磚：新回合的花磚一塊塊落進窯裡，先手牌回到中央
+      V = end; render();
+      const tiles = $$('#factories .t');
+      if (live()) tiles.forEach((t, i) => { t.style.animationDelay = (i * A.refillStaggerMs * spd()) + 'ms'; t.classList.add('dropin'); });
+      const mk = $('#center [data-marker]');
+      if (mk && markRect) { flyTile(E.MARK, markRect, rectOf(mk), A.flyMs); arriveLater(mk.parentElement, A.flyMs, false); }
+      for (let i = 0; i < Math.min(tiles.length, 12); i++) setTimeout(() => { if (live()) clack(); }, i * A.refillStaggerMs * 3 * spd());
+      await wait(tiles.length * A.refillStaggerMs + 450);
+    }
+  }
   function describe(a, s) {
     const nm = s.players[a.player].name;
     let t = `${nm} 從${a.src === 'c' ? '中央' : `第 ${a.src + 1} 座窯`}拿 ${a.count} 塊${tname(a.color)}`;
@@ -401,7 +636,7 @@
   function openSettings() {
     $('#vMusic').value = settings.music; $('#vSfx').value = settings.sfx;
     $('#vMusicV').textContent = settings.music; $('#vSfxV').textContent = settings.sfx;
-    segSet('#sStyle', settings.style); segSet('#sHints', String(settings.hints)); segSet('#sVib', String(settings.vib));
+    segSet('#sStyle', settings.style); segSet('#sAnim', settings.anim); segSet('#sHints', String(settings.hints)); segSet('#sVib', String(settings.vib));
     open('ovSet');
   }
   function segSet(id, v) { $$(id + ' button').forEach(b => b.classList.toggle('on', b.dataset.v === v)); }
@@ -410,6 +645,7 @@
   $('#vSfx').oninput = e => { settings.sfx = +e.target.value; $('#vSfxV').textContent = settings.sfx; saveSettings(); };
   $('#vSfx').onchange = () => sfx.place(2);
   $('#sStyle').onclick = e => { const v = e.target.dataset.v; if (!v) return; settings.style = v; segSet('#sStyle', v); saveSettings(); render(); drawCover(); drawHelpTiles(); };
+  $('#sAnim').onclick = e => { const v = e.target.dataset.v; if (!v) return; settings.anim = v; segSet('#sAnim', v); saveSettings(); };
   $('#sHints').onclick = e => { const v = e.target.dataset.v; if (!v) return; settings.hints = +v; segSet('#sHints', v); saveSettings(); render(); };
   $('#sVib').onclick = e => { const v = e.target.dataset.v; if (!v) return; settings.vib = +v; segSet('#sVib', v); saveSettings(); };
 
@@ -722,6 +958,7 @@
     if (mode === 'host') { try { host.peer && host.peer.destroy(); } catch (e) {} host.peer = null; if (clear) store.del('save'); }
     if (mode === 'guest') net.leave();
     if (mode === 'local' && clear) store.del('save');
+    skipAnim(); V = null; setAnimating(false);
     mode = null; S = null; sel = null; netStatus(false);
     show('cover'); refreshResume();
   }
