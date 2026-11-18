@@ -12,7 +12,7 @@
     set(k, v) { try { localStorage.setItem('olys_' + k, JSON.stringify(v)); } catch (e) {} },
     del(k) { try { localStorage.removeItem('olys_' + k); } catch (e) {} },
   };
-  const settings = Object.assign({ music: 35, sfx: 70, style: 'greek', hints: 1, vib: 1, ai: 'normal' }, store.get('settings', {}));
+  const settings = Object.assign({ music: 35, sfx: 70, style: 'greek', hints: 1, vib: 1, ai: 'normal', anim: 'normal' }, store.get('settings', {}));
   const saveSettings = () => store.set('settings', settings);
   let cid = store.get('cid', null);
   if (!cid) { cid = Math.random().toString(36).slice(2, 10); store.set('cid', cid); }
@@ -139,28 +139,30 @@
   const nameOf = p => (S && S.names[p]) || '玩家';
 
   // ---------- 尺寸 ----------
-  function layout() {
+  function layout(v) {
     const W = Math.min(window.innerWidth, 480), H = window.innerHeight;
     const c = Math.floor((W - 20 - 18) / 7);
-    const v = V(); const n = v ? v.hands[me()].length : 7;
+    const n = v ? v.hands[me()].length : 7;
     const avail = W - 32;
     let hc = Math.min(H < 700 ? 56 : 66, Math.floor(avail / Math.max(n, 5)) + 12);
     const g = $('#game'); g.style.setProperty('--c', Math.min(c, H < 700 ? 44 : 60) + 'px'); g.style.setProperty('--hc', hc + 'px');
     return { avail, hc, n };
   }
-  window.addEventListener('resize', () => { if (S) render(); });
+  window.addEventListener('resize', () => { if (S) render(lastRendered); });
 
   // ---------- 繪製 ----------
-  function render() {
-    const v = V(); if (!v) return;
-    const m = me(), o = 1 - m, act = actor(v);
-    const L = layout();
+  function render(vv, opt = {}) {
+    const v = vv || shown || V(); if (!v) return;
+    lastRendered = v;
+    const m = me(), o = 1 - m, act = opt.judging ? null : actor(v);
+    const L = layout(v);
     $('#roundLbl').textContent = `第 ${v.round} 回合`;
     let turn = '';
     if (v.phase === 'act') turn = act === m ? '輪到你獻祭' : `${esc(nameOf(o))} 獻祭中…`;
     else if (v.phase === 'respond') turn = act === m ? '請你挑選' : `${esc(nameOf(o))} 挑選中…`;
     else if (v.phase === 'roundEnd') turn = '回合結算';
     else if (v.phase === 'over') turn = `${esc(nameOf(v.winner))} 獲勝`;
+    if (opt.judging) turn = '回合結算';
     $('#turnLbl').innerHTML = turn;
 
     // 對手
@@ -178,9 +180,9 @@
       const f = v.favor[g], oc = v.offer[o][g], mc = v.offer[m][g];
       t += `<div class="col" style="--gc:${G[g].color}">
         <div class="offers"><span class="cnt ${oc ? '' : 'zero'}" style="color:var(--opp)">${oc}</span><span class="chip ${oc ? '' : 'empty'}" data-chip="${o}-${g}">${oc ? `<img src="${iImg(g)}" alt="">` : ''}</span></div>
-        <div class="marker">${f === o ? `<span class="coin opp" data-coin="${g}">眷</span>` : ''}</div>
+        <div class="marker">${f === o ? `<span class="coin opp" data-coin="${g}" ${opt.hideCoin === g ? 'style="visibility:hidden"' : ''}>眷</span>` : ''}</div>
         <div class="god ${fam() ? 'fam' : ''}" data-god="${g}"><img src="${gImg(g)}" alt="${esc(gName(g))}" draggable="false"><span class="val">${G[g].value}</span><span class="gname">${esc(gName(g))}</span></div>
-        <div class="marker">${f === m ? `<span class="coin me" data-coin="${g}">眷</span>` : ''}</div>
+        <div class="marker">${f === m ? `<span class="coin me" data-coin="${g}" ${opt.hideCoin === g ? 'style="visibility:hidden"' : ''}>眷</span>` : ''}</div>
         <div class="offers mine"><span class="chip ${mc ? '' : 'empty'}" data-chip="${m}-${g}">${mc ? `<img src="${iImg(g)}" alt="">` : ''}</span><span class="cnt ${mc ? '' : 'zero'}" style="color:var(--me)">${mc}</span></div>
       </div>`;
     }
@@ -189,17 +191,18 @@
     // 自己
     const sc = E.score(v.favor);
     $('#meStrip').className = 'strip me' + (act === m ? ' active' : '');
-    $('#meStrip').innerHTML = `<div class="who">${esc(nameOf(m))}（你）<small>眷顧 ${sc.pts[m]} 分・${sc.cnt[m]} 位神　｜　對手 ${sc.pts[o]} 分・${sc.cnt[o]} 位</small></div>
+    $('#meStrip').innerHTML = `<div class="who">${esc(nameOf(m))}（你）<small>眷顧 <b id="scMeP">${sc.pts[m]}</b> 分・<b id="scMeG">${sc.cnt[m]}</b> 位神　｜　對手 <b id="scOpP">${sc.pts[o]}</b> 分・<b id="scOpG">${sc.cnt[o]}</b> 位</small></div>
       <div class="hid">${hidSlots(v, m, true)}</div>
-      <div class="hid" title="牌庫"><span>牌庫</span><b style="color:var(--cream)">${v.deck.length}</b></div>`;
+      <div class="hid" title="牌庫"><span>牌庫</span><b id="deckN" style="color:var(--cream)">${v.deck.length}</b></div>`;
 
     // 行動按鈕
     const canAct = v.phase === 'act' && act === m;
     $('#acts').innerHTML = C.actions.map((a, i) => `<button class="act ${v.used[m][i] ? 'used' : ''} ${sel && sel.action === a.key ? 'on' : ''}" data-act="${a.key}" data-tip="${i}" ${!canAct || v.used[m][i] ? 'aria-disabled="true"' : ''}><b>${a.icon}</b>${a.name}<small>${a.cards} 張</small></button>`).join('');
 
     // 手牌
-    const hand = v.hands[m];
-    let nci = newCard != null ? hand.indexOf(newCard) : -1;
+    let hand = v.hands[m];
+    if (opt.hideNew && newCard != null && hand.indexOf(newCard) >= 0) { hand = hand.slice(); hand.splice(hand.indexOf(newCard), 1); }
+    let nci = -1;
     const overlap = L.n > 1 && L.n * (L.hc + 4) > L.avail ? (L.avail - L.hc) / (L.n - 1) - L.hc : 4;
     $('#hand').innerHTML = hand.map((g, i) => cardHTML(g, (sel && sel.idx.includes(i) ? 'sel' : '') + (i === nci ? ' new' : ''), `data-hi="${i}"`, `margin-left:${i ? overlap : 0}px;z-index:${i}`)).join('') || '<div class="muted" style="align-self:center">手上沒有祭品了</div>';
 
@@ -220,6 +223,7 @@
     $('#bConfirm').disabled = !confirmOk;
     const r = $('#bReopen'); if (r) r.onclick = () => { respHidden = false; openRespond(); };
     const sr = $('#bShowRound'); if (sr) sr.onclick = () => showRound(true);
+    renderPending(opt.judging ? null : v);
   }
   function hidSlots(v, p, mine) {
     let h = '';
@@ -253,64 +257,283 @@
   document.addEventListener('touchstart', e => { const el = e.target.closest('[data-tip]'); clearTimeout(lpT); if (el) lpT = setTimeout(() => { showTip(el); setTimeout(() => tip.classList.remove('on'), 2500); }, 450); }, { passive: true });
   document.addEventListener('touchend', () => clearTimeout(lpT), { passive: true });
 
-  // ---------- 卡片飛行動畫 ----------
-  function flyLayer() { let L = $('#flyLayer'); if (!L) { L = document.createElement('div'); L.id = 'flyLayer'; document.body.appendChild(L); } return L; }
-  // items: [{g, grp, to, glow}]：先在畫面中央排開，停一下再飛到各自的位置
-  function flyCards(items, caption, hold = 750) {
-    const L = flyLayer(); L.innerHTML = '';
-    const W = window.innerWidth, H = window.innerHeight;
-    const cw = Math.min(74, (Math.min(W, 480) - 40) / Math.max(items.length, 3) - 8), ch = cw * 1.5;
-    const gaps = items.map((it, i) => i && items[i - 1].grp !== it.grp ? 26 : 8);
-    const total = items.length * cw + gaps.slice(1).reduce((a, b) => a + b, 0);
-    let x = W / 2 - total / 2; const y = H * 0.42 - ch / 2;
-    if (caption) { const c = document.createElement('div'); c.className = 'flycap'; c.innerHTML = caption; c.style.top = (y - 40) + 'px'; L.appendChild(c); setTimeout(() => c.classList.add('out'), hold + 200); }
-    const els = items.map((it, i) => {
-      if (i) x += gaps[i];
-      const d = document.createElement('div');
-      d.className = 'flycard' + (it.glow ? ' ' + it.glow : '');
-      d.innerHTML = cardHTML(it.g);
-      Object.assign(d.style, { left: x + 'px', top: y + 'px', width: cw + 'px', height: ch + 'px' });
-      L.appendChild(d); x += cw;
-      return d;
+  // ---------- 動畫系統（排隊播放；動畫中點一下＝瞬間跳到結果） ----------
+  const anim = { active: 0, skipping: false, list: new Set(), waiters: new Set(), queue: Promise.resolve(), swallow: false };
+  const spd = () => settings.anim === 'off' ? 0 : settings.anim === 'fast' ? 0.5 : 1;
+  const instant = () => anim.skipping || spd() === 0;
+  function tween(el, frames, ms, opt = {}) {
+    if (!el || !el.animate || instant()) return Promise.resolve();
+    const a = el.animate(frames, { duration: ms * spd(), delay: (opt.delay || 0) * spd(), easing: opt.easing || 'cubic-bezier(.45,0,.3,1)', fill: 'both' });
+    anim.list.add(a);
+    return a.finished.catch(() => {}).then(() => { anim.list.delete(a); if (opt.keep !== true) try { a.cancel(); } catch (e) {} });
+  }
+  function wait(ms) {
+    if (instant()) return Promise.resolve();
+    return new Promise(res => { const done = () => { clearTimeout(t); anim.waiters.delete(done); res(); }; const t = setTimeout(done, ms * spd()); anim.waiters.add(done); });
+  }
+  function countTo(el, from, to, ms = 450) {
+    if (!el) return Promise.resolve();
+    if (instant() || from === to) { el.textContent = to; return Promise.resolve(); }
+    return new Promise(res => {
+      const t0 = performance.now(), dur = ms * spd();
+      const done = () => { anim.waiters.delete(done); el.textContent = to; res(); };
+      anim.waiters.add(done);
+      (function step(t) { if (!anim.waiters.has(done)) return; const k = Math.min(1, (t - t0) / dur); el.textContent = Math.round(from + (to - from) * k); if (k < 1) requestAnimationFrame(step); else done(); })(t0);
     });
-    // 飛到之前，目的地先顯示舊的數量，抵達時才加上去
-    const cntOf = to => to && to.dataset.chip && to.parentElement ? to.parentElement.querySelector('.cnt') : null;
-    const dec = new Set();
-    animUntil = Date.now() + hold + 900 + items.length * 70;
-    items.forEach(it => { const c = cntOf(it.to); if (c) { dec.add(it.to); c.textContent = (+c.textContent) - 1; if (+c.textContent <= 0) { c.classList.add('zero'); it.to.style.opacity = '.15'; } } });
-    requestAnimationFrame(() => requestAnimationFrame(() => els.forEach(d => d.classList.add('in'))));
-    setTimeout(() => {
-      els.forEach((d, i) => {
-        const old = items[i].to, to = old && old.isConnected ? old : (items[i].sel && document.querySelector(items[i].sel)); if (!to) { d.classList.add('fade'); return; }
-        const r = to.getBoundingClientRect(), s = d.getBoundingClientRect();
-        const dx = r.left + r.width / 2 - (s.left + s.width / 2), dy = r.top + r.height / 2 - (s.top + s.height / 2);
-        const sc = Math.max(0.25, r.width / s.width);
-        d.style.transitionDelay = (i * 70) + 'ms';
-        d.style.transform = `translate(${dx}px,${dy}px) scale(${sc})`;
-        d.classList.add('go');
-        setTimeout(() => { const c = dec.has(to) && to.isConnected ? cntOf(to) : null; if (c) { c.textContent = (+c.textContent) + 1; c.classList.remove('zero'); to.style.opacity = ''; } d.style.opacity = '0'; to.classList.remove('flash'); void to.offsetWidth; to.classList.add('flash'); }, 680 + i * 70);
+  }
+  function skipAnim() {
+    anim.skipping = true;
+    anim.list.forEach(a => { try { a.finish(); } catch (e) {} });
+    Array.from(anim.waiters).forEach(f => f());
+  }
+  function enqueue(fn) {
+    anim.queue = anim.queue.then(async () => {
+      anim.active++; $('#skipHint').classList.toggle('on', spd() > 0);
+      try { await fn(); } catch (e) { console.error(e); }
+      finally {
+        anim.active--;
+        if (!anim.active) { anim.skipping = false; flyLayer().innerHTML = ''; $('#skipHint').classList.remove('on'); }
+      }
+    });
+    return anim.queue;
+  }
+  // 動畫播放中點畫面任何地方：跳過，而且這一下不算按到按鈕
+  document.addEventListener('pointerdown', e => {
+    if (anim.active && !anim.skipping && $('#game').classList.contains('on')) { anim.swallow = true; skipAnim(); e.preventDefault(); e.stopPropagation(); }
+  }, true);
+  document.addEventListener('click', e => { if (anim.swallow) { anim.swallow = false; e.preventDefault(); e.stopPropagation(); } }, true);
+  document.addEventListener('pointerup', () => setTimeout(() => { anim.swallow = false; }, 400), true);
+
+  function flyLayer() { let L = $('#flyLayer'); if (!L) { L = document.createElement('div'); L.id = 'flyLayer'; document.body.appendChild(L); } return L; }
+  const R = el => el ? el.getBoundingClientRect() : null;
+  function ghost(html, r, cls = '') {
+    const d = document.createElement('div'); d.className = 'ghost ' + cls; d.innerHTML = html;
+    Object.assign(d.style, { left: r.left + 'px', top: r.top + 'px', width: r.width + 'px', height: r.height + 'px' });
+    flyLayer().appendChild(d); return d;
+  }
+  // 從目前位置飛到 to（矩形），預設飛完就移除
+  async function flyTo(d, to, ms = 600, opt = {}) {
+    const r = R(d);
+    const tf = `translate(${to.left - r.left}px,${to.top - r.top}px) scale(${to.width / r.width},${to.height / r.height})`;
+    await tween(d, [{ transform: 'none', opacity: 1 }, { transform: tf, opacity: opt.fade ? 0 : 1 }], ms, { delay: opt.delay, keep: true });
+    if (!opt.stay) d.remove();
+  }
+  async function flip(d, toHTML, ms = 360) { // 翻牌：寬度縮到 0，換正面，再展開
+    await tween(d, [{ transform: 'scaleX(1)' }, { transform: 'scaleX(0)' }], ms / 2, { keep: true });
+    d.innerHTML = toHTML;
+    await tween(d, [{ transform: 'scaleX(0)' }, { transform: 'scaleX(1)' }], ms / 2);
+  }
+  function bump(el) { return tween(el, [{ transform: 'scale(1)' }, { transform: 'scale(1.6)', offset: 0.35 }, { transform: 'scale(1)' }], 420, { easing: 'ease-out' }); }
+  // 桌面中央排開的位置（groups：[[g,g],[g,g]] 或 [[g],[g],[g]]）
+  function rowRects(groups) {
+    const W = window.innerWidth, H = window.innerHeight, n = groups.flat().length;
+    const cw = Math.min(70, (Math.min(W, 480) - 40) / Math.max(n, 3) - 8), ch = cw * 1.5, gap = 8, ggap = groups.length === 2 ? 26 : gap;
+    const total = n * cw + (n - groups.length) * gap + (groups.length - 1) * ggap;
+    let x = W / 2 - total / 2; const y = H * 0.42 - ch / 2, out = [];
+    groups.forEach((gs, gi) => { gs.forEach((g, i) => { out.push({ left: x, top: y, width: cw, height: ch, g, gi }); x += cw + (i < gs.length - 1 ? gap : 0); }); x += ggap; });
+    return out;
+  }
+  const pendGroups = P => P.type === 'oracle' ? P.cards.map(c => [c]) : P.groups;
+  function renderPending(v) {
+    const box = $('#pendRow');
+    if (!v || v.phase !== 'respond' || !v.pending) { box.innerHTML = ''; box.className = ''; return; }
+    const rs = rowRects(pendGroups(v.pending)), m = me();
+    box.className = 'on' + (respHidden ? ' low' : '');
+    box.innerHTML = `<div class="pcap" style="top:${rs[0].top - 30}px">${v.pending.from === m ? '你的' : esc(nameOf(v.pending.from)) + ' 的'}${C.actions[E.ACT[v.pending.type]].name}</div>` +
+      rs.map((r, i) => `<div class="pcard" data-pi="${i}" style="left:${r.left}px;top:${r.top}px;width:${r.width}px;height:${r.height}px">${cardHTML(r.g)}</div>`).join('');
+  }
+  const chipEl = (side, g) => document.querySelector(`[data-chip="${side}-${g}"]`);
+  function cntEl(side, g) { const c = chipEl(side, g); return c ? c.parentElement.querySelector('.cnt') : null; }
+  // 卡片飛到神殿：飛之前數字先退回，抵達才 +1 並跳動
+  async function cardsToChips(list) { // list: [{g, side, from(rect), glow}]
+    list.forEach(it => { const c = cntEl(it.side, it.g), ch = chipEl(it.side, it.g); if (c) { c.textContent = +c.textContent - 1; if (+c.textContent <= 0) { c.classList.add('zero'); ch.style.opacity = '.15'; } } });
+    await Promise.all(list.map(async (it, i) => {
+      const d = ghost(cardHTML(it.g), it.from, it.glow || '');
+      const ch = chipEl(it.side, it.g); if (!ch) { d.remove(); return; }
+      await flyTo(d, R(ch), 620, { delay: i * 80 });
+      const c = cntEl(it.side, it.g); if (c) { c.textContent = +c.textContent + 1; c.classList.remove('zero'); }
+      ch.style.opacity = ''; sfx.tap(); bump(ch); bump(c);
+    }));
+    list.forEach(it => { const ch = chipEl(it.side, it.g); if (ch) ch.style.opacity = ''; }); // 跳過時也要恢復
+  }
+  const midRect = () => ({ left: window.innerWidth / 2 - 17, top: window.innerHeight * 0.4, width: 34, height: 51 });
+  function oppHandRect() { const r = R($('#oppStrip .who')); return r ? { left: r.left + 20, top: r.top, width: 34, height: 51 } : midRect(); }
+  function deckRect() { const r = R($('#deckN')); return r ? { left: r.left - 8, top: r.top - 14, width: 30, height: 45 } : midRect(); }
+  function handRects() { return $$('#hand [data-hi]').map(el => ({ r: R(el), g: lastRendered ? lastRendered.hands[me()][+el.dataset.hi] : null })); }
+  function takeRects(hr, cards, idx) { // 從手牌位置找出打出的牌的位置
+    if (idx && idx.length === cards.length && idx.every(i => hr[i])) return idx.map(i => hr[i].r);
+    const used = new Set();
+    return cards.map(g => { const k = hr.findIndex((h, i) => !used.has(i) && h.g === g); if (k < 0) return hr[0] ? hr[0].r : deckRect(); used.add(k); return hr[k].r; });
+  }
+
+  // 抽牌：新牌從牌庫飛進手牌，其他牌讓位（FLIP）
+  async function animateDraw(prevV, v, before) {
+    const m = me(), o = 1 - m;
+    if (v.hands[m].length === prevV.hands[m].length + 1 && newCard != null) {
+      const els = $$('#hand [data-hi]'), ni = v.hands[m].indexOf(newCard), dr = deckRect();
+      els.forEach((el, i) => {
+        if (i === ni) { const r = R(el); el.style.opacity = '0'; const d = ghost(cardHTML(newCard), dr); flyTo(d, r, 550).then(() => { el.style.opacity = ''; }); }
+        else { const ob = before[i < ni ? i : i - 1]; if (ob) { const r = R(el); tween(el, [{ transform: `translateX(${ob.r.left - r.left}px)` }, { transform: 'none' }], 420); } }
       });
       sfx.card();
-      setTimeout(() => { L.innerHTML = ''; }, 1150 + items.length * 70);
-    }, hold);
+      await wait(560); els.forEach(el => el.style.opacity = '');
+    } else if (v.hands[o].length === prevV.hands[o].length + 1) {
+      const d = ghost(cardHTML(E.HIDDEN), deckRect()); await flyTo(d, oppHandRect(), 450);
+    }
   }
-  function animatePicked(ev) {
-    const m = me();
-    const chip = (side, g) => document.querySelector(`[data-chip="${side}-${g}"]`);
-    const items = ev.mine.map(g => ({ g, grp: 0, to: chip(ev.p, g), sel: `[data-chip="${ev.p}-${g}"]`, glow: ev.p === m ? 'gme' : 'gop' }))
-      .concat(ev.theirs.map(g => ({ g, grp: 1, to: chip(ev.from, g), sel: `[data-chip="${ev.from}-${g}"]`, glow: ev.from === m ? 'gme' : 'gop' })));
-    const who = ev.p === m ? '你' : esc(nameOf(ev.p));
-    flyCards(items, `${who} 挑了左邊${ev.mine.length > 1 ? '這份' : '這張'}`);
-    sfx.offer();
+
+  // 一次狀態變化要播的動畫
+  async function playEvent(prevV, v) {
+    const ev = v.ev || {}, m = me(), o = 1 - m;
+    const A = k => C.actions[E.ACT[k]];
+    const hr = handRects(), pend = $$('#pendRow .pcard').map(R);
+    const oldDeck = prevV ? prevV.deck.length : v.deck.length;
+    let roundV = v;
+    if (ev.roundEnd) { roundV = v; v = E.clone(v); } // 結算時先用結算前的畫面
+
+    if (ev.type === 'round') {
+      // 收牌：神殿上的祭品飛回牌庫
+      close('ovRound');
+      const back = [];
+      for (let p = 0; p < 2; p++) for (let g = 0; g < NG; g++) if (prevV && prevV.offer[p][g]) { const ch = chipEl(p, g); if (ch) back.push({ g, r: R(ch) }); }
+      if (back.length) { const dr = deckRect(); await Promise.all(back.map((b, i) => flyTo(ghost(cardHTML(b.g), b.r), dr, 500, { delay: i * 40, fade: true }))); }
+      banner(`第 ${v.round} 回合`); sfx.card();
+      render(v);
+      // 發牌
+      const els = $$('#hand [data-hi]'); els.forEach(el => el.style.opacity = '0');
+      const dn = $('#deckN'), total = v.deck.length + v.hands[0].length + v.hands[1].length;
+      countTo(dn, total, v.deck.length, 1400);
+      const jobs = [];
+      els.forEach((el, i) => { const r = R(el); jobs.push(wait(i * 170).then(() => { const d = ghost(cardHTML(E.HIDDEN), deckRect()); return flyTo(d, r, 380).then(() => { el.style.opacity = ''; sfx.tap(); return tween(el, [{ transform: 'scaleX(0)' }, { transform: 'scaleX(1)' }], 200); }); })); });
+      for (let i = 0; i < v.hands[o].length; i++) jobs.push(wait(i * 170 + 85).then(() => flyTo(ghost(cardHTML(E.HIDDEN), deckRect()), oppHandRect(), 380)));
+      await Promise.all(jobs); els.forEach(el => el.style.opacity = '');
+    } else if (ev.type === 'secret' || ev.type === 'burn') {
+      if (ev.p !== m) toast(`${esc(nameOf(o))} 使用了 ${A(ev.type).icon}「${A(ev.type).name}」`);
+      const n = ev.type === 'secret' ? 1 : 2;
+      const cards = mode === 'local' || ev.p !== m ? new Array(n).fill(E.HIDDEN) : (ev.type === 'secret' ? [v.secret[m]] : v.burned[m].slice());
+      const from = ev.p === m ? takeRects(hr, ev.type === 'secret' ? [v.secret[m]] : v.burned[m], playedIdx) : cards.map(oppHandRect);
+      // 畫面先換成新狀態，但「下一位抽的牌」先藏著
+      render(v, { hideNew: true });
+      const strip = ev.p === m ? '#meStrip' : '#oppStrip', slots = $$(strip + ' .hid .slot');
+      const targets = ev.type === 'secret' ? [slots[0]] : slots.slice(1, 3);
+      targets.forEach(t => t && (t.style.visibility = 'hidden'));
+      tokFlip(ev.p, ev.type);
+      await Promise.all(cards.map((g, i) => flyTo(ghost(cardHTML(g), from[i] || oppHandRect()), R(targets[i] || slots[0]), 520, { delay: i * 90 })));
+      targets.forEach(t => t && (t.style.visibility = ''));
+      if (ev.type === 'burn') { sfx.card(); await Promise.all(targets.map(t => t && tween(t, [{ filter: 'brightness(2.2) sepia(1) hue-rotate(-20deg)' }, { filter: 'none' }], 500))); }
+      if (!ev.roundEnd) { render(v); await animateDraw(prevV, v, hr); }
+    } else if (ev.type === 'offer') {
+      const groups = pendGroups(v.pending), rs = rowRects(groups), flat = groups.flat();
+      if (ev.p !== m) { banner(A(ev.kind).name); sfx.offer(); vibrate(60); respHidden = false; }
+      const from = ev.p === m ? takeRects(hr, flat.slice().sort((a, b) => a - b), null) : flat.map(oppHandRect);
+      // takeRects 依手牌順序配對；重新對應到 flat 順序
+      const fromByCard = ev.p === m ? (() => { const used = new Set(); return flat.map(g => { const k = hr.findIndex((h, i) => !used.has(i) && h.g === g && (!playedIdx || playedIdx.includes(i))); const kk = k >= 0 ? k : hr.findIndex((h, i) => !used.has(i) && h.g === g); used.add(kk); return kk >= 0 ? hr[kk].r : deckRect(); }); })() : from;
+      render(v); $('#pendRow').style.visibility = 'hidden';
+      tokFlip(ev.p, ev.kind);
+      const gs = flat.map((g, i) => ghost(cardHTML(ev.p === m ? g : E.HIDDEN), fromByCard[i]));
+      await Promise.all(gs.map((d, i) => flyTo(d, rs[i], 520, { delay: i * 80, stay: true })));
+      if (ev.p !== m) await Promise.all(gs.map((d, i) => wait(i * 60).then(() => flip(d, cardHTML(flat[i])))));
+      $('#pendRow').style.visibility = ''; gs.forEach(d => d.remove());
+      sfx.offer();
+    } else if (ev.type === 'picked') {
+      const its = cs => cs.map(c => G[c].itemName).join('＋');
+      if (ev.from === m) toast(`${esc(nameOf(o))} 挑走 ${its(ev.mine)}，你得到 ${its(ev.theirs)}`, 3400);
+      // 中央的牌：挑走的那份標上顏色，停一下再飛到兩邊
+      const groups = ev.kind === 'oracle' ? [ev.mine, ev.theirs] : [ev.mine, ev.theirs];
+      const rs = rowRects(groups);
+      const startRects = pend.length === rs.length ? null : rs;
+      render(v, { hideNew: true });
+      const items = ev.mine.map(g => ({ g, side: ev.p, glow: ev.p === m ? 'gme' : 'gop' })).concat(ev.theirs.map(g => ({ g, side: ev.from, glow: ev.from === m ? 'gme' : 'gop' })));
+      items.forEach((it, i) => it.from = rs[i]);
+      const cap = ghost(`${ev.p === m ? '你' : esc(nameOf(ev.p))} 挑了左邊${ev.mine.length > 1 ? '這份' : '這張'}`, { left: 0, top: rs[0].top - 34, width: window.innerWidth, height: 26 }, 'flycap');
+      const show = items.map((it, i) => ghost(cardHTML(it.g), it.from, it.glow));
+      await Promise.all(show.map((d, i) => tween(d, [{ transform: 'scale(.85)', opacity: .6 }, { transform: 'scale(1)', opacity: 1 }], 260, { delay: i * 40 })));
+      sfx.offer();
+      await wait(650);
+      show.forEach(d => d.remove()); cap.remove();
+      await cardsToChips(items);
+      if (!ev.roundEnd) { render(v); await animateDraw(prevV, v, hr); }
+    } else render(v);
+
+    if (ev.roundEnd) await playRoundEnd(roundV);
+    else if (prevV && v.deck.length !== oldDeck && ev.type !== 'round') countTo($('#deckN'), oldDeck, v.deck.length, 300);
   }
-  function animateHidden(ev) { // 秘密祈禱／焚燒：牌飛到那個人的欄位
-    const v = V(); if (!v) return;
-    const m = me(), side = ev.p === m ? '#meStrip' : '#oppStrip';
-    const slots = $$(side + ' .hid .slot'); if (!slots.length) return;
-    const to = ev.type === 'secret' ? slots[0] : slots[slots.length - 1];
-    const n = ev.type === 'secret' ? 1 : 2;
-    const cards = mode === 'local' || ev.p !== m ? new Array(n).fill(E.HIDDEN) : (ev.type === 'secret' ? [v.secret[ev.p]] : v.burned[ev.p].slice());
-    flyCards(cards.map(g => ({ g, grp: 0, to })), '', 300);
+
+  function tokFlip(p, key) {
+    const i = E.ACT[key], el = p === me() ? $(`#acts [data-act="${key}"]`) : $(`#oppStrip .tok[data-tip="${i}"]`);
+    if (el) tween(el, [{ transform: 'rotateY(0)', filter: 'none', opacity: 1 }, { transform: 'rotateY(90deg)', opacity: 1, offset: 0.5 }, { transform: 'rotateY(0)' }], 520);
+  }
+
+  // 回合結算：翻開秘密祈禱 → 一位一位神比較 → 金幣移動、分數累加
+  async function playRoundEnd(v) {
+    const Rz = v.result, m = me(), o = 1 - m;
+    const pre = E.clone(v);
+    pre.favor = Rz.before.slice();
+    pre.offer = E.clone(Rz.offer);
+    for (let p = 0; p < 2; p++) if (Rz.secret[p] != null) pre.offer[p][Rz.secret[p]]--;
+    pre.phase = 'act'; pre.turn = null; pre.secret = Rz.secret.slice();
+    pre.secret = pre.secret.map((s, p) => p === m || s == null ? s : E.HIDDEN);
+    render(pre, { judging: true });
+    await wait(350);
+    banner('回合結算'); await wait(700);
+    // 翻開秘密祈禱
+    const flips = [];
+    for (let p = 0; p < 2; p++) {
+      const g = Rz.secret[p]; if (g == null) continue;
+      const slot = $((p === m ? '#meStrip' : '#oppStrip') + ' .hid .slot');
+      const mid = rowRects([[0, 0]])[p === m ? 1 : 0];
+      flips.push((async () => {
+        const d = ghost(cardHTML(p === m && mode !== 'local' ? g : E.HIDDEN), R(slot));
+        if (slot) slot.style.visibility = 'hidden';
+        await flyTo(d, mid, 450, { stay: true });
+        if (!(p === m && mode !== 'local')) await flip(d, cardHTML(g));
+        await wait(350); d.remove();
+        pre.offer[p][g]++; render(pre, { judging: true });
+        const s2 = $((p === m ? '#meStrip' : '#oppStrip') + ' .hid .slot'); if (s2) s2.style.visibility = 'hidden';
+        const c = cntEl(p, g), ch = chipEl(p, g);
+        if (c) { c.textContent = +c.textContent - 1; if (+c.textContent <= 0) { c.classList.add('zero'); ch.style.opacity = '.15'; } }
+        const d2 = ghost(cardHTML(g), mid, p === m ? 'gme' : 'gop');
+        await flyTo(d2, R(ch), 520);
+        if (c) { c.textContent = +c.textContent + 1; c.classList.remove('zero'); } if (ch) { ch.style.opacity = ''; bump(ch); } bump(c);
+      })());
+    }
+    await Promise.all(flips);
+    render(pre, { judging: true });
+    // 逐位神比較
+    for (let g = 0; g < NG; g++) {
+      const col = $$('#temple .col')[g]; if (!col) continue;
+      col.classList.add('judge');
+      const a = Rz.after[g], b = Rz.before[g];
+      await wait(220);
+      if (a !== b) {
+        const oldSc = E.score(pre.favor);
+        const from = $(`[data-coin="${g}"]`), godR = R(col.querySelector('.god'));
+        const fr = from ? R(from) : { left: godR.left + godR.width / 2 - 9, top: godR.top + godR.height / 2 - 9, width: 18, height: 18 };
+        pre.favor[g] = a; render(pre, { judging: true, judgeUpto: g, hideCoin: g });
+        const to = $(`[data-coin="${g}"]`);
+        const d = ghost(`<span class="coin ${a === m ? 'me' : 'opp'}">眷</span>`, fr, 'coinghost');
+        sfx.favor();
+        await flyTo(d, R(to), 520);
+        if (to) { to.style.visibility = ''; bump(to); }
+        const ns = E.score(pre.favor);
+        await Promise.all([countTo($('#scMeP'), oldSc.pts[m], ns.pts[m]), countTo($('#scOpP'), oldSc.pts[o], ns.pts[o]), countTo($('#scMeG'), oldSc.cnt[m], ns.cnt[m], 300), countTo($('#scOpG'), oldSc.cnt[o], ns.cnt[o], 300)]);
+      } else await wait(180);
+      const c2 = $$('#temple .col')[g]; if (c2) c2.classList.remove('judge');
+    }
+    render(v);
+    if (v.phase === 'over') await victory(v.winner === m || mode === 'local');
+  }
+
+  async function victory(good) {
+    const W = window.innerWidth, H = window.innerHeight, jobs = [];
+    if (instant()) return;
+    for (let i = 0; i < 46; i++) {
+      const d = ghost('', { left: W / 2 - 6, top: H * 0.4, width: 12, height: 12 }, good ? 'spark' : 'spark dim');
+      const ang = Math.random() * Math.PI * 2, dist = 80 + Math.random() * Math.min(W, 480) * 0.5;
+      const dx = Math.cos(ang) * dist, dy = Math.sin(ang) * dist * 0.6;
+      jobs.push(tween(d, [{ transform: 'translate(0,0) scale(.4)', opacity: 1 }, { transform: `translate(${dx}px,${dy}px) scale(1)`, opacity: 1, offset: 0.45 }, { transform: `translate(${dx * 1.1}px,${dy + H * 0.45}px) scale(.6)`, opacity: 0 }], 1500 + Math.random() * 600, { delay: Math.random() * 250, easing: 'ease-out', keep: true }).then(() => d.remove()));
+    }
+    await Promise.all(jobs);
   }
 
   // ---------- 操作 ----------
@@ -342,9 +565,9 @@
   $('#bConfirm').onclick = () => {
     const v = V(); if (!sel || !v) return;
     const cards = sel.idx.map(i => v.hands[me()][i]);
-    if (sel.action === 'tables') { split = { a: cards.slice(0, 2), b: cards.slice(2) }; renderSplit(); open('ovSplit'); return; }
+    if (sel.action === 'tables') { playedIdx = sel.idx.slice(); split = { a: cards.slice(0, 2), b: cards.slice(2) }; renderSplit(); open('ovSplit'); return; }
     const m = { type: 'act', action: sel.action, cards };
-    sel = null; sfx.card(); doMove(m);
+    playedIdx = sel.idx.slice(); sel = null; sfx.card(); doMove(m);
   };
   function renderSplit() {
     $('#pileA').innerHTML = split.a.map((g, i) => cardHTML(g, '', `data-pa="${i}"`)).join('');
@@ -390,6 +613,7 @@
   });
   $('#bRespond').onclick = () => { if (respPick == null) return; close('ovRespond'); respHidden = false; sfx.card(); doMove({ type: 'respond', pick: respPick }); };
   $('#bRespondLook').onclick = () => { close('ovRespond'); respHidden = true; render(); };
+  $('#pendRow').addEventListener('click', () => {});
 
   // 點神看大圖
   $('#temple').addEventListener('click', e => {
@@ -416,44 +640,37 @@
     afterChange();
   }
 
-  // 狀態改變後：通知、音效、結算視窗、電腦、換人遮罩
+  // 狀態改變後：排進動畫佇列，播完再處理結算視窗、電腦、換人遮罩
+  let shown = null, lastRendered = null, playedIdx = null;
   function afterChange() {
     const v = V(); if (!v) return;
     const m = me(), seqChanged = v.seq !== lastSeq;
-    // 新抽到的牌
     const hand = v.hands[m];
-    newCard = null;
+    let nc = null;
     if (prevHand && prevHand.round === v.round && prevHand.seat === m && hand.length === prevHand.h.length + 1) {
-      const rest = prevHand.h.slice(); for (const c of hand) { const i = rest.indexOf(c); if (i >= 0) rest.splice(i, 1); else { newCard = c; break; } }
+      const rest = prevHand.h.slice(); for (const c of hand) { const i = rest.indexOf(c); if (i >= 0) rest.splice(i, 1); else { nc = c; break; } }
     }
     prevHand = { round: v.round, seat: m, h: hand.slice() };
-    if (seqChanged && v.ev) handleEvent(v, v.ev);
     lastSeq = v.seq;
     if (v.phase !== 'act' || actor(v) !== m) sel = null;
-    // 同機輪流：要換人就遮住畫面
-    if (mode === 'local') {
-      const a = actor(v);
-      if (a != null && a !== viewer) { askPass(a); return; }
-    }
-    render();
-    if (v.phase === 'respond' && actor(v) === m && !respHidden && !isOpen('ovPass')) setTimeout(openRespond, seqChanged && v.ev && v.ev.type === 'offer' ? 1250 : 350);
-    if ((v.phase === 'roundEnd' || v.phase === 'over') && lastRoundShown !== v.round + ':' + v.phase) setTimeout(() => showRound(false), 600);
-    scheduleAI();
+    const prevV = shown; shown = v;
+    enqueue(async () => {
+      newCard = nc;
+      const ev = v.ev || {};
+      if (seqChanged && v.ev && (prevV || ev.type === 'round') && $('#game').classList.contains('on') && !isOpen('ovPass')) await playEvent(prevV, v);
+      playedIdx = null;
+      if (v !== shown) return; // 後面還有新的狀態在排隊
+      if (seqChanged && actor(v) === m && v.phase === 'act') { sfx.myturn(); vibrate(40); }
+      postEvent(v);
+    });
   }
-
-  function handleEvent(v, ev) {
-    const m = me(), o = 1 - m;
-    const A = k => C.actions[E.ACT[k]];
-    if (ev.type === 'round') { banner(`第 ${v.round} 回合`); sfx.card(); close('ovRound'); }
-    if (ev.type === 'secret' || ev.type === 'burn') { if (ev.p !== m) toast(`${esc(nameOf(o))} 使用了 ${A(ev.type).icon}「${A(ev.type).name}」`); setTimeout(() => animateHidden(ev), 30); }
-    if (ev.type === 'offer' && ev.p !== m) { banner(A(ev.kind).name); sfx.offer(); vibrate(60); respHidden = false; }
-    if (ev.type === 'picked') {
-      const its = cs => cs.map(c => G[c].itemName).join('＋');
-      if (ev.from === m) toast(`${esc(nameOf(o))} 挑走 ${its(ev.mine)}，你得到 ${its(ev.theirs)}`, 3400);
-      setTimeout(() => animatePicked(ev), 30);
-    }
-    if (actor(v) === m && (ev.type !== 'offer' || ev.p !== m) && v.phase === 'act') { sfx.myturn(); vibrate(40); }
-    if (ev.type === 'roundEnd') { sfx.favor(); }
+  function postEvent(v) {
+    const m = me();
+    if (mode === 'local') { const a = actor(v); if (a != null && a !== viewer) { askPass(a); return; } }
+    render(v);
+    if (v.phase === 'respond' && actor(v) === m && !respHidden && !isOpen('ovPass')) openRespond();
+    if ((v.phase === 'roundEnd' || v.phase === 'over') && lastRoundShown !== v.round + ':' + v.phase) showRound(false);
+    scheduleAI();
   }
 
   // ---------- 回合結算 ----------
@@ -504,7 +721,7 @@
       const t0 = Date.now();
       const m = E.aiMove(E.view(S, 1), 1, aiLevel());
       setTimeout(() => { if (mode === 'ai' && !paused && actor(S) === 1) doMove(m, 1); }, Math.max(0, 250 - (Date.now() - t0)));
-    }, Math.max(C.aiDelayMs, animUntil - Date.now() + 300));
+    }, C.aiDelayMs);
   }
 
   // ---------- 同機輪流 ----------
@@ -515,18 +732,17 @@
     $$('.overlay').forEach(o => { if (o.id !== 'ovPass') o.classList.remove('on'); });
     open('ovPass'); $('#hand').innerHTML = '';
   }
-  $('#bPassGo').onclick = () => { const a = actor(S); if (a != null) viewer = a; close('ovPass'); prevHand = null; lastSeq = S.seq; sfx.myturn(); render(); const v = V(); if (v.phase === 'respond' && actor(v) === me()) setTimeout(openRespond, 250); };
+  $('#bPassGo').onclick = () => { const a = actor(S); if (a != null) viewer = a; close('ovPass'); const v = V(); prevHand = { round: v.round, seat: me(), h: v.hands[me()].slice() }; lastSeq = S.seq; shown = v; sfx.myturn(); render(v); if (v.phase === 'respond' && actor(v) === me()) setTimeout(openRespond, 250); };
 
   // ---------- 開始遊戲 ----------
-  function resetUI() { sel = null; split = null; respHidden = false; lastSeq = -1; lastRoundShown = null; prevHand = null; newCard = null; paused = false; $$('.overlay').forEach(o => o.classList.remove('on')); }
+  function resetUI() { shown = null; lastRendered = null; playedIdx = null; sel = null; split = null; respHidden = false; lastSeq = -1; lastRoundShown = null; prevHand = null; newCard = null; paused = false; $$('.overlay').forEach(o => o.classList.remove('on')); }
   function startLocal(kind, names) {
     resetUI(); mode = kind; seatInfo = [];
     S = E.newGame(names); viewer = S.start;
     if (kind === 'ai') viewer = 0;
     saveLocal(); show('game'); keepAwake();
-    lastSeq = S.seq; prevHand = null;
-    banner('第 1 回合');
-    if (kind === 'local') askPass(S.turn); else { render(); scheduleAI(); }
+    prevHand = null;
+    if (kind === 'local') { lastSeq = S.seq; shown = V(); askPass(S.turn); } else afterChange();
     toast(`${esc(nameOf(S.start))} 先手`);
   }
   function saveLocal() { if (mode === 'ai' || mode === 'local') store.set('save', { mode, S, viewer, ts: Date.now() }); }
@@ -563,7 +779,7 @@
   function openSettings() {
     $('#vMusic').value = settings.music; $('#vSfx').value = settings.sfx;
     $('#vMusicV').textContent = settings.music; $('#vSfxV').textContent = settings.sfx;
-    segSet('#sStyle', settings.style); segSet('#sHints', String(settings.hints)); segSet('#sVib', String(settings.vib));
+    segSet('#sStyle', settings.style); segSet('#sAnim', settings.anim); segSet('#sHints', String(settings.hints)); segSet('#sVib', String(settings.vib));
     open('ovSet');
   }
   function segSet(id, v) { $$(id + ' button').forEach(b => b.classList.toggle('on', b.dataset.v === v)); }
@@ -571,6 +787,7 @@
   $('#vSfx').oninput = e => { settings.sfx = +e.target.value; $('#vSfxV').textContent = settings.sfx; saveSettings(); };
   $('#vSfx').onchange = () => sfx.myturn();
   $('#sStyle').onclick = e => { const b = e.target.closest('button'); if (!b) return; settings.style = b.dataset.v; segSet('#sStyle', settings.style); saveSettings(); drawCover(); drawHelp(); if (S) render(); };
+  $('#sAnim').onclick = e => { const b = e.target.closest('button'); if (!b) return; settings.anim = b.dataset.v; segSet('#sAnim', settings.anim); saveSettings(); };
   $('#sHints').onclick = e => { const b = e.target.closest('button'); if (!b) return; settings.hints = +b.dataset.v; segSet('#sHints', String(settings.hints)); saveSettings(); if (S) render(); };
   $('#sVib').onclick = e => { const b = e.target.closest('button'); if (!b) return; settings.vib = +b.dataset.v; segSet('#sVib', String(settings.vib)); saveSettings(); };
 
@@ -718,9 +935,8 @@
     startGame() {
       resetUI();
       S = E.newGame(this.seats.map(s => s.name));
-      lastSeq = S.seq;
       this.broadcast(); this.save();
-      show('game'); banner('第 1 回合'); toast(`${esc(nameOf(S.start))} 先手`); afterChange();
+      show('game'); toast(`${esc(nameOf(S.start))} 先手`); afterChange();
     },
     save() { store.set('save', { mode: 'host', code: this.code, S, seats: this.seats.map(s => ({ name: s.name, cid: s.cid })), ts: Date.now() }); },
     tick() {
@@ -841,8 +1057,8 @@
         const fresh = !S || !$('#game').classList.contains('on') || (d.S.round === 1 && d.S.seq === 0 && (S.seq !== 0 || S.round !== 1));
         S = d.S;
         if (fresh) {
-          resetUI(); lastSeq = S.seq; show('game');
-          if (S.seq === 0) { banner('第 1 回合'); toast(`${esc(nameOf(S.start))} 先手`); }
+          resetUI(); show('game');
+          if (S.seq === 0) toast(`${esc(nameOf(S.start))} 先手`); else lastSeq = S.seq;
         }
         afterChange();
         store.set('lastRoom', { code: this.code, ts: Date.now() });
@@ -925,5 +1141,5 @@
   }
 
   // 測試用
-  window.__olys = { get S() { return S; }, get mode() { return mode; }, doMove, host, net, get viewer() { return viewer; } };
+  window.__olys = { get busy() { return anim.active; }, get S() { return S; }, get mode() { return mode; }, doMove, host, net, get viewer() { return viewer; } };
 })();

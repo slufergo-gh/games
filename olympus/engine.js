@@ -32,7 +32,7 @@
     S.burned = [[], []];
     S.offer = [new Array(NG).fill(0), new Array(NG).fill(0)];
     S.pending = null; S.result = null;
-    S.turn = S.start;
+    S.turn = S.start; S.ev = { type: 'round' };
     S.phase = 'act';
     draw(S, S.turn);
     sortHand(S.hands[0]); sortHand(S.hands[1]);
@@ -152,7 +152,7 @@
     if (w == null) for (let p = 0; p < 2; p++) if (sc.cnt[p] >= C.winGods) { w = p; why = 'gods'; }
     S.result = { round: S.round, before, after: S.favor.slice(), offer: clone(S.offer), secret: S.secret.slice(), burned: clone(S.burned), removed: S.removed.slice(), pts: sc.pts, cnt: sc.cnt, winner: w, why };
     S.turn = null;
-    S.ev = { type: 'roundEnd' };
+    S.ev = Object.assign(S.ev || {}, { roundEnd: true });
     if (w != null) {
       S.winner = w; S.phase = 'over';
       S.log.push({ r: S.round, t: `${S.names[w]} 獲勝！（${sc.pts[w]} 分、${sc.cnt[w]} 位神）` });
