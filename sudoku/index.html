@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#fbf3e4">
-<title>烏雞數獨</title>
+<title>紙筆數獨</title>
 <style>
 :root{
   --bg:#fbf3e4; --bg2:#f3e6cc; --ink:#4a3a2a; --ink2:#8a7560; --line:#5b4632; --thin:#d9c8ad;
@@ -28,10 +28,27 @@ img{-webkit-user-drag:none;user-select:none;pointer-events:none}
 #menu{justify-content:center;gap:14px;overflow-y:auto;padding-left:16px;padding-right:16px}
 #menu h1{margin:0;font-size:40px;letter-spacing:4px;color:var(--accent);text-shadow:2px 2px 0 #fff,4px 4px 0 var(--accent2)}
 #menu .sub{color:var(--ink2);margin-top:-6px;font-size:15px}
-.mascots{display:flex;gap:4px;height:84px;align-items:flex-end}
-.mascots img{width:56px;height:56px;object-fit:contain;animation:bob 1.8s ease-in-out infinite}
-.mascots img:nth-child(2){width:76px;height:76px;animation-delay:-.6s}
-.mascots img:nth-child(3){animation-delay:-1.2s}
+#menu{background-color:#fdfaf2;
+  background-image:linear-gradient(90deg,transparent 0,transparent 30px,#f2b8ae 30px,#f2b8ae 32px,transparent 32px),
+    repeating-linear-gradient(0deg,#e7dfcd 0,#e7dfcd 1px,transparent 1px,transparent 24px),
+    repeating-linear-gradient(90deg,#efe8d8 0,#efe8d8 1px,transparent 1px,transparent 24px)}
+.hero{display:grid;grid-template-columns:repeat(3,54px);grid-template-rows:repeat(3,54px);border:3px solid var(--line);background:var(--line);gap:1px;
+  transform:rotate(-3deg);box-shadow:4px 6px 0 rgba(90,60,30,.12);position:relative}
+.hero div{background:#fffdf8;display:flex;align-items:center;justify-content:center;font-size:30px;font-weight:600;color:var(--ink);position:relative}
+.hero .u{color:var(--user);font-family:"Bradley Hand","Segoe Print","Comic Sans MS",cursive}
+.hero .h{color:#2e9a57;font-family:"Bradley Hand","Segoe Print","Comic Sans MS",cursive;background:#e1f3e7}
+.hero .n{display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(3,1fr);font-size:12px;color:var(--note);font-weight:500;padding:2px}
+.hero .n span{display:flex;align-items:center;justify-content:center}
+.hero .n span.x{text-decoration:line-through;color:var(--bad)}
+.hero .w{display:inline-block;animation:write 3.2s ease-in-out infinite}
+@keyframes write{0%,20%{opacity:0;transform:scale(1.6)}32%,85%{opacity:1;transform:scale(1)}100%{opacity:0}}
+.pencil{position:absolute;right:-30px;bottom:-22px;font-size:40px;transform:rotate(10deg);animation:pen 3.2s ease-in-out infinite}
+@keyframes pen{0%,15%{transform:translate(0,0) rotate(10deg)}25%{transform:translate(-30px,-34px) rotate(-5deg)}30%{transform:translate(-22px,-30px) rotate(8deg)}40%,100%{transform:translate(0,0) rotate(10deg)}}
+#menu h1{font-family:"Songti TC","Noto Serif TC","PMingLiU",serif;color:var(--ink);text-shadow:none;letter-spacing:8px;font-size:42px;margin-top:6px}
+#menu h1 em{font-style:normal;color:var(--accent)}
+.pips{width:44px;height:44px;border-radius:12px;flex:none;display:grid;grid-template-columns:1fr 1fr;gap:4px;padding:8px}
+.pips i{border-radius:50%;background:rgba(255,255,255,.35)}
+.pips i.on{background:#fff}
 @keyframes bob{50%{transform:translateY(-8px)}}
 .diffs{display:grid;grid-template-columns:1fr 1fr;gap:10px;width:min(100%,420px)}
 .diff{display:flex;align-items:center;gap:10px;padding:10px 12px;border:none;border-radius:16px;background:var(--panel);
@@ -71,13 +88,48 @@ img{-webkit-user-drag:none;user-select:none;pointer-events:none}
 .c.bad{color:var(--bad);background:var(--badbg)}
 .c.bad img{filter:drop-shadow(0 0 3px var(--bad))}
 .c.L1{color:#2e9a57}.c.L2{color:#8a4fc4}.c.L3{color:#d0457f}
-.c .flag{position:absolute;top:1px;left:2px;font-size:calc(var(--cs)*.22);line-height:1}
-#board.br1{border-color:#2e9a57}#board.br2{border-color:#8a4fc4}#board.br3{border-color:#d0457f}
+.c .flag{position:absolute;top:1px;left:1px;min-width:calc(var(--cs)*.3);height:calc(var(--cs)*.3);border-radius:50%;color:#fff;
+  font-size:calc(var(--cs)*.2);font-weight:bold;display:flex;align-items:center;justify-content:center;line-height:1}
+#board.hyp1{border-color:#2e9a57;box-shadow:0 0 0 4px #bfe6cb}
+#board.hyp2{border-color:#8a4fc4;box-shadow:0 0 0 4px #ddc9f2}
+#board.hyp3{border-color:#d0457f;box-shadow:0 0 0 4px #f7c6da}
+#board.hyp1 .c:not(.given){background:#f7fcf8}#board.hyp2 .c:not(.given){background:#fbf7fe}#board.hyp3 .c:not(.given){background:#fef8fb}
+#board .c.hr1{background:#e1f3e7}#board .c.hr2{background:#efe4f9}#board .c.hr3{background:#fce1ec}
+#board .c.hr1.hcur{background:#c4e8cf}#board .c.hr2.hcur{background:#ddc8f3}#board .c.hr3.hcur{background:#f8c7db}
+#board .c.same{background:var(--same)}
 .c.brOut{transition:transform .35s,opacity .35s;transform:scale(.3) rotate(-20deg);opacity:0}
-#brBar{display:none;align-items:center;gap:6px;font-size:14px}
-#brBar.on{display:flex}#brBar.on~*{display:none}
-#brBar .tag{color:#fff;border-radius:999px;padding:3px 10px;font-weight:bold;white-space:nowrap}
-#brBar button{border:none;border-radius:999px;padding:6px 10px;font-size:14px;background:var(--panel);box-shadow:0 2px 6px rgba(90,60,30,.15);white-space:nowrap}
+#pad.pick .num{opacity:.28}
+#pad.pick .num.cand{opacity:1;background:#fff;color:var(--pc);box-shadow:inset 0 0 0 3px var(--pc)}
+#noteBar.pick{box-shadow:0 0 0 3px var(--pc)}
+#noteBar.pick .nbs span.on{border-color:var(--pc);color:var(--pc);background:#fff}
+#hypBar{display:none;flex-direction:column;gap:5px;background:var(--panel);border-radius:14px;padding:6px 8px;box-shadow:0 2px 8px rgba(90,60,30,.1)}
+#hypBar.on{display:flex}
+.hchips{display:flex;gap:5px;align-items:center;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+.hchips::-webkit-scrollbar{display:none}
+.hchip{flex:none;border:2px solid var(--hc,#bba);background:#fff;border-radius:999px;padding:3px 9px;font-size:13px;color:var(--ink);white-space:nowrap}
+.hchip.path{background:var(--hl,#f1e5cf)}
+.hchip.cur{background:var(--hc,#8a7560);color:#fff;font-weight:bold}
+.hsep{color:var(--ink2);font-size:13px;flex:none}
+.hrow{display:flex;align-items:center;gap:6px;font-size:13px}
+.hbtns{display:flex;gap:6px;flex-wrap:wrap}
+.hbtns button{flex:1;border:none;border-radius:999px;padding:5px 8px;font-size:13px;background:var(--bg2);white-space:nowrap}
+.hlv{display:inline-flex;align-items:center;gap:3px;color:#fff;border-radius:999px;padding:2px 9px;font-weight:bold;font-size:13px;white-space:nowrap}
+.hlv i{width:7px;height:7px;border-radius:50%;background:rgba(255,255,255,.4);display:inline-block}
+.hlv i.on{background:#fff}
+#hudLv{display:none}#hudLv.on{display:inline-flex}
+.c .pend{position:absolute;right:1px;bottom:1px;font-size:calc(var(--cs)*.2);font-weight:bold;line-height:1;padding:1px 3px;border-radius:5px;
+  border:1.5px dashed var(--pc2);color:var(--pc2);background:#fff}
+#lvBanner{position:fixed;left:50%;top:40%;transform:translate(-50%,-50%) scale(.6);opacity:0;z-index:42;pointer-events:none;
+  color:#fff;border-radius:22px;padding:14px 26px;text-align:center;box-shadow:var(--shadow);transition:none}
+#lvBanner b{display:block;font-size:30px;letter-spacing:2px}
+#lvBanner span{font-size:15px}
+#lvBanner .dots{margin-top:6px;display:flex;gap:6px;justify-content:center}
+#lvBanner .dots i{width:12px;height:12px;border-radius:50%;background:rgba(255,255,255,.35);display:inline-block}
+#lvBanner .dots i.on{background:#fff}
+#lvBanner.show{animation:lvb var(--lvms,1300ms) ease-out forwards}
+@keyframes lvb{0%{opacity:0;transform:translate(-50%,-50%) scale(.6)}15%{opacity:1;transform:translate(-50%,-50%) scale(1.06)}25%{transform:translate(-50%,-50%) scale(1)}75%{opacity:1}100%{opacity:0;transform:translate(-50%,-50%) scale(1)}}
+.hrow #hInfo{flex:1;line-height:1.3}
+.hrow button.x{border:none;border-radius:999px;padding:5px 10px;font-size:13px;background:var(--bg2);white-space:nowrap}
 .c.hl{background:#fff1b3!important}
 .c.hlTarget{box-shadow:inset 0 0 0 3px var(--ok)!important;background:#e6f7df!important}
 .c .nt{position:absolute;inset:1px;display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(3,1fr)}
@@ -153,6 +205,24 @@ img{-webkit-user-drag:none;user-select:none;pointer-events:none}
 #coach .next{background:var(--accent);color:#fff;font-weight:bold}
 .coachFocus{outline:4px solid var(--accent)!important;outline-offset:3px;animation:cpulse 1s ease-in-out infinite;position:relative;z-index:44}
 @keyframes cpulse{50%{outline-color:#ffc58a}}
+#lvGrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(50px,1fr));gap:6px;max-height:min(52vh,460px);overflow-y:auto;padding:4px;margin:8px 0}
+.lv{position:relative;border:none;border-radius:10px;background:#fff;box-shadow:0 1px 4px rgba(90,60,30,.15);height:50px;font-size:16px;font-weight:600;color:var(--ink);padding:0;display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1.1}
+.lv small{font-size:9px;color:#f5b52e;letter-spacing:-1px;height:10px}
+.lv.done{background:#eef7e9}
+.lv .sv{position:absolute;top:1px;right:3px;font-size:10px}
+.lvtop{display:flex;gap:8px;justify-content:center;flex-wrap:wrap}
+.lvnote{font-size:13px;color:var(--bad);margin-top:6px}
+.slot{display:flex;align-items:center;gap:8px;padding:9px 10px;border-radius:12px;background:#fff;box-shadow:0 1px 4px rgba(90,60,30,.12);text-align:left;width:100%;border:none;font-size:14px}
+.slot + .slot{margin-top:6px}
+.slot .sn{font-weight:bold;color:var(--accent);width:2.6em;flex:none}
+.slot .si{flex:1;line-height:1.35}
+.slot .si small{color:var(--ink2)}
+.slot.empty .si{color:#b9a88f}
+.slot.cur{box-shadow:0 0 0 2px var(--accent)}
+.slot.arm{background:#fff1d6}
+.slot .del{border:none;background:var(--bg2);border-radius:999px;padding:5px 9px;font-size:12px;flex:none}
+.slot .del.arm{background:var(--bad);color:#fff}
+#slotList{max-height:min(60vh,520px);overflow-y:auto;padding:3px;margin:8px 0}
 #toast{position:fixed;left:50%;top:calc(58px + env(safe-area-inset-top));transform:translateX(-50%) translateY(-16px);opacity:0;
   background:#4a3a2a;color:#fff;padding:10px 16px;border-radius:14px;font-size:15px;z-index:40;transition:.25s;max-width:min(92vw,520px);text-align:center;pointer-events:none;line-height:1.5}
 #toast.on{opacity:1;transform:translateX(-50%) translateY(0)}
@@ -161,7 +231,9 @@ img{-webkit-user-drag:none;user-select:none;pointer-events:none}
 .spin{width:44px;height:44px;border-radius:50%;border:5px solid var(--accent2);border-top-color:var(--accent);animation:sp 0.8s linear infinite;margin:6px auto 10px}
 @keyframes sp{to{transform:rotate(360deg)}}
 /* 結算 */
-#winChar{width:96px;height:96px;object-fit:contain;animation:jump .7s ease-in-out infinite}
+#winChar{width:96px;height:96px;margin:0 auto 4px;border:5px solid var(--bad);border-radius:50%;color:var(--bad);font-size:56px;font-weight:bold;
+  display:flex;align-items:center;justify-content:center;transform:rotate(-12deg);animation:stamp .5s ease-out}
+@keyframes stamp{0%{transform:scale(2.4) rotate(-12deg);opacity:0}70%{transform:scale(.92) rotate(-12deg);opacity:1}100%{transform:scale(1) rotate(-12deg)}}
 @keyframes jump{0%,100%{transform:translateY(0)}40%{transform:translateY(-16px) rotate(-6deg)}70%{transform:translateY(0) rotate(4deg)}}
 .stars{font-size:40px;letter-spacing:6px;margin:4px 0 8px;color:#d9c8ad}
 .stars span{display:inline-block;transition:transform .3s,color .3s}
@@ -182,12 +254,19 @@ img{-webkit-user-drag:none;user-select:none;pointer-events:none}
 
 <!-- 封面 -->
 <div id="menu" class="screen on">
-  <div class="mascots"><img src="assets/images/mei.png" alt=""><img src="assets/images/wuji.png" alt=""><img src="assets/images/didi.png" alt=""></div>
-  <h1>烏雞數獨</h1>
-  <div class="sub">每一列、每一行、每個九宮格，都要剛好 1～9 各一個</div>
+  <div class="hero">
+    <div>5</div><div class="n"><span></span><span>2</span><span></span><span></span><span></span><span></span><span class="x">7</span><span></span><span>9</span></div><div>3</div>
+    <div class="u">8</div><div>1</div><div class="n"><span>1</span><span></span><span></span><span>4</span><span></span><span></span><span></span><span>8</span><span></span></div>
+    <div class="h"><span class="w">9</span></div><div class="n"><span></span><span>2</span><span></span><span>4</span><span></span><span>6</span><span></span><span></span><span></span></div><div class="u">7</div>
+    <span class="pencil">✏️</span>
+  </div>
+  <h1>紙筆<em>數獨</em></h1>
+  <div class="sub">像在紙上一樣：寫候選、做假設、慢慢推出答案</div>
   <button class="btn primary" id="btnContinue" style="display:none">▶ 繼續上一局</button>
   <div class="diffs" id="diffs"></div>
   <div class="menurow">
+    <button class="btn" data-act="slotsLoad">📂 遊玩紀錄</button>
+    <button class="btn" data-act="tutorial">🎓 教學</button>
     <button class="btn" data-act="help">📖 說明</button>
     <button class="btn" data-act="settings">⚙️ 設定</button>
   </div>
@@ -198,7 +277,7 @@ img{-webkit-user-drag:none;user-select:none;pointer-events:none}
   <div id="hud">
     <button class="iconbtn" data-act="home" title="回封面">⌂</button>
     <div class="grow">
-      <div id="brBar"><span class="tag" id="brTag">假設 1</span><button data-act="brKeep">✓ 保留</button><button data-act="brDrop">✕ 放棄</button></div>
+      <span class="hlv" id="hudLv"></span>
       <span id="hDiff">簡單</span>
       <span id="hTimeWrap">⏱ <b id="hTime">00:00</b></span>
       <span id="hMisWrap">✗ <b id="hMis">0</b></span>
@@ -208,6 +287,7 @@ img{-webkit-user-drag:none;user-select:none;pointer-events:none}
   <div id="playarea" class="tall">
     <div id="boardwrap"><div id="board"></div></div>
     <div id="side">
+      <div id="hypBar"><div class="hchips" id="hChips"></div><div class="hrow"><span id="hInfo"></span></div><div class="hbtns" id="hBtns"><button data-act="hypHome" id="hHome">↩ 回正式盤面</button><button data-act="hypUp" id="hUp">↑ 回上一層</button><button data-act="hypAdopt" id="hAdopt">✓ 採用</button><button data-act="hypDel" id="hDel">🗑 刪除</button></div></div>
       <div id="noteBar"><span class="nbl" id="nbLabel">這格的<br>候選</span><div class="nbs" id="nbSlots"></div><div class="nbmsg" id="nbMsg"></div></div>
       <div id="tools">
         <button class="tool" data-act="undo"><span class="ic">↶</span>復原</button>
@@ -226,11 +306,13 @@ img{-webkit-user-drag:none;user-select:none;pointer-events:none}
   <h2>暫停中</h2>
   <div class="col">
     <button class="btn primary" data-act="resume">▶ 繼續</button>
+    <button class="btn" data-act="slotsSave" id="btnSave">💾 存檔</button>
+    <button class="btn" data-act="slotsLoad">📂 開啟其他紀錄</button>
     <button class="btn" data-act="settings">⚙️ 設定</button>
     <button class="btn" data-act="help">📖 說明</button>
     <button class="btn" data-act="fillNotes">✎ 幫我列出候選數字（只填還沒寫筆記的空格）</button>
     <button class="btn" data-act="restart">↻ 這題重來</button>
-    <button class="btn" data-act="newgame">🎲 換一題（同難度）</button>
+    <button class="btn" data-act="pickLevel">🎲 換一題（同難度）</button>
     <button class="btn" data-act="home">⌂ 回封面</button>
   </div>
 </div></div>
@@ -258,12 +340,20 @@ img{-webkit-user-drag:none;user-select:none;pointer-events:none}
       <li>每一<b>橫列</b>、每一<b>直行</b>、每個粗線圍起來的<b>九宮格</b>，1～9 都要剛好出現一次。</li>
       <li>每一題只有一個正確答案，靠推理就能解，不需要用猜的。</li>
     </ul>
+    <h3>遊玩紀錄</h3>
+    <ul>
+      <li>封面選難度後可以從 200 題裡選一題，或按「🎲 隨機新題」現場出一題新的。</li>
+      <li>暫停選單的「💾 存檔」可以存到 10 格紀錄之一，存過之後會自動更新那一格。「📂 開啟其他紀錄」可以換玩別的進度，目前這局會先自動存好。</li>
+      <li>封面的「▶ 繼續上一局」永遠是最後玩的那局。</li>
+    </ul>
     <h3>操作</h3>
     <ul>
       <li>點一個空格，再點下面的數字：會先在格子裡寫成<b>候選小字</b>（就像在紙上寫可能的數字），再點一次就劃掉。</li>
       <li>盤面下方的<b>候選欄</b>會放大顯示這格寫了哪些候選；數字鍵也會變成橘色，表示已經列入候選。</li>
       <li>確定答案時，按 <b>✍ 填入</b> 再點數字，才會正式填進去。如果這格只剩一個候選，按 ✍ 填入 就直接填那個。</li>
-      <li><b>🔀 假設</b>：遇到二選一不確定時，按下去開始「試填」。之後填的數字會變成<span style="color:#2e9a57">綠色</span>，第一格會插上🚩。試下去發現矛盾，按「✕ 放棄」整段退回假設前，還可以順手把猜錯的那個候選劃掉；試成功就按「✓ 保留」。假設裡還能再假設（最多 3 層：綠→紫→粉紅）。假設中填錯不算錯誤次數，也不會直接標紅答案，只標出重複，讓你自己發現矛盾。</li>
+      <li><b>🔀 假設</b>：遇到二選一時，按 🔀 再點一格的<b>候選數字</b>（要先寫候選），就會假設那格是這個數字。整個盤面會換成假設的顏色，那格所在的<b>橫列和直行</b>也會特別標色，提醒你從這裡往下推。</li>
+      <li>假設中可以再按 🔀 做下一層（最多 3 層：<span style="color:#2e9a57">綠</span>→<span style="color:#8a4fc4">紫</span>→<span style="color:#d0457f">粉紅</span>）。盤面下方的<b>假設欄</b>會列出所有假設（例如 1-1、2-1、2-2），點一下就能切換；也可以按「↩ 回正式盤面」「↑ 回上一層」，假設會保留著，格子右下角會用虛線框標「3?」提醒這格還有假設沒完成。切回上一層後再按 🔀，就能做同一層的另一個假設。</li>
+      <li>試出矛盾就按「🗑 刪除」，可以順手把猜錯的候選劃掉；確定沒問題就按「✓ 採用」，合併回上一層。假設中填錯不算錯誤次數，也不會直接標紅答案，只標出重複。</li>
       <li><b>💡 提示</b>：告訴你下一步可以填哪裡、為什麼（填錯的格子會先幫你指出來）。不限次數，但會影響星星。</li>
       <li>暫停選單裡可以「幫我列出候選數字」，不想自己寫筆記時使用。筆記不會自動幫你改正，寫錯也是你的計算空間。</li>
       <li><b>↶ 復原</b>：不限次數。<b>⌫ 清除</b>：擦掉選取格的數字或筆記。</li>
@@ -283,15 +373,33 @@ img{-webkit-user-drag:none;user-select:none;pointer-events:none}
   <div style="margin-top:12px;display:flex;gap:10px;justify-content:center"><button class="btn" data-act="replayTut">🎓 重看教學</button><button class="btn primary" data-act="closeHelp">知道了</button></div>
 </div></div>
 
-<!-- 放棄假設 -->
+<!-- 刪除假設 -->
 <div id="drop" class="overlay"><div class="panel">
-  <h2>放棄這個假設？</h2>
+  <h2 id="dropTitle">刪除這個假設？</h2>
   <p id="dropTxt" style="margin:0 0 12px;line-height:1.6"></p>
   <div class="col">
     <button class="btn primary" data-act="dropMark" id="dropMarkBtn"></button>
-    <button class="btn" data-act="dropOnly">只回到假設前</button>
-    <button class="btn" data-act="dropCancel">取消，繼續假設</button>
+    <button class="btn" data-act="dropOnly">只刪除，不劃掉</button>
+    <button class="btn" data-act="dropCancel">取消</button>
   </div>
+</div></div>
+
+<!-- 選題 -->
+<div id="levels" class="overlay"><div class="panel">
+  <h2 id="lvTitle">選題</h2>
+  <div class="lvtop"><button class="btn primary" data-act="lvNextNew">▶ 下一個沒玩過的</button><button class="btn" data-act="lvRandom">🎲 隨機新題</button></div>
+  <div class="lvnote" id="lvNote"></div>
+  <div id="lvGrid"></div>
+  <div style="font-size:12px;color:var(--ink2)">題號越後面，提示數字越少（稍微難一點）。🎲 隨機新題會現場產生一題全新的。</div>
+  <div style="margin-top:10px"><button class="btn" data-act="closeLevels">關閉</button></div>
+</div></div>
+
+<!-- 遊玩紀錄 -->
+<div id="slots" class="overlay"><div class="panel">
+  <h2 id="slotTitle">遊玩紀錄</h2>
+  <div style="font-size:13px;color:var(--ink2)" id="slotHint"></div>
+  <div id="slotList"></div>
+  <div><button class="btn" data-act="closeSlots">關閉</button></div>
 </div></div>
 
 <!-- 出題中 -->
@@ -299,7 +407,7 @@ img{-webkit-user-drag:none;user-select:none;pointer-events:none}
 
 <!-- 結算 -->
 <div id="win" class="overlay"><div class="panel">
-  <img id="winChar" src="assets/images/wuji.png" alt="">
+  <div id="winChar">✓</div>
   <h2 id="winTitle">完成了！</h2>
   <div class="stars" id="winStars"><span>★</span><span>★</span><span>★</span></div>
   <div class="reslist">
@@ -312,15 +420,18 @@ img{-webkit-user-drag:none;user-select:none;pointer-events:none}
     <div class="crit" id="c3"></div>
   </div>
   <div class="menurow">
-    <button class="btn primary" data-act="newgame">🎲 再來一題</button>
+    <button class="btn primary" data-act="nextLevel" id="btnNext">▶ 下一題</button>
+    <button class="btn" data-act="pickLevel">選題</button>
     <button class="btn" data-act="home">⌂ 回封面</button>
   </div>
   <div class="skipnote" id="skipNote">點一下畫面可跳過動畫</div>
 </div></div>
 
 <div id="toast"></div>
+<div id="lvBanner"></div>
 <div id="coach"><div class="ct" id="coachStep"></div><div id="coachTxt"></div><div class="cb"><button class="skip" data-act="tutSkip">跳過教學</button><button class="next" id="coachNext" data-act="tutNext">下一步</button></div></div>
 
+<script src="puzzles.js"></script>
 <script>
 /* =====================================================================
    可調數值（對照表見 數值表.md）
@@ -329,10 +440,10 @@ const CONFIG = {
   // 難度：clues = 盤面提示數字的數量範圍；level = 需要的推理技巧等級
   //   level 1 = 唯一候選 / 唯一位置；2 = 區塊排除、數對；3 = 更進階（解題器解不開，需要更高級技巧）
   diffs: {
-    easy:   { name:'簡單', minClues:38, maxClues:44, minLevel:1, maxLevel:1, char:'didi'  },
-    normal: { name:'普通', minClues:30, maxClues:35, minLevel:1, maxLevel:1, char:'mei'   },
-    hard:   { name:'困難', minClues:24, maxClues:32, minLevel:2, maxLevel:2, char:'wuji'  },
-    expert: { name:'專家', minClues:20, maxClues:30, minLevel:3, maxLevel:3, char:'laoda' },
+    easy:   { name:'簡單', minClues:38, maxClues:44, minLevel:1, maxLevel:1, color:'#4aa865' },
+    normal: { name:'普通', minClues:30, maxClues:35, minLevel:1, maxLevel:1, color:'#2f6fb5' },
+    hard:   { name:'困難', minClues:24, maxClues:32, minLevel:2, maxLevel:2, color:'#e8853d' },
+    expert: { name:'專家', minClues:20, maxClues:30, minLevel:3, maxLevel:3, color:'#c0392b' },
   },
   genBudgetMs: 3000,        // 出題最多花幾毫秒找符合條件的題目，超過就用目前最接近的
   symmetric: true,          // 提示數字是否左右上下對稱（比較好看）
@@ -349,7 +460,8 @@ const CONFIG = {
     countMs: 1200,          // 結算時間數字滾動
     starGapMs: 380,         // 星星一顆顆亮起的間隔
   },
-  maxBranch: 3,             // 假設最多幾層
+  maxBranch: 3,
+  slots: 10,                // 遊玩紀錄格數             // 假設最多幾層
   music: { defaultVol: 45 },
   sfx:   { defaultVol: 70 },
 };
@@ -365,6 +477,8 @@ const settings = Object.assign({ musicOn:true, musicVol:CONFIG.music.defaultVol,
   check:'answer', autoNote:true, same:true, timer:true, anim:1 }, store.get('settings', {}));
 let stats = store.get('stats', {}); // { easy:{played, done, best, stars} }
 function saveSettings(){ store.set('settings', settings); }
+let prog = store.get('prog', {});   // { easy: { 12: {stars, best} } }  題號從 0 起算
+let slots = store.get('slots', null); if (!Array.isArray(slots) || slots.length !== CONFIG.slots) slots = Array.from({length:CONFIG.slots}, (_, k) => (slots && slots[k]) || null);
 
 /* ==================== 音訊（iOS 需第一次觸控後才能出聲） ==================== */
 const BGM = new Audio('assets/audio/bgm.mp3'); BGM.loop = true; BGM.preload = 'auto';
@@ -500,28 +614,37 @@ const $ = id => document.getElementById(id);
 let G = null;          // 目前局：{dk, puz, sol, val, notes, mis, hints, elapsed, history, done}
 let sel = -1, fillArmed = false, paused = false, startT = 0, timerInt = null, busy = null; // busy = 正在播放可跳過的動畫
 const cells = [];
-const BRC = [null, '#2e9a57', '#8a4fc4', '#d0457f'];
+const HC = [null, '#2e9a57', '#8a4fc4', '#d0457f'], HL = [null, '#e1f3e7', '#efe4f9', '#fce1ec'];
+let hypPick = false, delTarget = -1, hypVis = false;
 const A = ms => ms * settings.anim;
 
-function newGame(dk){
-  overlay('gen', true); $('genTxt').textContent = '出題中…（' + CONFIG.diffs[dk].name + '）';
+function newGame(dk, pid, isTut){
+  const fromBank = pid != null && pid >= 0 && typeof PUZZLES !== 'undefined' && PUZZLES[dk] && PUZZLES[dk][pid];
+  if (!fromBank) { overlay('gen', true); $('genTxt').textContent = '出題中…（' + CONFIG.diffs[dk].name + '）'; }
   setTimeout(() => {
-    const r = generate(dk);
-    G = { dk, puz:[...r.puz], sol:[...r.sol], val:[...r.puz], notes:new Array(81).fill(0), mis:0, hints:0, elapsed:0, history:[], done:false, lv:r.lv, layer:new Array(81).fill(0), br:[] };
+    let puz, sol, lv = 0;
+    if (fromBank) { const str = PUZZLES[dk][pid]; puz = [...str.slice(0,81)].map(Number); sol = [...str.slice(81)].map(Number); }
+    else { const r = generate(dk); puz = [...r.puz]; sol = [...r.sol]; lv = r.lv; pid = -1; }
+    G = { dk, pid, slot:null, tut:!!isTut, puz, sol, val:[...puz], notes:new Array(81).fill(0), mis:0, hints:0, elapsed:0, history:[], done:false, lv, layer:new Array(81).fill(0) };
     const s = stats[dk] || (stats[dk] = {played:0, done:0, best:0, stars:0}); s.played++; store.set('stats', stats);
-    overlay('gen', false); startGame();
-  }, 60);
+    overlay('gen', false); startGame(); if (isTut) setTimeout(tutStart, 300);
+  }, fromBank ? 0 : 60);
 }
 function startGame(){
-  if (!G.layer) G.layer = new Array(81).fill(0); if (!G.br) G.br = [];
-  ['pause','win','settings','help','drop'].forEach(o => overlay(o, false));
+  if (!G.layer) G.layer = new Array(81).fill(0); ensureTree(); hypPick = false;
+  ['pause','win','settings','help','drop','levels','slots'].forEach(o => overlay(o, false));
   showScreen('game'); sel = G.val.findIndex(v => !v); fillArmed = false; paused = false;
-  $('game').classList.remove('paused'); $('hDiff').textContent = CONFIG.diffs[G.dk].name;
+  $('game').classList.remove('paused'); $('hDiff').textContent = gameName(G);
   layout(); renderAll(); startT = performance.now() - G.elapsed;
-  if (!store.get('tutDone', false)) setTimeout(tutStart, 300); else { tut = -1; tutShow(); }
+  tut = -1; tutShow();
   clearInterval(timerInt); timerInt = setInterval(tick, 250); save();
 }
-function save(){ if (G && !G.done) store.set('game', G); else store.del('game'); }
+const gameName = g => CONFIG.diffs[g.dk].name + (g.tut ? '・教學' : g.pid >= 0 ? ` #${g.pid+1}` : '・隨機');
+function save(){
+  if (!G) return;
+  if (!G.done) store.set('game', G); else store.del('game');
+  if (G.slot != null) { slots[G.slot] = Object.assign(JSON.parse(JSON.stringify(G)), { savedAt: Date.now() }); store.set('slots', slots); }
+}
 function tick(){ if (!G || paused || G.done || !$('game').classList.contains('on')) return; G.elapsed = performance.now() - startT; $('hTime').textContent = fmt(G.elapsed); }
 let lastSave = 0; setInterval(() => { if (G && !G.done && !paused) save(); }, 5000);
 const fmt = ms => { const s = Math.floor(ms/1000), h = Math.floor(s/3600), m = Math.floor(s/60)%60, ss = s%60;
@@ -559,27 +682,38 @@ function renderCell(i){
   c.classList.toggle('peer', sel >= 0 && i !== sel && PEERS[sel].includes(i));
   c.classList.toggle('same', settings.same && sv && v === sv && i !== sel);
   c.classList.toggle('bad', isBad(i));
+  for (let L=1;L<=3;L++) c.classList.toggle('hr'+L, HR[i] === L); c.classList.toggle('hcur', HR[i] > 0 && HCUR[i]);
   for (let L=1;L<=3;L++) c.classList.toggle('L'+L, !!v && !G.puz[i] && G.layer[i] === L);
   let html;
-  if (v) html = glyph(v, 'v') + (G.br.some(b => b.origin === i) ? '<span class="flag">🚩</span>' : '');
+  if (v) html = glyph(v, 'v') + (FLAG[i] ? `<span class="flag" style="background:${HC[FLAG[i]]}">${FLAG[i]}</span>` : '');
   else if (G.notes[i]) { html = '<div class="nt">'; for (let d=1;d<=9;d++) html += `<span class="${settings.same && sv===d && (G.notes[i]&(1<<d)) ? 'samen':''}">${G.notes[i] & (1<<d) ? d : ''}</span>`; html += '</div>'; }
   else html = '';
+  if (!v && PEND[i]) html += `<span class="pend" style="--pc2:${HC[curDepth()+1]}">${PEND[i]}?</span>`;
   if (c._h !== html) { c.innerHTML = html; c._h = html; }
 }
+const HR = new Int8Array(81), HCUR = new Uint8Array(81), FLAG = new Int8Array(81), PEND = new Array(81).fill('');
 function renderAll(){
   if (!G) return;
+  HR.fill(0); HCUR.fill(0); FLAG.fill(0); PEND.fill('');
+  childrenOf(G.cur).forEach(n => { PEND[n.cell] = PEND[n.cell] ? PEND[n.cell] + '/' + n.d : String(n.d); });
+  pathOf(G.cur).forEach(n => { if (!n.depth) return; const r = n.cell/9|0, c = n.cell%9, isCur = n.id === G.cur;
+    for (let k=0;k<9;k++) for (const j of [r*9+k, k*9+c]) { HR[j] = n.depth; HCUR[j] = isCur ? 1 : 0; }
+    FLAG[n.cell] = n.depth; });
   for (let i=0;i<81;i++) renderCell(i);
   const cnt = new Array(10).fill(0); G.val.forEach((v,i) => { if (v && v === G.sol[i]) cnt[v]++; });
   document.querySelectorAll('.num').forEach(n => { const d = +n.dataset.d, left = 9 - cnt[d];
     const html = d + `<span class="cnt">${left>0?left:'✓'}</span>`;
     if (n._h !== html) { n.innerHTML = html; n._h = html; }
-    n.classList.toggle('done', left <= 0); n.classList.toggle('cand', sel >= 0 && !G.val[sel] && !!(G.notes[sel] & (1<<d))); });
+    n.classList.toggle('done', left <= 0 && !hypPick); n.classList.toggle('cand', sel >= 0 && !G.val[sel] && !!(G.notes[sel] & (1<<d))); });
   $('pad').classList.toggle('pen', fillArmed); $('tFill').classList.toggle('on', fillArmed);
   renderNoteBar();
   $('hintCnt').textContent = G.hints;
-  const bl = G.br.length; $('brBar').classList.toggle('on', bl > 0);
-  $('board').classList.remove('br1','br2','br3'); if (bl) { $('board').classList.add('br'+bl); $('brTag').textContent = '假設 ' + bl; $('brTag').style.background = BRC[bl]; }
-  $('tBranch').classList.toggle('on', bl > 0); $('tHint').style.opacity = bl ? .4 : 1;
+  const bl = curDepth();
+  $('board').classList.remove('hyp1','hyp2','hyp3'); if (bl) $('board').classList.add('hyp'+bl);
+  $('tBranch').classList.toggle('on', hypPick); $('tHint').style.opacity = bl ? .4 : 1;
+  const pc = HC[Math.min(3, bl+1)]; $('pad').style.setProperty('--pc', pc); $('noteBar').style.setProperty('--pc', pc);
+  $('pad').classList.toggle('pick', hypPick); $('noteBar').classList.toggle('pick', hypPick);
+  renderHypBar();
   $('hMis').textContent = G.mis; $('hMisWrap').style.display = settings.check === 'off' ? 'none' : '';
   $('hTimeWrap').style.display = settings.timer ? '' : 'none'; $('hTime').textContent = fmt(G.elapsed);
 }
@@ -589,7 +723,7 @@ function layout(){
   pa.classList.toggle('wide', wide); pa.classList.toggle('tall', !wide);
   let size;
   if (wide) { size = Math.min(H - hud - 24, W - 24 - 260 - 18, 640); $('side').style.width = Math.min(300, Math.max(220, size*0.48)) + 'px'; }
-  else { const sideH = (Math.min(W-24, 560) - 40) / 9 * 1.15 + 66 + 22 + 50; size = Math.min(W - 24, H - hud - sideH - 16, 600); }
+  else { const sideH = (Math.min(W-24, 560) - 40) / 9 * 1.15 + 66 + 22 + 50 + (hypVis ? 108 : 0); size = Math.min(W - 24, H - hud - sideH - 16, 600); }
   const cs = Math.max(26, Math.floor((size - 6 - 8 - 4) / 9));
   document.documentElement.style.setProperty('--cs', cs + 'px');
   if (!wide) $('side').style.width = Math.max(cs*9 + 14, Math.min(W - 24, 420)) + 'px';
@@ -601,6 +735,7 @@ function pushHist(idxs){ G.history.push(idxs.map(i => [i, G.val[i], G.notes[i], 
 function input(d, fromEl, direct){
   if (!G || paused || G.done || sel < 0 || G.puz[sel]) { if (G && sel >= 0 && G.puz[sel]) cells[sel].classList.remove('shake'), void cells[sel].offsetWidth, cells[sel].classList.add('shake'); return; }
   const i = sel;
+  if (hypPick) { if (G.val[i]) { toast('這格已經填了。請選一個還沒填、有寫候選的空格。'); return; } createHyp(i, d); return; }
   if (fillArmed || direct) {
     fillArmed = false;
     if (G.val[i] === d) { renderAll(); return; }
@@ -612,6 +747,7 @@ function input(d, fromEl, direct){
 function fillAct(){
   if (!G || paused || G.done || busy) return;
   if (sel < 0 || G.puz[sel]) { toast('先點一個空格。'); return; }
+  hypPick = false;
   if (fillArmed) { fillArmed = false; SFX.tap(); renderAll(); return; }
   const m = G.notes[sel];
   if (!G.val[sel] && POP[m] === 1) { placeValue(sel, bitsOf(m)[0], $('tFill'), false); return; }
@@ -640,8 +776,7 @@ function placeValue(i, d, fromEl, byHint){
   fadeNotes.forEach(p => { const sp = cells[p].querySelectorAll('.nt span')[d-1]; if (sp) sp.classList.add('gone'); });
   const commit = () => {
     G.val[i] = d; G.notes[i] = 0; fadeNotes.forEach(p => G.notes[p] &= ~(1<<d));
-    const bl = G.br.length; G.layer[i] = bl;
-    if (bl && G.br[bl-1].origin < 0) { G.br[bl-1].origin = i; G.br[bl-1].d = d; }
+    const bl = curDepth(); G.layer[i] = bl;
     const wrong = d !== G.sol[i];
     if (wrong && !byHint && !bl && tut < 0) G.mis++;
     renderAll(); const el = cells[i].firstElementChild || cells[i]; el.classList.remove('pop'); void el.offsetWidth; el.classList.add('pop');
@@ -669,7 +804,7 @@ function flyTo(fromEl, toEl, d, ms, done, blocking){
 function skipBusy(){ if (busy) { const f = busy; busy = null; f(); return true; } return false; }
 function unitDone(u){ return UNITS[u].every(j => G.val[j] === G.sol[j]); }
 function checkUnits(i){
-  if (G.val.every((v,k) => v === G.sol[k])) { G.br = []; G.layer.fill(0); win(i); return; }
+  if (G.val.every((v,k) => v === G.sol[k])) { G.nodes = null; ensureTree(); G.layer.fill(0); hypPick = false; layout(); win(i); return; }
   const done = CU[i].filter(unitDone); if (!done.length) return;
   SFX.unit(); const step = A(CONFIG.anim.waveStepMs);
   const set = new Map();
@@ -684,59 +819,124 @@ function erase(){
   pushHist([sel]); G.val[sel] = 0; G.notes[sel] = 0; SFX.erase(); renderAll(); save();
 }
 function undo(){
-  if (!G || paused || G.done || !G.history.length) return;
-  const top = G.br[G.br.length-1];
-  if (top && G.history.length <= top.hist) { toast('這是假設的起點。要離開假設請按上方「✕ 放棄」或「✓ 保留」。'); return; }
+  if (!G || paused || G.done) return;
+  if (!G.history.length) { if (curDepth()) toast('這是這個假設的起點，前面沒有可以復原的步驟。要離開假設，請在下方假設欄切換或按 🗑 刪除。'); return; }
   const h = G.history.pop(); h.forEach(([i, v, n, L]) => { G.val[i] = v; G.notes[i] = n; G.layer[i] = L || 0; });
-  if (top && top.origin >= 0 && !G.val[top.origin]) top.origin = -1; sel = h[0][0]; SFX.undo(); renderAll(); save();
+  sel = h[0][0]; SFX.undo(); renderAll(); save();
 }
 function toast(html, ms){ const t = $('toast'); t.innerHTML = html; t.classList.add('on'); clearTimeout(t._t); t._t = setTimeout(() => t.classList.remove('on'), ms || 3200); }
 
-/* ==================== 假設（試填分支） ==================== */
-function startBranch(){
+/* ==================== 假設樹（試填分支） ==================== */
+// G.nodes：{id:{id, parent, depth, k, cell, d, val, notes, layer, history}}，0 = 正式盤面；G.cur = 目前所在的節點
+// 目前節點的盤面放在 G.val / G.notes / G.layer / G.history，其他節點存快照
+function ensureTree(){ if (!G.nodes) { G.nodes = {0:{id:0, parent:null, depth:0, k:0}}; G.cur = 0; G.nextId = 1; } delete G.br; }
+const curDepth = () => (G && G.nodes) ? G.nodes[G.cur].depth : 0;
+const childrenOf = id => Object.values(G.nodes).filter(n => n.parent === id).sort((a,b) => a.k - b.k);
+function pathOf(id){ const p = []; if (!G || !G.nodes) return p; while (id != null) { const n = G.nodes[id]; p.unshift(n); id = n.parent; } return p; }
+const nodeName = n => n.depth ? `${n.depth}-${n.k}` : '正式';
+const rcName = i => `第 ${(i/9|0)+1} 列第 ${i%9+1} 行`;
+function stash(){ const n = G.nodes[G.cur]; n.val = [...G.val]; n.notes = [...G.notes]; n.layer = [...G.layer]; n.history = G.history; }
+function loadNode(id){ const n = G.nodes[id]; G.val = [...n.val]; G.notes = [...n.notes]; G.layer = [...n.layer]; G.history = n.history || []; G.cur = id; }
+function removeSubtree(id){ childrenOf(id).forEach(c => removeSubtree(c.id)); delete G.nodes[id]; }
+function hypAct(){
   if (!G || paused || G.done || busy) return;
-  if (G.br.length >= CONFIG.maxBranch) { toast(`最多只能假設 ${CONFIG.maxBranch} 層喔。`); return; }
-  G.br.push({ val:[...G.val], notes:[...G.notes], layer:[...G.layer], hist:G.history.length, mis:G.mis, origin:-1, d:0 });
-  SFX.hint(); renderAll(); save();
-  toast(`🔀 開始假設第 ${G.br.length} 層：接下來填的數字會用<b style="color:${BRC[G.br.length]}">這個顏色</b>，第一格插🚩。不對就按「✕ 放棄」整段退回。`, 4200);
+  if (hypPick) { hypPick = false; SFX.tap(); renderAll(); return; }
+  if (curDepth() >= CONFIG.maxBranch) { toast(`最多只能假設 ${CONFIG.maxBranch} 層。可以在下方假設欄切回上一層，做另一個假設。`); return; }
+  hypPick = true; fillArmed = false; SFX.tap(); renderAll(); tutEvent('pick');
+  toast('🔀 選一個空格，再點它的<b>候選數字</b>做假設（再按一次 🔀 取消）。', 3500);
 }
-function keepBranch(){
-  if (!G || !G.br.length || busy) return;
-  const bl = G.br.length; G.br.pop();
-  for (let i=0;i<81;i++) if (G.layer[i] === bl) { G.layer[i] = bl - 1;
-    if (bl === 1 && G.val[i] && G.val[i] !== G.sol[i]) G.mis++; }
-  SFX.unit(); renderAll(); save();
-  toast(bl === 1 ? '✓ 假設保留，變成正式答案。' : `✓ 保留到第 ${bl-1} 層假設。`);
+function createHyp(i, d){
+  if (!(G.notes[i] & (1<<d))) { toast(G.notes[i] ? `${label(d)} 不在這格的候選裡，請點有標色的候選數字。` : '這格還沒寫候選。先寫候選，再從候選裡選一個做假設。'); return; }
+  hypPick = false; stash();
+  const par = G.nodes[G.cur], depth = par.depth + 1, k = Math.max(0, ...childrenOf(par.id).map(n => n.k)) + 1, id = G.nextId++;
+  G.nodes[id] = { id, parent:par.id, depth, k, cell:i, d, val:[...G.val], notes:[...G.notes], layer:[...G.layer], history:[] };
+  loadNode(id);
+  G.val[i] = d; G.notes[i] = 0; G.layer[i] = depth;
+  if (settings.autoNote) for (const p of PEERS[i]) G.notes[p] &= ~(1<<d);
+  sel = i; SFX.hint(); layout(); renderAll();
+  const el = cells[i].firstElementChild; if (el && settings.anim) { el.classList.remove('pop'); void el.offsetWidth; el.classList.add('pop'); }
+  save(); tutEvent('hyp');
+  lvBanner(depth === 1 ? '進入假設' : `進入第 ${depth} 層假設`, `假設 ${nodeName(G.nodes[id])}：這格 = ${d}`, depth);
+  if (!settings.anim) toast(`進入假設 <b style="color:${HL[depth]}">${nodeName(G.nodes[id])}</b>：這格 = ${label(d)}，先處理標色的橫列和直行`, 2200);
+  if (d === G.sol[i]) checkUnits(i);
 }
-function askDrop(){
-  if (!G || !G.br.length || busy) return;
-  const top = G.br[G.br.length-1];
-  if (top.origin >= 0) { const r = (top.origin/9|0)+1, c = top.origin%9+1;
-    $('dropTxt').innerHTML = `這次假設是從 🚩 第 ${r} 列第 ${c} 行填 ${label(top.d)} 開始的。`;
-    $('dropMarkBtn').innerHTML = `放棄，並把 🚩 那格的 ${top.d} 從候選劃掉`; $('dropMarkBtn').style.display = '';
-  } else { $('dropTxt').textContent = '這層假設還沒填任何數字。'; $('dropMarkBtn').style.display = 'none'; }
+function switchNode(id){
+  if (!G.nodes[id] || id === G.cur || busy) return;
+  stash(); loadNode(id); fillArmed = false; hypPick = false;
+  if (G.nodes[id].depth) sel = G.nodes[id].cell;
+  SFX.tap(); layout(); renderAll(); save();
+  const n = G.nodes[id];
+  if (n.depth) lvBanner(`假設 ${nodeName(n)}`, `第 ${n.depth} 層・${rcName(n.cell)} = ${n.d}`, n.depth);
+  else lvBanner('回到正式盤面', childrenOf(0).length ? '假設都還保留著，隨時可以切回去' : '', 0);
+}
+function adoptHyp(){
+  const n = G.nodes[G.cur]; if (!n || !n.depth || busy) return;
+  const par = G.nodes[n.parent];
+  if (par.depth === 0) for (let i=0;i<81;i++) if (G.layer[i] > 0 && G.val[i] && G.val[i] !== G.sol[i]) G.mis++;
+  childrenOf(par.id).filter(c => c.id !== n.id).forEach(c => removeSubtree(c.id));   // 同層其他假設的前提已經改變，一起移除
+  const kids = childrenOf(n.id);
+  const shift = c => { c.depth--; c.layer = c.layer.map(L => L > par.depth ? L - 1 : L); childrenOf(c.id).forEach(shift); };
+  kids.forEach(c => { c.parent = par.id; shift(c); });
+  par.val = [...G.val]; par.notes = [...G.notes]; par.layer = G.layer.map(L => L >= n.depth ? par.depth : L); par.history = [];
+  delete G.nodes[n.id]; loadNode(par.id);
+  SFX.unit(); layout(); renderAll(); save();
+  toast(par.depth ? `✓ 已採用，合併到假設 ${nodeName(par)}。` : '✓ 已採用，假設變成正式答案。');
+}
+function askDel(){
+  const n = G.nodes[G.cur]; if (!n || !n.depth || busy) return;
+  delTarget = n.id; const sub = Object.values(G.nodes).filter(x => pathOf(x.id).some(y => y.id === n.id)).length - 1;
+  $('dropTitle').textContent = `刪除假設 ${nodeName(n)}？`;
+  $('dropTxt').innerHTML = `這個假設是：${rcName(n.cell)}是 ${label(n.d)}。${sub ? `<br>它下面的 ${sub} 個假設也會一起刪除。` : ''}<br>刪除後回到${n.parent ? '假設 ' + nodeName(G.nodes[n.parent]) : '正式盤面'}。`;
+  $('dropMarkBtn').innerHTML = `刪除，並把那格的候選 ${n.d} 劃掉`;
   overlay('drop', true);
 }
-function dropBranch(mark){
+function delHyp(strike){
   overlay('drop', false);
-  const bl = G.br.length, top = G.br[bl-1];
-  const gone = []; for (let i=0;i<81;i++) if (G.layer[i] === bl && G.val[i]) gone.push(i);
+  const n = G.nodes[delTarget]; if (!n) return;
+  const par = G.nodes[n.parent], depth = n.depth;
+  const gone = []; for (let i=0;i<81;i++) if (G.layer[i] >= depth && G.val[i]) gone.push(i);
   const fin = () => {
     busy = null; gone.forEach(i => { const el = cells[i].firstElementChild; if (el) el.classList.remove('brOut'); });
-    G.br.pop(); G.val = top.val; G.notes = top.notes; G.layer = top.layer; G.history.length = top.hist; G.mis = top.mis;
-    if (mark && top.origin >= 0) {
-      if (!G.notes[top.origin]) { // 沒寫筆記：先列出候選再劃掉
-        const cand = candidatesOf(G.val); G.notes[top.origin] = cand[top.origin]; }
-      G.notes[top.origin] &= ~(1<<top.d);
-      sel = top.origin;
-    }
-    SFX.undo(); renderAll(); save();
-    toast(mark && top.origin >= 0 ? `已退回假設前，🚩 那格劃掉了 ${label(top.d)}。` : '已退回假設前。');
+    stash(); removeSubtree(n.id); loadNode(par.id);
+    if (strike && !G.val[n.cell]) { if (!G.notes[n.cell]) G.notes[n.cell] = candidatesOf(G.val)[n.cell]; G.notes[n.cell] &= ~(1<<n.d); }
+    sel = n.cell; SFX.undo(); layout(); renderAll(); save();
+    toast(`已刪除假設 ${nodeName(n)}${strike ? `，${rcName(n.cell)}劃掉了候選 ${label(n.d)}` : ''}。`);
   };
   if (!settings.anim || !gone.length) { fin(); return; }
   gone.forEach((i, k) => setTimeout(() => { const el = cells[i].firstElementChild; if (el && busy === fin) el.classList.add('brOut'); }, k * A(30)));
   busy = fin; setTimeout(() => { if (busy === fin) fin(); }, gone.length * A(30) + A(380));
 }
+const lvDots = dep => [1,2,3].map(k => `<i class="${k <= dep ? 'on' : ''}"></i>`).join('');
+function lvBanner(title, sub, dep){
+  if (!settings.anim) return;
+  const b = $('lvBanner'); b.style.background = dep ? HC[dep] : '#8a7560';
+  b.innerHTML = `<b>${title}</b><span>${sub}</span>${dep ? `<div class="dots">${lvDots(dep)}</div>` : ''}`;
+  b.style.setProperty('--lvms', A(1400) + 'ms'); b.classList.remove('show'); void b.offsetWidth; b.classList.add('show');
+}
+function renderHypBar(){
+  const many = Object.keys(G.nodes).length > 1, vis = many || hypPick, dep = curDepth();
+  $('hudLv').classList.toggle('on', dep > 0); $('hDiff').style.display = dep > 0 ? 'none' : '';
+  if (dep) { $('hudLv').style.background = HC[dep]; $('hudLv').innerHTML = `假設 第${dep}層 ${lvDots(dep)}`; }
+  $('hypBar').classList.toggle('on', vis);
+  if (vis !== hypVis) { hypVis = vis; layout(); }
+  if (!vis) return;
+  const path = pathOf(G.cur), inPath = new Set(path.map(n => n.id));
+  const chip = n => `<button class="hchip${inPath.has(n.id) ? ' path' : ''}${n.id === G.cur ? ' cur' : ''}" data-node="${n.id}" style="--hc:${HC[n.depth] || '#8a7560'};--hl:${HL[n.depth] || '#f1e5cf'}">${n.depth ? `${nodeName(n)}・${n.d}` : '正式'}</button>`;
+  let html = chip(G.nodes[0]);
+  for (let dep=1; dep<=3 && path[dep-1]; dep++) { const ks = childrenOf(path[dep-1].id); if (!ks.length) break; html += '<span class="hsep">›</span>' + ks.map(chip).join(''); }
+  if ($('hChips')._h !== html) { $('hChips').innerHTML = html; $('hChips')._h = html; const c = $('hChips').querySelector('.cur'); if (c) c.scrollIntoView({block:'nearest', inline:'nearest'}); }
+  const n = G.nodes[G.cur];
+  let info;
+  if (hypPick) info = `<b style="color:${HC[Math.min(3, n.depth+1)]}">選一格，再點它的候選數字</b>做${n.depth ? '第 ' + (n.depth+1) + ' 層' : ''}假設`;
+  else if (n.depth) info = `<b style="color:${HC[n.depth]}">假設 ${nodeName(n)}</b>：${rcName(n.cell)} = ${n.d}`;
+  else if (childrenOf(0).length) info = '正式盤面・有虛線框「?」的格子還有假設沒完成，點上面可以切換';
+  else info = '正式盤面・點上面的假設可以切換';
+  $('hInfo').innerHTML = (n.depth && !hypPick ? `<span class="hlv" style="background:${HC[n.depth]}">第 ${n.depth} 層 ${lvDots(n.depth)}</span> ` : '') + info;
+  const show = n.depth && !hypPick;
+  $('hBtns').style.display = show ? '' : 'none';
+  $('hUp').style.display = n.depth >= 2 ? '' : 'none';
+}
+$('hChips').addEventListener('click', e => { const b = e.target.closest('[data-node]'); if (b) switchNode(+b.dataset.node); });
 function fillNotes(){
   if (!G || G.done) return;
   const cand = candidatesOf(G.val), idx = []; for (let i=0;i<81;i++) if (!G.val[i] && !G.notes[i]) idx.push(i);
@@ -752,14 +952,14 @@ const TUT = [
   { txt:'寫上去了！盤面下方的<b>候選欄</b>會放大顯示這格的候選，數字鍵也會變<b style="color:#b85a14">橘色</b>。再點一次同一個數字就劃掉。', focus:()=>$('noteBar') },
   { txt:'想好答案時，按 <b style="color:#2f6fb5">✍ 填入</b>，再點數字，才會正式填進去。（如果這格只剩一個候選，按 ✍ 填入 就直接填。）<br>現在按 ✍ 填入 試試。', focus:()=>$('tFill'), wait:'arm' },
   { txt:'數字鍵變藍色了，代表下一個點的數字會<b>正式填入</b>。點一個數字吧（填錯沒關係，⌫ 清除、↶ 復原都可以改）。', focus:()=>$('pad'), wait:'place' },
-  { txt:'<b>🔀 假設</b>：遇到二選一不確定時按它，之後填的數字會變<b style="color:#2e9a57">綠色</b>。試出矛盾就按上方「✕ 放棄」，整段退回假設前；試對了按「✓ 保留」。', focus:()=>$('tBranch') },
+  { txt:'<b>🔀 假設</b>：遇到二選一時，按 🔀 再點一格的<b>候選數字</b>，就會假設那格是這個數字，盤面換成<b style="color:#2e9a57">假設的顏色</b>。下方會出現假設欄，可以切換、採用或刪除，最多 3 層。', focus:()=>$('tBranch') },
   { txt:'<b>💡 提示</b>：卡住時告訴你下一格填什麼，還會說明為什麼。<br>右上 <b>❚❚</b> 可以暫停、調音量、看說明。開始玩吧！', focus:()=>$('tHint'), last:true },
 ];
 let tut = -1;
 function tutStart(){ tut = 0; tutShow(); }
 function tutShow(){
   document.querySelectorAll('.coachFocus').forEach(e => e.classList.remove('coachFocus'));
-  if (tut < 0 || tut >= TUT.length) { $('coach').classList.remove('on'); tut = -1; store.set('tutDone', true); return; }
+  if (tut < 0 || tut >= TUT.length) { $('coach').classList.remove('on'); tut = -1; return; }
   const S = TUT[tut], f = S.focus(); f.classList.add('coachFocus');
   $('coachStep').textContent = `教學 ${tut+1} / ${TUT.length}`; $('coachTxt').innerHTML = S.txt;
   $('coachNext').style.display = S.wait ? 'none' : ''; $('coachNext').textContent = S.last ? '開始玩' : '下一步';
@@ -776,7 +976,7 @@ function tutEvent(ev){ if (tut >= 0 && TUT[tut].wait === ev) { tut++; tutShow();
 const unitName = u => u < 9 ? `第 ${u+1} 橫列` : u < 18 ? `第 ${u-8} 直行` : '這個九宮格';
 function hint(){
   if (!G || paused || G.done || busy) return;
-  if (G.br.length) { toast('假設中不能用提示，先「✓ 保留」或「✕ 放棄」假設。'); return; }
+  if (curDepth()) { toast('假設中不能用提示。先在下方假設欄切回「正式」，或採用、刪除假設。'); return; }
   G.hints++; SFX.hint();
   // 1) 先指出填錯的格子
   const wrong = G.val.findIndex((v,i) => v && !G.puz[i] && v !== G.sol[i]);
@@ -813,6 +1013,10 @@ function win(lastI){
   const stars = 1 + (G.mis <= CONFIG.stars.maxMistakes ? 1 : 0) + (G.hints <= CONFIG.stars.maxHints ? 1 : 0);
   const isBest = !s.best || G.elapsed < s.best;
   s.done++; s.stars += stars; if (isBest) s.best = G.elapsed; store.set('stats', stats);
+  if (G.pid >= 0 && !G.tut) { const pd = prog[G.dk] || (prog[G.dk] = {}), r = pd[G.pid] || {};
+    pd[G.pid] = { stars: Math.max(r.stars||0, stars), best: r.best ? Math.min(r.best, G.elapsed) : G.elapsed }; store.set('prog', prog); }
+  save();
+  $('btnNext').textContent = G.pid >= 0 && G.pid < 199 ? `▶ 下一題（#${G.pid+2}）` : '🎲 再來一題';
   const step = A(CONFIG.anim.winWaveStepMs), timers = [];
   const later = (fn, ms) => timers.push(setTimeout(fn, ms));
   let maxD = 0;
@@ -821,7 +1025,7 @@ function win(lastI){
   SFX.win();
   // 結算面板
   const D = CONFIG.diffs[G.dk];
-  $('winChar').src = `assets/images/${D.char}.png`;
+  const wc = $('winChar'); wc.style.animation = 'none'; void wc.offsetWidth; wc.style.animation = '';
   $('winTitle').textContent = ['完成了！','漂亮！','太厲害了！'][stars-1];
   $('rDiff').textContent = D.name; $('rTime').textContent = '00:00'; $('rMis').textContent = G.mis; $('rHint').textContent = G.hints;
   $('rBest').classList.remove('on');
@@ -870,9 +1074,9 @@ document.addEventListener('visibilitychange', () => { if (document.hidden) { pau
 function renderMenu(){
   const saved = store.get('game', null);
   $('btnContinue').style.display = saved && !saved.done ? '' : 'none';
-  if (saved) $('btnContinue').textContent = `▶ 繼續上一局（${CONFIG.diffs[saved.dk].name}・${fmt(saved.elapsed)}）`;
+  if (saved) $('btnContinue').textContent = `▶ 繼續上一局（${gameName(saved)}・${fmt(saved.elapsed)}）`;
   $('diffs').innerHTML = DKEYS.map(k => { const D = CONFIG.diffs[k], s = stats[k] || {};
-    return `<button class="diff" data-dk="${k}"><img src="assets/images/${D.char}.png" alt=""><span><b>${D.name}</b><small>完成 ${s.done||0} 題<br>最快 ${s.best ? fmt(s.best) : '—'}</small></span></button>`; }).join('');
+    return `<button class="diff" data-dk="${k}"><span class="pips" style="background:${D.color}">${[0,1,2,3].map(j => `<i class="${j <= DKEYS.indexOf(k) ? 'on' : ''}"></i>`).join('')}</span><span><b>${D.name}</b><small>完成 ${Object.keys(prog[k]||{}).length} / ${(typeof PUZZLES !== 'undefined' && PUZZLES[k]) ? PUZZLES[k].length : 0}<br>最快 ${s.best ? fmt(s.best) : '—'}</small></span></button>`; }).join('');
   syncSeg();
 }
 function syncSeg(){
@@ -901,17 +1105,76 @@ const ACTS = {
   settings(){ syncSeg(); overlay('settings', true); }, closeSettings(){ overlay('settings', false); },
   pause: pauseGame, resume: resumeGame,
   home(){ tut = -1; $('coach').classList.remove('on'); document.querySelectorAll('.coachFocus').forEach(e => e.classList.remove('coachFocus')); if (G && !G.done) { G.elapsed = paused ? G.elapsed : performance.now() - startT; save(); } paused = false; ['pause','win','settings','help'].forEach(o => overlay(o, false)); showScreen('menu'); },
-  restart(){ if (!G) return; G.val = [...G.puz]; G.notes = new Array(81).fill(0); G.mis = 0; G.hints = 0; G.elapsed = 0; G.history = []; G.done = false; G.br = []; G.layer = new Array(81).fill(0); startGame(); },
-  newgame(){ if (!G) return; const dk = G.dk; overlay('win', false); overlay('pause', false); paused = false; $('game').classList.remove('paused'); newGame(dk); },
+  restart(){ if (!G) return; G.val = [...G.puz]; G.notes = new Array(81).fill(0); G.mis = 0; G.hints = 0; G.elapsed = 0; G.history = []; G.done = false; G.nodes = null; G.layer = new Array(81).fill(0); startGame(); },
+  pickLevel(){ if (!G) return; openLevels(G.dk); },
+  nextLevel(){ if (!G) return; if (G.pid >= 0 && G.pid < 199) startFromLevels(G.dk, G.pid + 1); else { overlay('win', false); newGame(G.dk); } },
+  lvNextNew(){ startFromLevels(lvDk, firstUnplayed(lvDk, 0)); },
+  lvRandom(){ ['levels','pause','win'].forEach(o => overlay(o, false)); paused = false; $('game').classList.remove('paused'); if (G && !G.done) save(); newGame(lvDk, -1); },
+  closeLevels(){ overlay('levels', false); },
+  slotsSave(){ openSlots('save'); }, slotsLoad(){ openSlots('load'); }, closeSlots(){ overlay('slots', false); },
+  tutorial(){ newGame('easy', 0, true); },
   undo, erase, hint, fillNotes,
-  branch: startBranch, brKeep: keepBranch, brDrop: askDrop,
+  branch: hypAct, hypAdopt: adoptHyp, hypDel: askDel,
+  hypHome(){ switchNode(0); }, hypUp(){ const n = G.nodes[G.cur]; if (n.parent != null) switchNode(n.parent); },
   tutNext(){ SFX.tap(); tut++; tutShow(); }, tutSkip(){ tut = -1; tutShow(); },
-  replayTut(){ overlay('help', false); if ($('game').classList.contains('on')) { if (paused) resumeGame(); tutStart(); } else { store.set('tutDone', false); toast('下次開始遊戲時會重新播放教學。'); } },
-  dropMark(){ dropBranch(true); }, dropOnly(){ dropBranch(false); }, dropCancel(){ overlay('drop', false); },
+  replayTut(){ overlay('help', false); if ($('game').classList.contains('on')) { if (paused) resumeGame(); tutStart(); } else newGame('easy', 0, true); },
+  dropMark(){ delHyp(true); }, dropOnly(){ delHyp(false); }, dropCancel(){ overlay('drop', false); },
   fill: fillAct,
 };
-document.addEventListener('click', e => { const b = e.target.closest('[data-act]'); if (!b) return; const a = ACTS[b.dataset.act]; if (a) { if (!['undo','erase','hint','fill','branch','brKeep'].includes(b.dataset.act)) SFX.tap(); a(); } });
-$('diffs').addEventListener('click', e => { const b = e.target.closest('[data-dk]'); if (!b) return; SFX.tap(); newGame(b.dataset.dk); });
+document.addEventListener('click', e => { const b = e.target.closest('[data-act]'); if (!b) return; const a = ACTS[b.dataset.act]; if (a) { if (!['undo','erase','hint','fill','branch','hypAdopt'].includes(b.dataset.act)) SFX.tap(); a(); } });
+$('diffs').addEventListener('click', e => { const b = e.target.closest('[data-dk]'); if (!b) return; SFX.tap(); openLevels(b.dataset.dk); });
+let lvDk = 'easy';
+function openLevels(dk){
+  lvDk = dk; const D = CONFIG.diffs[dk], pd = prog[dk] || {}, n = (typeof PUZZLES !== 'undefined' && PUZZLES[dk]) ? PUZZLES[dk].length : 0;
+  const savedP = new Set(slots.filter(x => x && x.dk === dk && !x.done && x.pid >= 0).map(x => x.pid));
+  $('lvTitle').textContent = `${D.name}・${n} 題（完成 ${Object.keys(pd).length}）`;
+  let html = ''; for (let k=0;k<n;k++){ const r = pd[k];
+    html += `<button class="lv${r ? ' done' : ''}" data-pid="${k}">${k+1}<small>${r ? '★'.repeat(r.stars) : ''}</small>${savedP.has(k) ? '<span class="sv">💾</span>' : ''}</button>`; }
+  $('lvGrid').innerHTML = html;
+  const inGame = $('game').classList.contains('on') && G && !G.done && !G.tut;
+  $('lvNote').textContent = inGame && G.slot == null ? '目前這局還沒存到紀錄，換題後只會留在「繼續上一局」。想留著可以先按 💾 存檔。' : '';
+  overlay('levels', true);
+}
+$('lvGrid').addEventListener('click', e => { const b = e.target.closest('[data-pid]'); if (!b) return; SFX.tap(); startFromLevels(lvDk, +b.dataset.pid); });
+function startFromLevels(dk, pid){ ['levels','pause','win','slots'].forEach(o => overlay(o, false)); paused = false; $('game').classList.remove('paused'); if (G && !G.done) save(); newGame(dk, pid); }
+function firstUnplayed(dk, from){ const pd = prog[dk] || {}, n = PUZZLES[dk].length; for (let k=0;k<n;k++){ const i = ((from||0) + k) % n; if (!pd[i]) return i; } return ((from||0)) % n; }
+
+/* ==================== 遊玩紀錄（10 格） ==================== */
+let slotMode = 'load', slotArm = -1, delArm = -1;
+function openSlots(mode){ slotMode = mode; slotArm = -1; delArm = -1; renderSlots(); overlay('slots', true); }
+function renderSlots(){
+  const saving = slotMode === 'save';
+  $('slotTitle').textContent = saving ? '💾 存到哪一格？' : '📂 遊玩紀錄';
+  $('slotHint').textContent = saving ? (G && G.slot != null ? `這局已經在紀錄 ${G.slot+1}，會自動更新。也可以另存到別格。` : '存了之後，這局玩的過程會自動更新到那一格。') : '點一筆紀錄就能接著玩。';
+  const d2 = t => { const d = new Date(t); return `${d.getMonth()+1}/${d.getDate()} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`; };
+  $('slotList').innerHTML = slots.map((g, k) => {
+    if (!g) return `<button class="slot empty${slotArm===k?' arm':''}" data-slot="${k}"><span class="sn">${k+1}</span><span class="si">${saving ? '空白・點這裡存檔' : '空白'}</span></button>`;
+    const blanks = g.puz.filter(v => !v).length, filled = g.val.filter((v,i) => v && !g.puz[i]).length;
+    const hyp = g.nodes && Object.keys(g.nodes).length > 1 ? '・🔀 有假設' : '';
+    const st = g.done ? '✓ 已完成' : `進度 ${Math.round(filled/blanks*100)}%${hyp}`;
+    const cur = G && G.slot === k && $('game').classList.contains('on');
+    return `<div class="slot${cur?' cur':''}${slotArm===k?' arm':''}" data-slot="${k}" role="button"><span class="sn">${k+1}</span><span class="si"><b>${gameName(g)}</b>・⏱ ${fmt(g.elapsed)}${cur ? '（目前這局）' : ''}<br><small>${st}・${d2(g.savedAt||Date.now())}</small>${slotArm===k ? '<br><b style="color:var(--bad)">再點一次覆蓋這格</b>' : ''}</span><button class="del${delArm===k?' arm':''}" data-del="${k}">${delArm===k ? '確定刪除？' : '🗑'}</button></div>`;
+  }).join('');
+}
+$('slotList').addEventListener('click', e => {
+  const del = e.target.closest('[data-del]');
+  if (del) { const k = +del.dataset.del; e.stopPropagation();
+    if (delArm === k) { slots[k] = null; store.set('slots', slots); if (G && G.slot === k) G.slot = null; delArm = -1; SFX.erase(); } else { delArm = k; SFX.tap(); }
+    renderSlots(); return; }
+  const row = e.target.closest('[data-slot]'); if (!row) return; const k = +row.dataset.slot; delArm = -1;
+  if (slotMode === 'save') {
+    if (!G || G.done) return;
+    if (slots[k] && G.slot !== k && slotArm !== k) { slotArm = k; SFX.tap(); renderSlots(); return; }
+    if (!paused) G.elapsed = performance.now() - startT;
+    G.slot = k; save(); SFX.unit(); overlay('slots', false); toast(`💾 已存到紀錄 ${k+1}，之後會自動更新。`);
+  } else {
+    const g = slots[k]; if (!g) return;
+    if (g.done) { toast('這筆已經完成了。可以從選題重新玩這一題。'); return; }
+    if (G && !G.done && $('game').classList.contains('on')) { if (!paused) G.elapsed = performance.now() - startT; save(); }
+    G = JSON.parse(JSON.stringify(g)); G.slot = k; SFX.tap(); paused = false; $('game').classList.remove('paused');
+    ['slots','pause'].forEach(o => overlay(o, false)); startGame(); toast(`📂 開啟紀錄 ${k+1}：${gameName(G)}`);
+  }
+});
 $('btnContinue').addEventListener('click', () => { const g = store.get('game', null); if (!g) return; G = g; startGame(); });
 
 // 任何觸控：解鎖音訊；動畫中點一下跳過
@@ -931,7 +1194,7 @@ document.addEventListener('keydown', e => {
   if (k === 'Backspace' || k === 'Delete' || k === '0') { erase(); e.preventDefault(); return; }
   if (k === 'z' || k === 'Z') { undo(); return; }
   if (k === 'h' || k === 'H') { hint(); return; }
-  if (k === 'b' || k === 'B') { startBranch(); return; }
+  if (k === 'b' || k === 'B') { hypAct(); return; }
   const mv = {ArrowUp:-9, ArrowDown:9, ArrowLeft:-1, ArrowRight:1}[k];
   if (mv) { e.preventDefault(); if (sel < 0) sel = 0; else { const r = sel/9|0, c = sel%9;
     if (mv === -9) sel = ((r+8)%9)*9 + c; if (mv === 9) sel = ((r+1)%9)*9 + c; if (mv === -1) sel = r*9 + (c+8)%9; if (mv === 1) sel = r*9 + (c+1)%9; }
