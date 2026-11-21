@@ -279,8 +279,6 @@ img{-webkit-user-drag:none;user-select:none;pointer-events:none}
     <div class="grow">
       <span class="hlv" id="hudLv"></span>
       <span id="hDiff">簡單</span>
-      <span id="hTimeWrap">⏱ <b id="hTime">00:00</b></span>
-      <span id="hMisWrap">✗ <b id="hMis">0</b></span>
     </div>
     <button class="iconbtn" data-act="pause" title="暫停 (Esc)">❚❚</button>
   </div>
@@ -325,7 +323,6 @@ img{-webkit-user-drag:none;user-select:none;pointer-events:none}
   <div class="setrow"><span>錯誤提示</span><span class="seg" id="sCheck"><button data-v="answer">填錯就紅</button><button data-v="conflict">只標重複</button><button data-v="off">關</button></span></div>
   <div class="setrow"><span>填入後自動擦掉相關筆記</span><button class="tog" id="sAutoNote"></button></div>
   <div class="setrow"><span>標示相同數字</span><button class="tog" id="sSame"></button></div>
-  <div class="setrow"><span>顯示計時器</span><button class="tog" id="sTimer"></button></div>
   <div class="setrow"><span>動畫</span><span class="seg" id="sAnim"><button data-v="1">正常</button><button data-v="0.5">快</button><button data-v="0">關</button></span></div>
   <div style="margin-top:12px"><button class="btn primary" data-act="closeSettings">完成</button></div>
 </div></div>
@@ -353,8 +350,8 @@ img{-webkit-user-drag:none;user-select:none;pointer-events:none}
       <li>確定答案時，按 <b>✍ 填入</b> 再點數字，才會正式填進去。如果這格只剩一個候選，按 ✍ 填入 就直接填那個。</li>
       <li><b>🔀 假設</b>：遇到二選一時，按 🔀 再點一格的<b>候選數字</b>（要先寫候選），就會假設那格是這個數字。整個盤面會換成假設的顏色，那格所在的<b>橫列和直行</b>也會特別標色，提醒你從這裡往下推。</li>
       <li>假設中可以再按 🔀 做下一層（最多 3 層：<span style="color:#2e9a57">綠</span>→<span style="color:#8a4fc4">紫</span>→<span style="color:#d0457f">粉紅</span>）。盤面下方的<b>假設欄</b>會列出所有假設（例如 1-1、2-1、2-2），點一下就能切換；也可以按「↩ 回正式盤面」「↑ 回上一層」，假設會保留著，格子右下角會用虛線框標「3?」提醒這格還有假設沒完成。切回上一層後再按 🔀，就能做同一層的另一個假設。</li>
-      <li>試出矛盾就按「🗑 刪除」，可以順手把猜錯的候選劃掉；確定沒問題就按「✓ 採用」，合併回上一層。假設中填錯不算錯誤次數，也不會直接標紅答案，只標出重複。</li>
-      <li><b>💡 提示</b>：告訴你下一步可以填哪裡、為什麼（填錯的格子會先幫你指出來）。不限次數，但會影響星星。</li>
+      <li>試出矛盾就按「🗑 刪除」，可以順手把猜錯的候選劃掉；確定沒問題就按「✓ 採用」，合併回上一層。假設中不會直接標紅答案，只標出重複。</li>
+      <li><b>💡 提示</b>：告訴你下一步可以填哪裡、為什麼（填錯的格子會先幫你指出來）。不限次數。</li>
       <li>暫停選單裡可以「幫我列出候選數字」，不想自己寫筆記時使用。筆記不會自動幫你改正，寫錯也是你的計算空間。</li>
       <li><b>↶ 復原</b>：不限次數。<b>⌫ 清除</b>：擦掉選取格的數字或筆記。</li>
       <li>動畫播放中點一下畫面，可以直接跳到結果。</li>
@@ -367,8 +364,6 @@ img{-webkit-user-drag:none;user-select:none;pointer-events:none}
       <li><b>困難</b>：需要用筆記排除（例如「這兩格一定是 3 和 7」）。</li>
       <li><b>專家</b>：需要更進階的推理技巧。</li>
     </ul>
-    <h3>星星</h3>
-    <ul id="helpStars"></ul>
   </div>
   <div style="margin-top:12px;display:flex;gap:10px;justify-content:center"><button class="btn" data-act="replayTut">🎓 重看教學</button><button class="btn primary" data-act="closeHelp">知道了</button></div>
 </div></div>
@@ -409,16 +404,7 @@ img{-webkit-user-drag:none;user-select:none;pointer-events:none}
 <div id="win" class="overlay"><div class="panel">
   <div id="winChar">✓</div>
   <h2 id="winTitle">完成了！</h2>
-  <div class="stars" id="winStars"><span>★</span><span>★</span><span>★</span></div>
-  <div class="reslist">
-    <div><span>難度</span><b id="rDiff"></b></div>
-    <div><span>時間</span><b><span id="rTime">00:00</span> <span class="newbest" id="rBest">新紀錄！</span></b></div>
-    <div><span>填錯次數</span><b id="rMis">0</b></div>
-    <div><span>用了提示</span><b id="rHint">0</b></div>
-    <div class="crit" id="c1">★ 完成這一題</div>
-    <div class="crit" id="c2"></div>
-    <div class="crit" id="c3"></div>
-  </div>
+  <div id="winSub" style="color:var(--ink2);margin:-4px 0 14px"></div>
   <div class="menurow">
     <button class="btn primary" data-act="nextLevel" id="btnNext">▶ 下一題</button>
     <button class="btn" data-act="pickLevel">選題</button>
@@ -447,18 +433,12 @@ const CONFIG = {
   },
   genBudgetMs: 3000,        // 出題最多花幾毫秒找符合條件的題目，超過就用目前最接近的
   symmetric: true,          // 提示數字是否左右上下對稱（比較好看）
-  stars: {                  // ★1 完成；★2 填錯次數 ≤ maxMistakes；★3 用提示次數 ≤ maxHints
-    maxMistakes: 3,
-    maxHints: 0,
-  },
   anim: {                   // 毫秒（設定裡的「動畫：快」會乘 0.5，「關」= 0）
     flyMs: 200,             // 數字從按鈕飛到格子
     hintFocusMs: 900,       // 提示時先標出相關格子多久
     hintFlyMs: 500,         // 提示數字飛入
     waveStepMs: 40,         // 完成一列／行／宮時，每格亮起的間隔
     winWaveStepMs: 28,      // 全部完成時整盤波浪的間隔
-    countMs: 1200,          // 結算時間數字滾動
-    starGapMs: 380,         // 星星一顆顆亮起的間隔
   },
   maxBranch: 3,
   slots: 10,                // 遊玩紀錄格數             // 假設最多幾層
@@ -645,7 +625,7 @@ function save(){
   if (!G.done) store.set('game', G); else store.del('game');
   if (G.slot != null) { slots[G.slot] = Object.assign(JSON.parse(JSON.stringify(G)), { savedAt: Date.now() }); store.set('slots', slots); }
 }
-function tick(){ if (!G || paused || G.done || !$('game').classList.contains('on')) return; G.elapsed = performance.now() - startT; $('hTime').textContent = fmt(G.elapsed); }
+function tick(){ if (!G || paused || G.done || !$('game').classList.contains('on')) return; G.elapsed = performance.now() - startT; }
 let lastSave = 0; setInterval(() => { if (G && !G.done && !paused) save(); }, 5000);
 const fmt = ms => { const s = Math.floor(ms/1000), h = Math.floor(s/3600), m = Math.floor(s/60)%60, ss = s%60;
   return (h ? h + ':' + String(m).padStart(2,'0') : String(m).padStart(2,'0')) + ':' + String(ss).padStart(2,'0'); };
@@ -714,8 +694,6 @@ function renderAll(){
   const pc = HC[Math.min(3, bl+1)]; $('pad').style.setProperty('--pc', pc); $('noteBar').style.setProperty('--pc', pc);
   $('pad').classList.toggle('pick', hypPick); $('noteBar').classList.toggle('pick', hypPick);
   renderHypBar();
-  $('hMis').textContent = G.mis; $('hMisWrap').style.display = settings.check === 'off' ? 'none' : '';
-  $('hTimeWrap').style.display = settings.timer ? '' : 'none'; $('hTime').textContent = fmt(G.elapsed);
 }
 function layout(){
   const W = window.innerWidth, H = window.innerHeight, hud = 54;
@@ -1009,52 +987,28 @@ function hint(){
 /* ==================== 完成 ==================== */
 function win(lastI){
   G.done = true; G.elapsed = performance.now() - startT; sel = -1; renderAll(); store.del('game');
-  const s = stats[G.dk] || (stats[G.dk] = {played:1, done:0, best:0, stars:0});
-  const stars = 1 + (G.mis <= CONFIG.stars.maxMistakes ? 1 : 0) + (G.hints <= CONFIG.stars.maxHints ? 1 : 0);
-  const isBest = !s.best || G.elapsed < s.best;
-  s.done++; s.stars += stars; if (isBest) s.best = G.elapsed; store.set('stats', stats);
-  if (G.pid >= 0 && !G.tut) { const pd = prog[G.dk] || (prog[G.dk] = {}), r = pd[G.pid] || {};
-    pd[G.pid] = { stars: Math.max(r.stars||0, stars), best: r.best ? Math.min(r.best, G.elapsed) : G.elapsed }; store.set('prog', prog); }
+  const s = stats[G.dk] || (stats[G.dk] = {played:1, done:0}); s.done++; store.set('stats', stats);
+  if (G.pid >= 0 && !G.tut) { const pd = prog[G.dk] || (prog[G.dk] = {}); pd[G.pid] = { done: true }; store.set('prog', prog); }
   save();
   $('btnNext').textContent = G.pid >= 0 && G.pid < 199 ? `▶ 下一題（#${G.pid+2}）` : '🎲 再來一題';
-  const step = A(CONFIG.anim.winWaveStepMs), timers = [];
-  const later = (fn, ms) => timers.push(setTimeout(fn, ms));
+  const step = A(CONFIG.anim.winWaveStepMs);
   let maxD = 0;
   if (settings.anim) for (let j=0;j<81;j++){ const dist = Math.abs((j/9|0)-(lastI/9|0)) + Math.abs(j%9 - lastI%9); maxD = Math.max(maxD, dist);
     const c = cells[j]; c.classList.remove('wave'); void c.offsetWidth; c.style.animationDelay = (dist*step) + 'ms'; c.classList.add('wave'); }
   SFX.win();
-  // 結算面板
-  const D = CONFIG.diffs[G.dk];
-  const wc = $('winChar'); wc.style.animation = 'none'; void wc.offsetWidth; wc.style.animation = '';
-  $('winTitle').textContent = ['完成了！','漂亮！','太厲害了！'][stars-1];
-  $('rDiff').textContent = D.name; $('rTime').textContent = '00:00'; $('rMis').textContent = G.mis; $('rHint').textContent = G.hints;
-  $('rBest').classList.remove('on');
-  const stEls = [...$('winStars').children]; stEls.forEach(e => e.classList.remove('lit'));
-  $('c2').textContent = `★ 填錯 ${CONFIG.stars.maxMistakes} 次以內`; $('c3').textContent = CONFIG.stars.maxHints ? `★ 提示 ${CONFIG.stars.maxHints} 次以內` : '★ 沒有用提示';
-  ['c1','c2','c3'].forEach(c => $(c).classList.remove('ok'));
-  const crit = [true, G.mis <= CONFIG.stars.maxMistakes, G.hints <= CONFIG.stars.maxHints];
+  $('winTitle').textContent = '過關！';
+  $('winSub').textContent = gameName(G) + ' 完成';
+  let timer = 0;
   const finalState = () => {
-    timers.forEach(clearTimeout); busy = null;
+    clearTimeout(timer); busy = null;
     cells.forEach(c => { c.classList.remove('wave'); c.style.animationDelay = ''; });
-    overlay('win', true); $('rTime').textContent = fmt(G.elapsed); if (isBest) $('rBest').classList.add('on');
-    crit.forEach((ok, k) => { if (ok) $('c'+(k+1)).classList.add('ok'); });
-    stEls.forEach((e, k) => e.classList.toggle('lit', k < stars)); $('skipNote').style.visibility = 'hidden';
-    confetti();
+    const wc = $('winChar'); wc.style.animation = 'none'; void wc.offsetWidth; wc.style.animation = '';
+    overlay('win', true); $('skipNote').style.visibility = 'hidden'; confetti();
   };
   busy = finalState;
   if (!settings.anim) { finalState(); return; }
-  const t1 = maxD*step + 600;
-  later(() => { overlay('win', true); $('skipNote').style.visibility = 'visible'; confetti();
-    // 時間滾動
-    const t0 = performance.now(), dur = A(CONFIG.anim.countMs);
-    const roll = () => { if (busy !== finalState) return; const k = Math.min(1, (performance.now()-t0)/dur);
-      $('rTime').textContent = fmt(G.elapsed * (1 - Math.pow(1-k, 3))); if (k < 1) { if (Math.random() < .3) SFX.tick(); requestAnimationFrame(roll); } };
-    roll();
-    later(() => { if (isBest) $('rBest').classList.add('on'); }, dur);
-    let n = 0;
-    crit.forEach((ok, k) => later(() => { if (ok) { $('c'+(k+1)).classList.add('ok'); stEls[n].classList.add('lit'); SFX.star(n); n++; } }, dur + 200 + k*A(CONFIG.anim.starGapMs)));
-    later(() => { busy = null; $('skipNote').style.visibility = 'hidden'; }, dur + 300 + 3*A(CONFIG.anim.starGapMs));
-  }, t1);
+  $('skipNote').style.visibility = 'visible';
+  timer = setTimeout(finalState, maxD*step + 600);
 }
 function confetti(){
   if (!settings.anim) return;
@@ -1074,9 +1028,9 @@ document.addEventListener('visibilitychange', () => { if (document.hidden) { pau
 function renderMenu(){
   const saved = store.get('game', null);
   $('btnContinue').style.display = saved && !saved.done ? '' : 'none';
-  if (saved) $('btnContinue').textContent = `▶ 繼續上一局（${gameName(saved)}・${fmt(saved.elapsed)}）`;
+  if (saved) $('btnContinue').textContent = `▶ 繼續上一局（${gameName(saved)}）`;
   $('diffs').innerHTML = DKEYS.map(k => { const D = CONFIG.diffs[k], s = stats[k] || {};
-    return `<button class="diff" data-dk="${k}"><span class="pips" style="background:${D.color}">${[0,1,2,3].map(j => `<i class="${j <= DKEYS.indexOf(k) ? 'on' : ''}"></i>`).join('')}</span><span><b>${D.name}</b><small>完成 ${Object.keys(prog[k]||{}).length} / ${(typeof PUZZLES !== 'undefined' && PUZZLES[k]) ? PUZZLES[k].length : 0}<br>最快 ${s.best ? fmt(s.best) : '—'}</small></span></button>`; }).join('');
+    return `<button class="diff" data-dk="${k}"><span class="pips" style="background:${D.color}">${[0,1,2,3].map(j => `<i class="${j <= DKEYS.indexOf(k) ? 'on' : ''}"></i>`).join('')}</span><span><b>${D.name}</b><small>完成 ${Object.keys(prog[k]||{}).length} / ${(typeof PUZZLES !== 'undefined' && PUZZLES[k]) ? PUZZLES[k].length : 0}</small></span></button>`; }).join('');
   syncSeg();
 }
 function syncSeg(){
@@ -1084,19 +1038,18 @@ function syncSeg(){
   document.querySelectorAll('#sAnim button').forEach(b => b.classList.toggle('on', +b.dataset.v === settings.anim));
   $('sMusic').classList.toggle('on', settings.musicOn); $('sSfx').classList.toggle('on', settings.sfxOn);
   $('sMusicVol').value = settings.musicVol; $('sSfxVol').value = settings.sfxVol;
-  $('sAutoNote').classList.toggle('on', settings.autoNote); $('sSame').classList.toggle('on', settings.same); $('sTimer').classList.toggle('on', settings.timer);
+  $('sAutoNote').classList.toggle('on', settings.autoNote); $('sSame').classList.toggle('on', settings.same);
 }
 function changed(){ saveSettings(); syncSeg(); applyVolumes(); if (G) renderAll(); }
 document.querySelectorAll('#sCheck button').forEach(b => b.addEventListener('click', () => { settings.check = b.dataset.v; changed(); }));
 document.querySelectorAll('#sAnim button').forEach(b => b.addEventListener('click', () => { settings.anim = +b.dataset.v; changed(); }));
-[['sMusic','musicOn'],['sSfx','sfxOn'],['sAutoNote','autoNote'],['sSame','same'],['sTimer','timer']].forEach(([id,k]) =>
+[['sMusic','musicOn'],['sSfx','sfxOn'],['sAutoNote','autoNote'],['sSame','same']].forEach(([id,k]) =>
   $(id).addEventListener('click', () => { settings[k] = !settings[k]; changed(); SFX.tap(); }));
 $('sMusicVol').addEventListener('input', e => { settings.musicVol = +e.target.value; if (settings.musicVol > 0) settings.musicOn = true; changed(); });
 $('sSfxVol').addEventListener('input', e => { settings.sfxVol = +e.target.value; if (settings.sfxVol > 0) settings.sfxOn = true; changed(); });
 $('sSfxVol').addEventListener('change', () => SFX.place(5));
 
 function renderLegend(){
-  $('helpStars').innerHTML = `<li>★ 完成題目</li><li>★ 填錯 ${CONFIG.stars.maxMistakes} 次以內（「錯誤提示」關掉時也會偷偷算）</li><li>★ ${CONFIG.stars.maxHints ? '提示 ' + CONFIG.stars.maxHints + ' 次以內' : '沒有用提示'}</li>`;
 }
 
 let helpFrom = null;
@@ -1129,7 +1082,7 @@ function openLevels(dk){
   const savedP = new Set(slots.filter(x => x && x.dk === dk && !x.done && x.pid >= 0).map(x => x.pid));
   $('lvTitle').textContent = `${D.name}・${n} 題（完成 ${Object.keys(pd).length}）`;
   let html = ''; for (let k=0;k<n;k++){ const r = pd[k];
-    html += `<button class="lv${r ? ' done' : ''}" data-pid="${k}">${k+1}<small>${r ? '★'.repeat(r.stars) : ''}</small>${savedP.has(k) ? '<span class="sv">💾</span>' : ''}</button>`; }
+    html += `<button class="lv${r ? ' done' : ''}" data-pid="${k}">${k+1}<small style="color:var(--ok)">${r ? '✓' : ''}</small>${savedP.has(k) ? '<span class="sv">💾</span>' : ''}</button>`; }
   $('lvGrid').innerHTML = html;
   const inGame = $('game').classList.contains('on') && G && !G.done && !G.tut;
   $('lvNote').textContent = inGame && G.slot == null ? '目前這局還沒存到紀錄，換題後只會留在「繼續上一局」。想留著可以先按 💾 存檔。' : '';
@@ -1153,7 +1106,7 @@ function renderSlots(){
     const hyp = g.nodes && Object.keys(g.nodes).length > 1 ? '・🔀 有假設' : '';
     const st = g.done ? '✓ 已完成' : `進度 ${Math.round(filled/blanks*100)}%${hyp}`;
     const cur = G && G.slot === k && $('game').classList.contains('on');
-    return `<div class="slot${cur?' cur':''}${slotArm===k?' arm':''}" data-slot="${k}" role="button"><span class="sn">${k+1}</span><span class="si"><b>${gameName(g)}</b>・⏱ ${fmt(g.elapsed)}${cur ? '（目前這局）' : ''}<br><small>${st}・${d2(g.savedAt||Date.now())}</small>${slotArm===k ? '<br><b style="color:var(--bad)">再點一次覆蓋這格</b>' : ''}</span><button class="del${delArm===k?' arm':''}" data-del="${k}">${delArm===k ? '確定刪除？' : '🗑'}</button></div>`;
+    return `<div class="slot${cur?' cur':''}${slotArm===k?' arm':''}" data-slot="${k}" role="button"><span class="sn">${k+1}</span><span class="si"><b>${gameName(g)}</b>${cur ? '（目前這局）' : ''}<br><small>${st}・${d2(g.savedAt||Date.now())}</small>${slotArm===k ? '<br><b style="color:var(--bad)">再點一次覆蓋這格</b>' : ''}</span><button class="del${delArm===k?' arm':''}" data-del="${k}">${delArm===k ? '確定刪除？' : '🗑'}</button></div>`;
   }).join('');
 }
 $('slotList').addEventListener('click', e => {
