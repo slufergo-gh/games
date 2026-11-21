@@ -106,7 +106,20 @@ img{-webkit-user-drag:none;user-select:none;pointer-events:none}
 #playarea.wide .num{aspect-ratio:1/1;font-size:34px}
 .num .cnt{position:absolute;right:4px;bottom:2px;font-size:10px;color:var(--ink2);font-weight:400}
 .num.done{opacity:.3}
-.num.notes{color:var(--note);font-size:20px}
+.num.cand{background:#ffe3b8;color:#b85a14;box-shadow:inset 0 0 0 2px var(--accent)}
+#pad.pen .num{color:#fff;background:var(--user)}
+#pad.pen .num .cnt{color:#dbe8f7}
+#pad.pen .num.cand{background:#1f4f86;box-shadow:inset 0 0 0 3px #ffd28a}
+.tool.fill{color:var(--user)}.tool.fill .ic{color:var(--user)}
+.tool.fill.on{background:var(--user);color:#fff}.tool.fill.on .ic{color:#fff}
+#noteBar{display:flex;align-items:center;gap:8px;background:var(--panel);border-radius:14px;padding:5px 8px;box-shadow:0 2px 8px rgba(90,60,30,.1);min-height:40px}
+#noteBar .nbl{font-size:12px;color:var(--ink2);white-space:nowrap;width:4.5em;line-height:1.25}
+#noteBar .nbs{flex:1;display:grid;grid-template-columns:repeat(9,1fr);gap:3px}
+#noteBar .nbs span{display:flex;align-items:center;justify-content:center;height:28px;border-radius:8px;font-size:15px;color:#d5c7b0;border:1px dashed #e6d9c3}
+#noteBar .nbs span.on{background:#ffe3b8;color:#b85a14;border:2px solid var(--accent);font-weight:bold}
+#noteBar.filled .nbs{display:none}
+#noteBar .nbmsg{flex:1;font-size:14px;display:none}
+#noteBar.filled .nbmsg{display:block}
 
 /* 飛行數字 */
 .fly{position:fixed;z-index:50;pointer-events:none;display:flex;align-items:center;justify-content:center;
@@ -195,12 +208,13 @@ img{-webkit-user-drag:none;user-select:none;pointer-events:none}
   <div id="playarea" class="tall">
     <div id="boardwrap"><div id="board"></div></div>
     <div id="side">
+      <div id="noteBar"><span class="nbl" id="nbLabel">這格的<br>候選</span><div class="nbs" id="nbSlots"></div><div class="nbmsg" id="nbMsg"></div></div>
       <div id="tools">
         <button class="tool" data-act="undo"><span class="ic">↶</span>復原</button>
         <button class="tool" data-act="erase"><span class="ic">⌫</span>清除</button>
-        <button class="tool" data-act="notes" id="tNotes"><span class="ic">✎</span>筆記</button>
         <button class="tool" data-act="branch" id="tBranch"><span class="ic">🔀</span>假設</button>
         <button class="tool" data-act="hint" id="tHint"><span class="ic">💡</span>提示<span class="badge" id="hintCnt">0</span></button>
+        <button class="tool fill" data-act="fill" id="tFill"><span class="ic">✍</span>填入</button>
       </div>
       <div id="pad"></div>
     </div>
@@ -246,14 +260,15 @@ img{-webkit-user-drag:none;user-select:none;pointer-events:none}
     </ul>
     <h3>操作</h3>
     <ul>
-      <li>點一個空格，再點下面的數字填進去；再點一次同一個數字就會擦掉。</li>
-      <li><b>✎ 筆記</b>：打開後點數字會變成格子裡的小字，用來記「可能是哪幾個」。</li>
+      <li>點一個空格，再點下面的數字：會先在格子裡寫成<b>候選小字</b>（就像在紙上寫可能的數字），再點一次就劃掉。</li>
+      <li>盤面下方的<b>候選欄</b>會放大顯示這格寫了哪些候選；數字鍵也會變成橘色，表示已經列入候選。</li>
+      <li>確定答案時，按 <b>✍ 填入</b> 再點數字，才會正式填進去。如果這格只剩一個候選，按 ✍ 填入 就直接填那個。</li>
       <li><b>🔀 假設</b>：遇到二選一不確定時，按下去開始「試填」。之後填的數字會變成<span style="color:#2e9a57">綠色</span>，第一格會插上🚩。試下去發現矛盾，按「✕ 放棄」整段退回假設前，還可以順手把猜錯的那個候選劃掉；試成功就按「✓ 保留」。假設裡還能再假設（最多 3 層：綠→紫→粉紅）。假設中填錯不算錯誤次數，也不會直接標紅答案，只標出重複，讓你自己發現矛盾。</li>
       <li><b>💡 提示</b>：告訴你下一步可以填哪裡、為什麼（填錯的格子會先幫你指出來）。不限次數，但會影響星星。</li>
       <li>暫停選單裡可以「幫我列出候選數字」，不想自己寫筆記時使用。筆記不會自動幫你改正，寫錯也是你的計算空間。</li>
       <li><b>↶ 復原</b>：不限次數。<b>⌫ 清除</b>：擦掉選取格的數字或筆記。</li>
       <li>動畫播放中點一下畫面，可以直接跳到結果。</li>
-      <li>電腦鍵盤：<kbd>1</kbd>～<kbd>9</kbd> 填入、方向鍵移動、<kbd>Backspace</kbd> 清除、<kbd>N</kbd> 筆記、<kbd>Z</kbd> 復原、<kbd>H</kbd> 提示、<kbd>B</kbd> 假設、<kbd>Esc</kbd> 暫停。</li>
+      <li>電腦鍵盤：<kbd>1</kbd>～<kbd>9</kbd> 寫候選、<kbd>Shift</kbd>＋數字 或 <kbd>F</kbd> 填入、方向鍵移動、<kbd>Backspace</kbd> 清除、<kbd>Z</kbd> 復原、<kbd>H</kbd> 提示、<kbd>B</kbd> 假設、<kbd>Esc</kbd> 暫停。</li>
     </ul>
     <h3>難度</h3>
     <ul>
@@ -483,7 +498,7 @@ function generate(dk){
 /* ==================== 遊戲狀态 ==================== */
 const $ = id => document.getElementById(id);
 let G = null;          // 目前局：{dk, puz, sol, val, notes, mis, hints, elapsed, history, done}
-let sel = -1, notesMode = false, paused = false, startT = 0, timerInt = null, busy = null; // busy = 正在播放可跳過的動畫
+let sel = -1, fillArmed = false, paused = false, startT = 0, timerInt = null, busy = null; // busy = 正在播放可跳過的動畫
 const cells = [];
 const BRC = [null, '#2e9a57', '#8a4fc4', '#d0457f'];
 const A = ms => ms * settings.anim;
@@ -500,7 +515,7 @@ function newGame(dk){
 function startGame(){
   if (!G.layer) G.layer = new Array(81).fill(0); if (!G.br) G.br = [];
   ['pause','win','settings','help','drop'].forEach(o => overlay(o, false));
-  showScreen('game'); sel = G.val.findIndex(v => !v); notesMode = false; paused = false;
+  showScreen('game'); sel = G.val.findIndex(v => !v); fillArmed = false; paused = false;
   $('game').classList.remove('paused'); $('hDiff').textContent = CONFIG.diffs[G.dk].name;
   layout(); renderAll(); startT = performance.now() - G.elapsed;
   if (!store.get('tutDone', false)) setTimeout(tutStart, 300); else { tut = -1; tutShow(); }
@@ -558,8 +573,9 @@ function renderAll(){
   document.querySelectorAll('.num').forEach(n => { const d = +n.dataset.d, left = 9 - cnt[d];
     const html = d + `<span class="cnt">${left>0?left:'✓'}</span>`;
     if (n._h !== html) { n.innerHTML = html; n._h = html; }
-    n.classList.toggle('done', left <= 0); n.classList.toggle('notes', notesMode); });
-  $('tNotes').classList.toggle('on', notesMode);
+    n.classList.toggle('done', left <= 0); n.classList.toggle('cand', sel >= 0 && !G.val[sel] && !!(G.notes[sel] & (1<<d))); });
+  $('pad').classList.toggle('pen', fillArmed); $('tFill').classList.toggle('on', fillArmed);
+  renderNoteBar();
   $('hintCnt').textContent = G.hints;
   const bl = G.br.length; $('brBar').classList.toggle('on', bl > 0);
   $('board').classList.remove('br1','br2','br3'); if (bl) { $('board').classList.add('br'+bl); $('brTag').textContent = '假設 ' + bl; $('brTag').style.background = BRC[bl]; }
@@ -573,7 +589,7 @@ function layout(){
   pa.classList.toggle('wide', wide); pa.classList.toggle('tall', !wide);
   let size;
   if (wide) { size = Math.min(H - hud - 24, W - 24 - 260 - 18, 640); $('side').style.width = Math.min(300, Math.max(220, size*0.48)) + 'px'; }
-  else { const sideH = (Math.min(W-24, 560) - 40) / 9 * 1.15 + 66 + 22; size = Math.min(W - 24, H - hud - sideH - 16, 600); }
+  else { const sideH = (Math.min(W-24, 560) - 40) / 9 * 1.15 + 66 + 22 + 50; size = Math.min(W - 24, H - hud - sideH - 16, 600); }
   const cs = Math.max(26, Math.floor((size - 6 - 8 - 4) / 9));
   document.documentElement.style.setProperty('--cs', cs + 'px');
   if (!wide) $('side').style.width = Math.max(cs*9 + 14, Math.min(W - 24, 420)) + 'px';
@@ -582,15 +598,39 @@ window.addEventListener('resize', () => { if ($('game').classList.contains('on')
 
 /* ==================== 操作 ==================== */
 function pushHist(idxs){ G.history.push(idxs.map(i => [i, G.val[i], G.notes[i], G.layer[i]])); if (G.history.length > 500) G.history.shift(); }
-function input(d, fromEl){
+function input(d, fromEl, direct){
   if (!G || paused || G.done || sel < 0 || G.puz[sel]) { if (G && sel >= 0 && G.puz[sel]) cells[sel].classList.remove('shake'), void cells[sel].offsetWidth, cells[sel].classList.add('shake'); return; }
   const i = sel;
-  if (notesMode) {
-    if (G.val[i]) return;
-    pushHist([i]); G.notes[i] ^= (1<<d); SFX.note(); renderAll(); save(); return;
+  if (fillArmed || direct) {
+    fillArmed = false;
+    if (G.val[i] === d) { renderAll(); return; }
+    placeValue(i, d, fromEl, false); return;
   }
-  if (G.val[i] === d) { pushHist([i]); G.val[i] = 0; SFX.erase(); renderAll(); save(); return; }
-  placeValue(i, d, fromEl, false);
+  if (G.val[i]) { toast(`這格已經填了 ${label(G.val[i])}。要改的話先按 ⌫ 清除。`); return; }
+  pushHist([i]); G.notes[i] ^= (1<<d); SFX.note(); renderAll(); save(); tutEvent('note');
+}
+function fillAct(){
+  if (!G || paused || G.done || busy) return;
+  if (sel < 0 || G.puz[sel]) { toast('先點一個空格。'); return; }
+  if (fillArmed) { fillArmed = false; SFX.tap(); renderAll(); return; }
+  const m = G.notes[sel];
+  if (!G.val[sel] && POP[m] === 1) { placeValue(sel, bitsOf(m)[0], $('tFill'), false); return; }
+  fillArmed = true; SFX.tap(); renderAll(); tutEvent('arm');
+  toast(G.val[sel] ? '點一個數字，改填這格的答案。' : '點一個數字，正式填入這格（再按一次 ✍ 取消）。', 2200);
+}
+function renderNoteBar(){
+  const nb = $('noteBar'); if (!nb) return;
+  const slots = $('nbSlots'); if (!slots.children.length) for (let d=1;d<=9;d++){ const sp = document.createElement('span'); sp.textContent = d;
+    sp.addEventListener('pointerdown', e => { e.preventDefault(); if (skipBusy()) return; if (fillArmed) fillArmed = false; input(d, null); }); slots.appendChild(sp); }
+  let msg = '', lab = '這格的<br>候選';
+  if (sel < 0) msg = '點一個格子';
+  else if (G.puz[sel]) { msg = `題目給的數字 <b>${G.val[sel]}</b>`; lab = '這格'; }
+  else if (G.val[sel]) { msg = `已填入 <b style="color:var(--user)">${G.val[sel]}</b>（⌫ 清除可以重寫）`; lab = '這格'; }
+  nb.classList.toggle('filled', !!msg); $('nbMsg').innerHTML = msg;
+  const m = sel >= 0 && !G.val[sel] ? G.notes[sel] : 0;
+  [...slots.children].forEach((sp, k) => sp.classList.toggle('on', !!(m & (1<<(k+1)))));
+  if (!msg && POP[m] === 1) lab = '只剩 1 個<br><b style="color:var(--user)">按 ✍ 填入</b>';
+  $('nbLabel').innerHTML = lab;
 }
 function placeValue(i, d, fromEl, byHint){
   const touched = [i]; if (settings.autoNote) for (const p of PEERS[i]) if (G.notes[p] & (1<<d)) touched.push(p);
@@ -708,9 +748,10 @@ function fillNotes(){
 /* ==================== 第一次教學 ==================== */
 const TUT = [
   { txt:'歡迎！目標：每一<b>橫列</b>、每一<b>直行</b>、每個<b>粗框九宮格</b>，都要剛好有 1～9 各一個。<br>先<b>點一個空白格子</b>。', focus:()=>$('board'), wait:'sel' },
-  { txt:'選好了（橘色框）。現在<b>點下面的數字</b>把它填進去。<br>不知道填什麼？隨便填一個試試，填錯可以再改。', focus:()=>$('pad'), wait:'place' },
-  { txt:'很好！再點一次同一個數字可以擦掉，<b>⌫ 清除</b>也可以。<br><b>↶ 復原</b>可以一直退回上一步。', focus:()=>document.querySelector('[data-act=undo]') },
-  { txt:'<b>✎ 筆記</b>：打開後點數字，會在格子裡寫<b>小字</b>，記下「這格可能是哪幾個」，跟在紙上寫候選一樣。再按一次就關掉。', focus:()=>$('tNotes') },
+  { txt:'選好了（橘色框）。<b>點下面的數字</b>，會先在格子裡寫成<b>候選小字</b>，就像在紙上寫「可能是哪幾個」。<br>試著點一個數字。', focus:()=>$('pad'), wait:'note' },
+  { txt:'寫上去了！盤面下方的<b>候選欄</b>會放大顯示這格的候選，數字鍵也會變<b style="color:#b85a14">橘色</b>。再點一次同一個數字就劃掉。', focus:()=>$('noteBar') },
+  { txt:'想好答案時，按 <b style="color:#2f6fb5">✍ 填入</b>，再點數字，才會正式填進去。（如果這格只剩一個候選，按 ✍ 填入 就直接填。）<br>現在按 ✍ 填入 試試。', focus:()=>$('tFill'), wait:'arm' },
+  { txt:'數字鍵變藍色了，代表下一個點的數字會<b>正式填入</b>。點一個數字吧（填錯沒關係，⌫ 清除、↶ 復原都可以改）。', focus:()=>$('pad'), wait:'place' },
   { txt:'<b>🔀 假設</b>：遇到二選一不確定時按它，之後填的數字會變<b style="color:#2e9a57">綠色</b>。試出矛盾就按上方「✕ 放棄」，整段退回假設前；試對了按「✓ 保留」。', focus:()=>$('tBranch') },
   { txt:'<b>💡 提示</b>：卡住時告訴你下一格填什麼，還會說明為什麼。<br>右上 <b>❚❚</b> 可以暫停、調音量、看說明。開始玩吧！', focus:()=>$('tHint'), last:true },
 ];
@@ -867,9 +908,9 @@ const ACTS = {
   tutNext(){ SFX.tap(); tut++; tutShow(); }, tutSkip(){ tut = -1; tutShow(); },
   replayTut(){ overlay('help', false); if ($('game').classList.contains('on')) { if (paused) resumeGame(); tutStart(); } else { store.set('tutDone', false); toast('下次開始遊戲時會重新播放教學。'); } },
   dropMark(){ dropBranch(true); }, dropOnly(){ dropBranch(false); }, dropCancel(){ overlay('drop', false); },
-  notes(){ notesMode = !notesMode; SFX.tap(); renderAll(); },
+  fill: fillAct,
 };
-document.addEventListener('click', e => { const b = e.target.closest('[data-act]'); if (!b) return; const a = ACTS[b.dataset.act]; if (a) { if (!['undo','erase','hint','notes','branch','brKeep'].includes(b.dataset.act)) SFX.tap(); a(); } });
+document.addEventListener('click', e => { const b = e.target.closest('[data-act]'); if (!b) return; const a = ACTS[b.dataset.act]; if (a) { if (!['undo','erase','hint','fill','branch','brKeep'].includes(b.dataset.act)) SFX.tap(); a(); } });
 $('diffs').addEventListener('click', e => { const b = e.target.closest('[data-dk]'); if (!b) return; SFX.tap(); newGame(b.dataset.dk); });
 $('btnContinue').addEventListener('click', () => { const g = store.get('game', null); if (!g) return; G = g; startGame(); });
 
@@ -884,9 +925,10 @@ document.addEventListener('keydown', e => {
   if (paused || G.done) return;
   if (skipBusy()) return;
   const k = e.key;
-  if (k >= '1' && k <= '9') { input(+k, document.querySelector(`.num[data-d="${k}"]`)); e.preventDefault(); return; }
+  const dg = /^Digit([1-9])$/.exec(e.code); const kd = dg ? +dg[1] : (k >= '1' && k <= '9' ? +k : 0);
+  if (kd) { input(kd, document.querySelector(`.num[data-d="${kd}"]`), e.shiftKey); e.preventDefault(); return; }
+  if (k === 'f' || k === 'F' || k === 'Enter') { fillAct(); e.preventDefault(); return; }
   if (k === 'Backspace' || k === 'Delete' || k === '0') { erase(); e.preventDefault(); return; }
-  if (k === 'n' || k === 'N') { ACTS.notes(); return; }
   if (k === 'z' || k === 'Z') { undo(); return; }
   if (k === 'h' || k === 'H') { hint(); return; }
   if (k === 'b' || k === 'B') { startBranch(); return; }
