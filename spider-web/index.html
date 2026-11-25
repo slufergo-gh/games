@@ -1,0 +1,1223 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#000000">
+<title>蛛網大作戰</title>
+<style>
+:root{
+  --bg:#000; --fg:#fff; --accent:#ffd400; --accent2:#00e5ff; --red:#ff3b3b; --panel:#0b0b1a; --line:#3a3a66;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--fg);overflow:hidden;
+  font-family:"PingFang TC","Noto Sans TC","Microsoft JhengHei",system-ui,sans-serif;
+  -webkit-user-select:none;user-select:none;-webkit-touch-callout:none;overscroll-behavior:none}
+#app{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)}
+#stage{position:relative;flex:none}
+#cv{display:block;width:100%;height:100%;touch-action:none;image-rendering:pixelated;border:2px solid #222}
+#pauseBtn{position:absolute;right:4px;top:4px;width:48px;height:44px;border-radius:10px;border:2px solid #666;
+  background:rgba(0,0,0,.6);color:#fff;font-size:20px;font-weight:bold;display:none;z-index:5;cursor:pointer}
+#pad{flex:none;display:none;gap:10px;width:100%;max-width:560px;padding:8px 10px 6px;height:clamp(92px,17vh,140px)}
+#pad button{flex:1;border-radius:18px;border:3px solid #555;background:#1a1a2e;color:#fff;font-size:clamp(26px,6vh,44px);
+  font-weight:bold;touch-action:none;font-family:inherit}
+#pad button.fire{flex:1.4;background:#5a1010;border-color:#ff5050;font-size:clamp(22px,4.5vh,34px)}
+#pad button.on{background:#ffd400;color:#000;border-color:#fff}
+#pad button.fire.on{background:#ff5050;color:#fff}
+.overlay{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.78);z-index:20;
+  padding:12px;overflow:auto;-webkit-overflow-scrolling:touch}
+.overlay.show{display:flex}
+.panel{background:var(--panel);border:3px solid var(--line);border-radius:16px;padding:18px 18px 16px;width:min(100%,520px);
+  max-height:100%;overflow:auto;margin:auto;-webkit-overflow-scrolling:touch}
+.panel h2{margin:0 0 12px;text-align:center;color:var(--accent);font-size:26px;letter-spacing:2px}
+.btn{display:block;width:100%;margin:10px 0;padding:14px 10px;font-size:22px;font-weight:bold;border-radius:14px;
+  border:3px solid #556;background:#1c1c38;color:#fff;cursor:pointer;font-family:inherit;min-height:58px}
+.btn.main{background:#ffd400;color:#000;border-color:#fff;font-size:26px}
+.btn:active{transform:scale(.97)}
+.row{display:flex;gap:8px}
+.row .btn{flex:1}
+#title .panel{background:transparent;border:none;text-align:center}
+.logo{font-size:clamp(40px,11vw,64px);font-weight:900;color:var(--accent);text-shadow:4px 4px 0 #c00000, 8px 8px 0 #300;
+  letter-spacing:4px;margin:4px 0 2px;line-height:1.15}
+.sub{color:var(--accent2);font-size:18px;margin-bottom:10px;letter-spacing:3px}
+.hi{color:#fff;font-size:20px;margin:6px 0 10px}
+.diff{display:flex;gap:6px;margin:6px 0}
+.diff button{flex:1;padding:12px 4px;font-size:20px;border-radius:12px;border:3px solid #556;background:#1c1c38;color:#fff;font-weight:bold;font-family:inherit;min-height:54px}
+.diff button.sel{background:var(--accent2);color:#000;border-color:#fff}
+.set{margin:14px 0}
+.set label{display:block;font-size:20px;margin-bottom:6px}
+.set input[type=range]{width:100%;height:36px;accent-color:#ffd400}
+.seg{display:flex;gap:6px;flex-wrap:wrap}
+.seg button{flex:1;min-width:80px;padding:10px 4px;font-size:18px;border-radius:10px;border:2px solid #556;background:#1c1c38;color:#fff;font-family:inherit;min-height:48px}
+.seg button.sel{background:var(--accent);color:#000;border-color:#fff;font-weight:bold}
+.help{font-size:19px;line-height:1.7}
+.help h3{color:var(--accent2);margin:14px 0 4px;font-size:21px}
+.help ul{margin:0;padding-left:1.2em}
+.help table{border-collapse:collapse;width:100%;font-size:16px;margin:6px 0}
+.help td,.help th{border:1px solid #445;padding:5px 6px;text-align:left}
+.help th{background:#1c1c38}
+.tabs{display:flex;gap:6px;margin-bottom:8px}
+.tabs button{flex:1;padding:10px;font-size:18px;border-radius:10px;border:2px solid #556;background:#1c1c38;color:#fff;font-family:inherit}
+.tabs button.sel{background:var(--accent2);color:#000;font-weight:bold}
+.note{font-size:15px;color:#aab;margin-top:8px;text-align:center}
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="stage">
+    <canvas id="cv"></canvas>
+    <button id="pauseBtn" aria-label="暫停">❚❚</button>
+  </div>
+  <div id="pad">
+    <button id="bL" aria-label="向左">◀</button>
+    <button id="bF" class="fire" aria-label="發射">發射</button>
+    <button id="bR" aria-label="向右">▶</button>
+  </div>
+</div>
+
+<!-- 封面 -->
+<div id="title" class="overlay show"><div class="panel">
+  <div class="logo">蛛網<br>大作戰</div>
+  <div class="sub">— 懷舊街機射擊 —</div>
+  <div class="hi">最高分：<span id="hiTxt">0</span></div>
+  <div class="diff" id="diffSel">
+    <button data-d="easy">簡單</button><button data-d="normal">普通</button><button data-d="hard">困難</button>
+  </div>
+  <button class="btn main" data-act="start">▶ 開始遊戲</button>
+  <div class="row"><button class="btn" data-act="help">📖 說明</button><button class="btn" data-act="settings">⚙️ 設定</button></div>
+</div></div>
+
+<!-- 暫停 -->
+<div id="pause" class="overlay"><div class="panel">
+  <h2>暫停中</h2>
+  <button class="btn main" data-act="resume">▶ 繼續</button>
+  <button class="btn" data-act="settings">⚙️ 設定</button>
+  <button class="btn" data-act="help">📖 說明</button>
+  <button class="btn" data-act="restart">↻ 重新開始</button>
+  <button class="btn" data-act="home">🏠 回封面</button>
+</div></div>
+
+<!-- 設定 -->
+<div id="settings" class="overlay"><div class="panel">
+  <h2>設定</h2>
+  <div class="set"><label>🎵 音樂音量：<b id="mvT"></b></label><input type="range" id="mv" min="0" max="100" step="5"></div>
+  <div class="set"><label>🔊 音效音量：<b id="svT"></b></label><input type="range" id="sv" min="0" max="100" step="5"></div>
+  <div class="set"><label>自動連發（不用一直按發射）</label>
+    <div class="seg" data-key="autofire"><button data-v="on">開</button><button data-v="off">關</button></div></div>
+  <div class="set"><label>畫面下方大按鈕（◀ 發射 ▶）</label>
+    <div class="seg" data-key="pad"><button data-v="auto">手機自動</button><button data-v="on">一直顯示</button><button data-v="off">不顯示</button></div></div>
+  <div class="set"><label>震動（手機被打到時）</label>
+    <div class="seg" data-key="vibrate"><button data-v="on">開</button><button data-v="off">關</button></div></div>
+  <button class="btn main" data-act="closeSettings">完成</button>
+</div></div>
+
+<!-- 說明 -->
+<div id="help" class="overlay"><div class="panel">
+  <h2>說明</h2>
+  <div class="tabs"><button data-tab="play" class="sel">怎麼玩</button><button data-tab="stats">數值表</button></div>
+  <div class="help" id="helpPlay">
+    <h3>目標</h3>
+    <ul>
+      <li>上面的蜘蛛網掛著<b>蜘蛛卵囊</b>，蜘蛛會吊著絲一隻一隻垂下來。</li>
+      <li>把<b>所有卵囊打破</b>就過關，關卡會越來越難。</li>
+      <li>被蜘蛛碰到、或被毒液打到，就少一台砲台。砲台用完就結束。</li>
+    </ul>
+    <h3>操作</h3>
+    <ul>
+      <li><b>手機：</b>按下面的 ◀ ▶ 移動，按「發射」射擊。也可以手指在畫面上左右拖。</li>
+      <li><b>電腦：</b>方向鍵 ← → 或 A D 移動，空白鍵射擊，P 或 Esc 暫停。也可以用滑鼠移動、按住左鍵射擊。</li>
+      <li>設定裡有「自動連發」，打開後不用一直按發射。</li>
+    </ul>
+    <h3>小技巧</h3>
+    <ul>
+      <li><b>射斷蜘蛛絲</b>（射蜘蛛上面那條線）：蜘蛛會掉到地上暈一下，這時打牠分數兩倍！但沒打到牠就會爬過來。</li>
+      <li>白色的蜘蛛網球打到會讓砲台變慢一下，綠色毒液才會扣命。</li>
+      <li>打破卵囊有時會掉出寶物：<b style="color:#ffd400">雙</b>＝兩發子彈、<b style="color:#00e5ff">快</b>＝連射變快、<b style="color:#7cff6b">盾</b>＝擋一次、<b style="color:#ff6b9a">命</b>＝多一台砲台。</li>
+      <li>紫蜘蛛和綠吐絲蛛吊在半空中時，有時會<b>在那裡拉出彎彎曲曲的蜘蛛絲、結新的網和卵囊</b>，網會一層一層往下把你包圍。看到牠在結網就快點打掉（或射斷牠的絲）；打破新卵囊，那一片網就會掉下來。新卵囊也要打破才能過關。</li>
+      <li>每 5 關會出現大蜘蛛「蛛后」。</li>
+    </ul>
+    <h3>蜘蛛種類</h3>
+    <ul>
+      <li><b style="color:#c84cff">紫蜘蛛</b>：最普通，會上上下下。</li>
+      <li><b style="color:#ff9b2f">橘跳蛛</b>：吊到一半會跳下來亂跳。</li>
+      <li><b style="color:#5cff5c">綠吐絲蛛</b>：吊在半空中吐網球和毒液，要打兩下。</li>
+      <li><b style="color:#aaaaaa">灰甲蛛</b>：慢慢垂到地上爬過來，要打三下。</li>
+    </ul>
+  </div>
+  <div class="help" id="helpStats" style="display:none"></div>
+  <button class="btn main" data-act="closeHelp">知道了</button>
+</div></div>
+
+<script>
+'use strict';
+/* ================= 數值表（可調整） ================= */
+const CONFIG = {
+  W: 224, H: 288,            // 遊戲畫面邏輯大小（直式街機比例）
+  floorY: 268,               // 地面高度（砲台與爬行蜘蛛所在）
+  player: {
+    speed: 110,              // 砲台移動速度（像素/秒）
+    fireInterval: 0.30,      // 射擊間隔（秒）
+    rapidInterval: 0.15,     // 「快」寶物時的射擊間隔
+    bulletSpeed: 260,        // 子彈速度
+    maxBullets: 3,           // 畫面上最多幾發（快寶物時 ×2）
+    invuln: 2.2,             // 被打後無敵秒數
+    slowMul: 0.45,           // 被網球黏到時的速度倍率
+    slowTime: 2.0            // 被網球黏住秒數
+  },
+  powerTime: 12,             // 雙發/快射寶物持續秒數
+  shieldTime: 20,            // 護盾最長秒數
+  powerFall: 45,             // 寶物掉落速度
+  dropChance: { cocoon: 0.45, spider: 0.04 },   // 掉寶機率
+  dropWeights: { double: 4, rapid: 4, shield: 3, life: 1 },
+  spiders: {
+    // hp 血量, descend 垂降速度, climb 往上爬速度, crawl 地上爬速度, score 分數
+    small:   { name:'紫蜘蛛',   hp:1, descend:34, climb:40, crawl:34, score:100, r:8 },
+    jumper:  { name:'橘跳蛛',   hp:1, descend:46, climb:46, crawl:44, score:150, r:8, hopVX:55, hopVY:-140 },
+    spitter: { name:'綠吐絲蛛', hp:2, descend:28, climb:34, crawl:30, score:200, r:8, shotEvery:1.8 },
+    armor:   { name:'灰甲蛛',   hp:3, descend:18, climb:20, crawl:24, score:300, r:10 }
+  },
+  nest: { chance: 0.4, spinTime: 2.4, minY: 75, maxY: 215, maxExtra: 5, hpMul: 0.7 },  // 蜘蛛垂到半空結新網：機率（每次停住時）、結網秒數、可結網高度、每關最多多幾個、新卵囊血量倍率
+  cutBonus: 50,              // 射斷蜘蛛絲加分
+  stunTime: 1.6,             // 掉地上暈眩秒數（打牠 ×2 分）
+  crawlLife: 7,              // 地上爬多久後離開
+  gravity: 320,
+  webBallSpeed: 70, venomSpeed: 90,
+  cocoon: { baseHP: 3, hpPerStage: 0.6, score: 300 },
+  queen: { baseHP: 30, hpPerBoss: 15, score: 5000, speed: 30, shootEvery: 2.6, spawnEvery: 4.5, r: 15 },
+  stageClearBonus: 500,      // 過關獎勵 × 關卡數
+  noHitBonus: 1000,          // 無傷過關獎勵
+  extraLifeEvery: 20000,     // 每多少分加一命
+  difficulty: {
+    easy:   { label:'簡單', lives:5, speed:0.70, spawn:1.45, shot:0.6, maxAliveAdd:-1, nest:0.5 },
+    normal: { label:'普通', lives:3, speed:1.00, spawn:1.00, shot:1.0, maxAliveAdd:0, nest:1 },
+    hard:   { label:'困難', lives:3, speed:1.25, spawn:0.75, shot:1.35, maxAliveAdd:2, nest:1.4 }
+  },
+  music: { defaultVol: 50, tempo: 120, bossTempo: 140 },
+  sfx: { defaultVol: 70 }
+};
+// 每一關的組成：卵囊數、生蜘蛛間隔、同時最多幾隻、蜘蛛種類比例
+function stageSpec(n){
+  const boss = n % 5 === 0;
+  const w = { small: 10, jumper: n>=2?4+n*0.5:0, spitter: n>=3?3+n*0.5:0, armor: n>=4?2+n*0.3:0 };
+  return {
+    boss,
+    cocoons: boss ? 2 : Math.min(3 + Math.floor((n-1)/2), 6),
+    cocoonHP: Math.round(CONFIG.cocoon.baseHP + n*CONFIG.cocoon.hpPerStage),
+    spawnEvery: Math.max(1.4, 4.2 - n*0.22),
+    maxAlive: Math.min(3 + Math.floor(n/2), 9),
+    weights: w
+  };
+}
+
+/* ================= 儲存（失敗也能玩） ================= */
+const store = {
+  get(k, d){ try{ const v = localStorage.getItem('spiderweb_'+k); return v==null ? d : JSON.parse(v); }catch(e){ return d; } },
+  set(k, v){ try{ localStorage.setItem('spiderweb_'+k, JSON.stringify(v)); }catch(e){} }
+};
+const settings = Object.assign({ musicVol: CONFIG.music.defaultVol, sfxVol: CONFIG.sfx.defaultVol, autofire:'on', pad:'auto', vibrate:'on', diff:'easy' }, store.get('settings', {}));
+function saveSettings(){ store.set('settings', settings); }
+let hiScores = store.get('hi', { easy:0, normal:0, hard:0 });
+
+/* ================= 音訊 ================= */
+let AC = null, master, musicGain, sfxGain, noiseBuf;
+function initAudio(){
+  if (AC) { if (AC.state === 'suspended') AC.resume(); return; }
+  const C = window.AudioContext || window.webkitAudioContext; if (!C) return;
+  try { AC = new C(); } catch(e){ AC = null; return; }
+  master = AC.createGain(); master.connect(AC.destination);
+  musicGain = AC.createGain(); musicGain.connect(master);
+  sfxGain = AC.createGain(); sfxGain.connect(master);
+  noiseBuf = AC.createBuffer(1, AC.sampleRate*0.5, AC.sampleRate);
+  const d = noiseBuf.getChannelData(0); for (let i=0;i<d.length;i++) d[i] = Math.random()*2-1;
+  // iOS 解鎖：播一個無聲音
+  const b = AC.createBuffer(1,1,22050), s = AC.createBufferSource(); s.buffer=b; s.connect(AC.destination); s.start(0);
+  applyVolume();
+}
+function applyVolume(){
+  if (!AC) return;
+  musicGain.gain.setTargetAtTime(Math.pow(settings.musicVol/100,1.6)*0.35, AC.currentTime, 0.03);
+  sfxGain.gain.setTargetAtTime(Math.pow(settings.sfxVol/100,1.4)*0.6, AC.currentTime, 0.03);
+}
+function tone(freq, dur, type='square', vol=0.3, slideTo=null, when=0, dest=null){
+  if (!AC) return;
+  const t = AC.currentTime + when, o = AC.createOscillator(), g = AC.createGain();
+  o.type = type; o.frequency.setValueAtTime(freq, t);
+  if (slideTo) o.frequency.exponentialRampToValueAtTime(slideTo, t+dur);
+  g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(0.001, t+dur);
+  o.connect(g); g.connect(dest || sfxGain); o.start(t); o.stop(t+dur+0.02);
+}
+function noise(dur, vol=0.3, freq=1200, when=0){
+  if (!AC) return;
+  const t = AC.currentTime + when, s = AC.createBufferSource(), f = AC.createBiquadFilter(), g = AC.createGain();
+  s.buffer = noiseBuf; f.type='bandpass'; f.frequency.value=freq; f.Q.value=0.8;
+  g.gain.setValueAtTime(vol,t); g.gain.exponentialRampToValueAtTime(0.001,t+dur);
+  s.connect(f); f.connect(g); g.connect(sfxGain); s.start(t); s.stop(t+dur+0.02);
+}
+const SFX = {
+  shoot(){ tone(1400, 0.07, 'square', 0.12, 500); },
+  hit(){ noise(0.08, 0.25, 2500); },
+  pop(){ tone(300, 0.12, 'square', 0.2, 900); noise(0.1,0.2,1800); },
+  cut(){ tone(2400, 0.05, 'triangle', 0.25, 1800); tone(1600,0.05,'triangle',0.2,1200,0.05); },
+  cocoon(){ noise(0.35, 0.4, 600); tone(200,0.3,'square',0.2,60); },
+  power(){ [523,659,784,1047].forEach((f,i)=>tone(f,0.09,'square',0.18,null,i*0.06)); },
+  life(){ [784,988,1175,1568,1175,1568].forEach((f,i)=>tone(f,0.09,'square',0.2,null,i*0.07)); },
+  hurt(){ tone(600,0.6,'sawtooth',0.3,60); noise(0.5,0.35,400); },
+  slow(){ tone(300,0.2,'triangle',0.25,150); },
+  enemyShot(){ tone(220,0.08,'triangle',0.12,330); },
+  land(){ tone(120,0.08,'square',0.15,70); },
+  clear(){ [523,659,784,659,784,1047].forEach((f,i)=>tone(f,0.14,'square',0.2,null,i*0.12)); },
+  over(){ [392,370,349,330,262].forEach((f,i)=>tone(f,0.3,'square',0.2,null,i*0.25)); },
+  tick(){ tone(1800,0.03,'square',0.08); },
+  boss(){ [110,104,98,92].forEach((f,i)=>tone(f,0.3,'sawtooth',0.25,null,i*0.22)); }
+};
+/* 背景音樂：程式產生的街機風小曲 */
+const Music = {
+  playing:false, step:0, next:0, timer:null, tempo:120, kind:'play',
+  start(kind){
+    if (!AC) return; this.stop(); this.kind = kind; this.tempo = kind==='boss' ? CONFIG.music.bossTempo : CONFIG.music.tempo;
+    this.playing = true; this.step = 0; this.next = AC.currentTime + 0.08;
+    this.timer = setInterval(()=>this.tick(), 25);
+  },
+  stop(){ this.playing = false; if (this.timer) clearInterval(this.timer); this.timer = null; },
+  tick(){
+    if (!this.playing || !AC) return;
+    const sp = 60/this.tempo/4;
+    while (this.next < AC.currentTime + 0.12){ this.note(this.step, this.next); this.step++; this.next += sp; }
+  },
+  note(s, t){
+    const when = Math.max(0, t - AC.currentTime);
+    const N = f => 440*Math.pow(2,(f-69)/12);
+    const bars = this.kind==='boss' ? [45,45,44,44,43,43,44,44] : this.kind==='title' ? [45,41,43,40] : [45,41,43,40,45,41,40,40];
+    const bar = Math.floor(s/16) % bars.length, i = s % 16, root = bars[bar];
+    // 低音
+    if (i % 4 === 0) tone(N(root-12), 0.18, 'triangle', 0.5, null, when, musicGain);
+    if (i % 4 === 2) tone(N(root), 0.08, 'triangle', 0.3, null, when, musicGain);
+    // 琶音
+    const chord = [0,3,7,12,7,3,0,3];
+    if (i % 2 === 0) tone(N(root+12+chord[(i/2)%8]), 0.07, 'square', 0.08, null, when, musicGain);
+    // 旋律
+    const mel = this.kind==='boss' ? [12,-1,10,-1,12,15,-1,12,10,-1,8,-1,7,-1,-1,-1]
+              : [0,-1,3,-1,7,-1,5,3,-1,-1,0,-1,3,5,7,-1];
+    const m = mel[i]; if (m >= 0 && (bar % 2 === 0 || this.kind==='boss')) tone(N(root+24+m), 0.12, 'square', 0.07, null, when, musicGain);
+    if (i % 8 === 4) { // 小鼓
+      const tt = AC.currentTime + when, src = AC.createBufferSource(), g = AC.createGain();
+      src.buffer = noiseBuf; g.gain.setValueAtTime(0.12, tt); g.gain.exponentialRampToValueAtTime(0.001, tt+0.06);
+      src.connect(g); g.connect(musicGain); src.start(tt); src.stop(tt+0.08);
+    }
+  }
+};
+
+/* ================= 像素圖 ================= */
+const SPR = {
+  spiderA: [
+    "1.........1",
+    ".1..222..1.",
+    "..1222221..",
+    "1.2323232.1",
+    ".122222221.",
+    "1..22222..1",
+    "..1.222.1..",
+    ".1.......1."],
+  spiderB: [
+    ".1.......1.",
+    "1...222...1",
+    ".1.22222.1.",
+    "..2323232..",
+    "11222222211",
+    "...22222...",
+    ".11.222.11.",
+    "1.........1"],
+  player: [
+    "......4......",
+    "......4......",
+    ".....141.....",
+    ".....111.....",
+    "..111111111..",
+    ".11121112111.",
+    "1111111111111",
+    "3.3.3.3.3.3.3"],
+  cocoon: [
+    "....1....",
+    "...121...",
+    "..12221..",
+    ".1222221.",
+    ".2212122.",
+    "122222221",
+    "122121221",
+    "122222221",
+    ".1221221.",
+    "..22222..",
+    "...222...",
+    "....2...."],
+  crown: [
+    "1..1..1",
+    "1.111.1",
+    "1111111",
+    "2222222"],
+  life: [
+    "...1...",
+    "..111..",
+    "1111111",
+    "1.1.1.1"]
+};
+const PAL = {
+  small:   {1:'#b07cff', 2:'#8a2be2', 3:'#ff2020'},
+  jumper:  {1:'#ffc070', 2:'#ff7a00', 3:'#202020'},
+  spitter: {1:'#a0ffa0', 2:'#22b822', 3:'#ffee00'},
+  armor:   {1:'#dddddd', 2:'#8a8a9a', 3:'#ff3030'},
+  queen:   {1:'#ff6bd0', 2:'#c0006a', 3:'#ffee00'},
+  player:  {1:'#00e5ff', 2:'#ffd400', 3:'#888', 4:'#ffffff'},
+  cocoon:  {1:'#b0b0b0', 2:'#f4f4f4'},
+  crown:   {1:'#ffd400', 2:'#ff9b00'},
+  life:    {1:'#00e5ff'}
+};
+const sprCache = {};
+function sprite(name, palName, white){
+  const key = name+'|'+palName+'|'+(white?1:0);
+  if (sprCache[key]) return sprCache[key];
+  const rows = SPR[name], pal = PAL[palName], c = document.createElement('canvas');
+  c.width = rows[0].length; c.height = rows.length;
+  const g = c.getContext('2d');
+  rows.forEach((r,y)=>{ for (let x=0;x<r.length;x++){ const ch = r[x]; if (ch!=='.' && pal[ch]) { g.fillStyle = white ? '#fff' : pal[ch]; g.fillRect(x,y,1,1); } } });
+  return sprCache[key] = c;
+}
+function drawSpr(name, palName, x, y, scale=1, white=false){
+  const c = sprite(name, palName, white);
+  ctx.drawImage(c, Math.round(x - c.width*scale/2), Math.round(y - c.height*scale/2), c.width*scale, c.height*scale);
+}
+
+/* ================= 畫面與版面 ================= */
+const W = CONFIG.W, H = CONFIG.H, FLOOR = CONFIG.floorY;
+const cv = document.getElementById('cv'), ctx = cv.getContext('2d');
+const stageEl = document.getElementById('stage'), padEl = document.getElementById('pad'), pauseBtn = document.getElementById('pauseBtn');
+const isTouch = ('ontouchstart' in window) || navigator.maxTouchPoints > 0;
+let K = 1; // 每個邏輯像素等於多少實際像素
+function padVisible(){ return settings.pad==='on' || (settings.pad==='auto' && isTouch); }
+function layout(){
+  const vv = window.visualViewport;
+  const vw = vv ? vv.width : window.innerWidth, vh = vv ? vv.height : window.innerHeight;
+  padEl.style.display = padVisible() ? 'flex' : 'none';
+  const padH = padVisible() ? padEl.getBoundingClientRect().height : 0;   // 量實際高度
+  const cs = getComputedStyle(document.getElementById('app'));
+  const safeV = parseFloat(cs.paddingTop)+parseFloat(cs.paddingBottom), safeH = parseFloat(cs.paddingLeft)+parseFloat(cs.paddingRight);
+  const availW = vw - safeH - 8, availH = vh - safeV - padH - 8;
+  let cssW = Math.min(availW, availH * W / H);
+  cssW = Math.max(160, Math.floor(cssW));
+  const cssH = Math.floor(cssW * H / W);
+  stageEl.style.width = cssW+'px'; stageEl.style.height = cssH+'px';
+  const dpr = Math.min(window.devicePixelRatio || 1, 3);
+  cv.width = Math.round(cssW*dpr); cv.height = Math.round(cssH*dpr);
+  K = cv.width / W;
+  webCache = null;
+}
+window.addEventListener('resize', layout);
+window.addEventListener('orientationchange', ()=>setTimeout(layout, 300));
+if (window.visualViewport) window.visualViewport.addEventListener('resize', layout);
+
+/* ================= 遊戲狀態 ================= */
+let G = null;
+const keys = {};
+const ctl = { left:false, right:false, fire:false, pointerX:null, dragging:false, mouseFire:false };
+let paused = false, webCache = null, stars = [];
+for (let i=0;i<40;i++) stars.push({x:Math.random()*W, y:20+Math.random()*(FLOOR-40), t:Math.random()*6});
+
+function newGame(){
+  const D = CONFIG.difficulty[settings.diff];
+  G = { mode:'intro', stage:0, score:0, shownScore:0, lives:D.lives, nextLife:CONFIG.extraLifeEvery, D, t:0,
+        player:null, bullets:[], spiders:[], cocoons:[], shots:[], powers:[], parts:[], texts:[], queen:null,
+        shake:0, introT:0, result:null, hitThisStage:false, lifePop:0 };
+  nextStage();
+}
+function nextStage(){
+  G.stage++; const S = stageSpec(G.stage); G.spec = S;
+  G.player = G.player || {};
+  Object.assign(G.player, { x: W/2, cool:0, inv:1.0, slow:0, dbl:G.player.dbl||0, rapid:G.player.rapid||0, shield:G.player.shield||0, vx:0 });
+  G.bullets = []; G.spiders = []; G.shots = []; G.powers = []; G.texts = []; G.parts = [];
+  G.cocoons = [];
+  const n = S.cocoons;
+  for (let i=0;i<n;i++){
+    const x = Math.round(W*(i+1)/(n+1) + (Math.random()*10-5));
+    const y = 36 + ((i%2) ? 14 : 0) + Math.random()*6;
+    G.cocoons.push({ x, y, anchorY:16, grow:1, hp:S.cocoonHP, max:S.cocoonHP, timer: 1.5 + Math.random()*S.spawnEvery*1.5, flash:0, wob:0, drop:-40 - i*12 });
+  }
+  // 網的節點：上方大網的下緣，新網的弧線會接在這些點上
+  G.webNodes = []; G.strands = [];
+  for (let x=0; x<=W; x+=W/8){ const d = (x-W/2)/(W/2); G.webNodes.push({ x, y: 72 - d*d*40 }); }
+  G.cocoons.forEach(c=>{ c.node = { x:c.x, y:c.y, owner:c }; G.webNodes.push(c.node); });
+  G.queen = S.boss ? { x:W/2, y:-30, ty:52, hp: CONFIG.queen.baseHP + CONFIG.queen.hpPerBoss*(G.stage/5-1), max:0, vx:CONFIG.queen.speed, state:'enter',
+                        t:0, shootT:2, spawnT:3, flash:0, dropY:52 } : null;
+  if (G.queen) G.queen.max = G.queen.hp;
+  G.mode = 'intro'; G.introT = S.boss ? 2.6 : 1.8; G.hitThisStage = false;
+  webCache = null;
+  if (S.boss) SFX.boss();
+  Music.start(S.boss ? 'boss' : 'play');
+}
+function addScore(v, x, y, color='#fff'){
+  G.score += v;
+  if (x != null) G.texts.push({ x, y, s: '+'+v, t: 0.9, c: color });
+  while (G.score >= G.nextLife){ G.nextLife += CONFIG.extraLifeEvery; G.lives++; G.lifePop = 1; SFX.life(); G.texts.push({x:W/2,y:H/2,s:'多一台砲台！',t:1.4,c:'#00e5ff',big:true}); }
+}
+function burst(x, y, color, n=10, sp=60){
+  for (let i=0;i<n;i++){ const a = Math.random()*Math.PI*2, v = sp*(0.4+Math.random()); G.parts.push({ x, y, vx:Math.cos(a)*v, vy:Math.sin(a)*v, t:0.4+Math.random()*0.4, c:color }); }
+}
+function pickWeighted(w){
+  let tot = 0; for (const k in w) tot += w[k];
+  let r = Math.random()*tot; for (const k in w){ r -= w[k]; if (r <= 0) return k; } return Object.keys(w)[0];
+}
+function spawnSpider(type, x, anchorY){
+  const T = CONFIG.spiders[type], sp = G.D.speed;
+  const s = { type, x, ax: x, y: anchorY + 4, anchorY, hp:T.hp, state:'descend', t:0, flash:0, onThread:true,
+              target: 0, vx:0, vy:0, hops:0, shotT: (T.shotEvery||2)*(0.6+Math.random()*0.6), life:0, anim:Math.random()*10 };
+  if (type === 'armor') s.target = FLOOR - 5;
+  else if (type === 'spitter') s.target = 100 + Math.random()*90;
+  else if (type === 'jumper') s.target = 110 + Math.random()*90;
+  else s.target = Math.random() < 0.18 ? FLOOR - 5 : 100 + Math.random()*140;
+  s.speedMul = sp;
+  G.spiders.push(s);
+}
+function hurtPlayer(){
+  const P = G.player;
+  if (P.inv > 0 || G.mode !== 'play') return;
+  if (P.shield > 0){ P.shield = 0; P.inv = 1.0; SFX.hit(); burst(P.x, FLOOR-4, '#7cff6b', 14, 80); G.texts.push({x:P.x,y:FLOOR-20,s:'擋住了！',t:1,c:'#7cff6b'}); return; }
+  G.lives--; G.hitThisStage = true; P.inv = CONFIG.player.invuln; P.dbl = 0; P.rapid = 0; P.slow = 0;
+  G.shake = 0.4; SFX.hurt(); burst(P.x, FLOOR-4, '#00e5ff', 24, 110); burst(P.x, FLOOR-4, '#ffd400', 12, 70);
+  G.shots = [];
+  // 附近爬行中的蜘蛛被震開
+  G.spiders.forEach(s=>{ if (!s.onThread && Math.abs(s.x-P.x) < 40){ s.state='leave'; s.vx = s.x < P.x ? -80 : 80; } });
+  if (settings.vibrate==='on' && navigator.vibrate) { try{ navigator.vibrate(200); }catch(e){} }
+  if (G.lives <= 0) gameOver();
+}
+function gameOver(){
+  G.mode = 'over'; Music.stop(); SFX.over(); G.bullets = [];
+  const prev = hiScores[settings.diff] || 0, isNew = G.score > prev;
+  if (isNew){ hiScores[settings.diff] = G.score; store.set('hi', hiScores); }
+  G.result = { kind:'over', t:0, lines:[ {label:'最後關卡', value:G.stage, suffix:' 關'}, {label:'總分', value:G.score} ], isNew, shown:0, done:false };
+  pauseBtn.style.display = 'none';
+}
+function stageClear(){
+  G.mode = 'clear'; Music.stop(); SFX.clear();
+  // 剩下的蜘蛛變成星星
+  G.spiders.forEach(s=>{ burst(s.x, s.y, '#ffd400', 6, 50); });
+  G.spiders = []; G.shots = []; G.bullets = []; G.powers = [];
+  G.strands.forEach(st=>{ if (!st.fall) st.fall = 0.01; });
+  const bonus = CONFIG.stageClearBonus * G.stage * (settings.diff==='hard'?2:1);
+  const nohit = G.hitThisStage ? 0 : CONFIG.noHitBonus;
+  G.result = { kind:'clear', t:0, lines:[ {label:'過關獎勵', value:bonus}, {label:'無傷獎勵', value:nohit} ], shown:0, done:false,
+               total: bonus + nohit, startScore: G.score, added:0 };
+}
+
+/* ================= 更新 ================= */
+function update(dt){
+  if (!G || paused) return;
+  G.t += dt;
+  if (G.lifePop > 0) G.lifePop = Math.max(0, G.lifePop - dt*1.5);
+  // 分數慢慢跳上去（看得到增加的過程）
+  if (G.shownScore < G.score) G.shownScore = Math.min(G.score, G.shownScore + Math.max(20, (G.score-G.shownScore)*6)*dt);
+  G.parts.forEach(p=>{ p.x += p.vx*dt; p.y += p.vy*dt; p.vy += 120*dt; p.t -= dt; }); G.parts = G.parts.filter(p=>p.t>0);
+  G.texts.forEach(t=>{ t.y -= 20*dt; t.t -= dt; }); G.texts = G.texts.filter(t=>t.t>0);
+  if (G.shake > 0) G.shake -= dt;
+
+  if (G.mode === 'intro'){
+    G.introT -= dt;
+    G.cocoons.forEach(c=>{ c.drop = Math.min(0, c.drop + 60*dt); });
+    if (G.queen) updateQueenEnter(dt);
+    updatePlayer(dt, false);
+    if (G.introT <= 0){ G.mode = 'play'; G.cocoons.forEach(c=>c.drop=0); }
+    return;
+  }
+  if (G.mode === 'clear' || G.mode === 'over'){ updateStrands(dt); updateResult(dt); return; }
+
+  updatePlayer(dt, true);
+  const sp = G.D.speed;
+  // 子彈
+  G.bullets.forEach(b=>{ b.y -= CONFIG.player.bulletSpeed*dt; });
+  G.bullets = G.bullets.filter(b=>b.y > 14 && !b.dead);
+  // 卵囊
+  const S = G.spec;
+  let alive = G.spiders.length;
+  const maxAlive = Math.max(2, S.maxAlive + G.D.maxAliveAdd);
+  G.cocoons.forEach(c=>{
+    if (c.flash > 0) c.flash -= dt; if (c.wob > 0) c.wob -= dt; if (c.grow < 1) c.grow = Math.min(1, c.grow + dt*2);
+    c.timer -= dt;
+    if (c.timer <= 0){
+      c.timer = S.spawnEvery * G.D.spawn * (0.7 + Math.random()*0.6);
+      if (alive < maxAlive){ spawnSpider(pickWeighted(S.weights), c.x, c.y+6); alive++; c.wob = 0.3; }
+    }
+  });
+  if (G.queen) updateQueen(dt);
+  updateStrands(dt);
+  // 蜘蛛
+  for (const s of G.spiders) updateSpider(s, dt, sp);
+  G.spiders = G.spiders.filter(s=>!s.dead);
+  // 敵方子彈
+  const P = G.player;
+  G.shots.forEach(o=>{
+    o.x += o.vx*dt; o.y += o.vy*dt; o.t += dt;
+    if (o.y > FLOOR-10 && o.y < FLOOR+2 && Math.abs(o.x - P.x) < 7){
+      o.dead = true;
+      if (o.kind === 'web'){ if (P.inv <= 0 || P.shield>0){ P.slow = CONFIG.player.slowTime; SFX.slow(); G.texts.push({x:P.x,y:FLOOR-22,s:'黏住了！',t:0.9,c:'#fff'}); } }
+      else hurtPlayer();
+    }
+  });
+  G.shots = G.shots.filter(o=>!o.dead && o.y < H);
+  // 寶物
+  G.powers.forEach(p=>{
+    p.y = Math.min(FLOOR-4, p.y + CONFIG.powerFall*dt); p.t += dt;
+    if (p.y >= FLOOR-4) p.ground += dt;
+    if (Math.abs(p.x - P.x) < 11 && p.y > FLOOR-16){ p.dead = true; givePower(p.kind); }
+    if (p.ground > 5) p.dead = true;
+  });
+  G.powers = G.powers.filter(p=>!p.dead);
+  // 碰撞：子彈
+  for (const b of G.bullets) collideBullet(b);
+  // 過關判定
+  if (G.cocoons.length === 0 && !G.queen) stageClear();
+}
+function updatePlayer(dt, canFire){
+  const P = G.player, C = CONFIG.player;
+  if (P.inv > 0) P.inv -= dt; if (P.slow > 0) P.slow -= dt;
+  if (P.dbl > 0) P.dbl -= dt; if (P.rapid > 0) P.rapid -= dt; if (P.shield > 0) P.shield -= dt;
+  const spd = C.speed * (P.slow > 0 ? C.slowMul : 1);
+  let dir = 0;
+  if (keys.ArrowLeft || keys.KeyA || ctl.left) dir -= 1;
+  if (keys.ArrowRight || keys.KeyD || ctl.right) dir += 1;
+  if (dir) { P.x += dir*spd*dt; ctl.pointerX = null; }
+  else if (ctl.pointerX != null){
+    const d = ctl.pointerX - P.x, m = spd*1.6*dt;
+    P.x += Math.abs(d) <= m ? d : Math.sign(d)*m;
+  }
+  P.x = Math.max(8, Math.min(W-8, P.x));
+  P.cool -= dt;
+  const wantFire = keys.Space || keys.KeyZ || keys.KeyJ || ctl.fire || ctl.mouseFire || (settings.autofire==='on' && (G.mode==='play'));
+  if (canFire && wantFire && P.cool <= 0){
+    const max = C.maxBullets * (P.rapid > 0 ? 2 : 1) * (P.dbl > 0 ? 2 : 1);
+    if (G.bullets.length < max){
+      P.cool = P.rapid > 0 ? C.rapidInterval : C.fireInterval;
+      if (P.dbl > 0){ G.bullets.push({x:P.x-3,y:FLOOR-12}); G.bullets.push({x:P.x+3,y:FLOOR-12}); }
+      else G.bullets.push({x:P.x, y:FLOOR-12});
+      SFX.shoot();
+    }
+  }
+}
+function givePower(kind){
+  const P = G.player;
+  if (kind==='double') P.dbl = CONFIG.powerTime;
+  if (kind==='rapid') P.rapid = CONFIG.powerTime;
+  if (kind==='shield') P.shield = CONFIG.shieldTime;
+  if (kind==='life'){ G.lives++; G.lifePop = 1; SFX.life(); G.texts.push({x:P.x,y:FLOOR-24,s:'多一台！',t:1.2,c:'#ff6b9a'}); return; }
+  SFX.power();
+  const names = {double:'兩發子彈！', rapid:'連射加快！', shield:'護盾！'};
+  G.texts.push({x:P.x, y:FLOOR-24, s:names[kind], t:1.2, c:POWER_COL[kind]});
+}
+const POWER_COL = { double:'#ffd400', rapid:'#00e5ff', shield:'#7cff6b', life:'#ff6b9a' };
+const POWER_TXT = { double:'雙', rapid:'快', shield:'盾', life:'命' };
+function maybeDrop(x, y, chance){
+  if (Math.random() < chance) G.powers.push({ x, y, kind: pickWeighted(CONFIG.dropWeights), t:0, ground:0 });
+}
+function updateSpider(s, dt, sp){
+  const T = CONFIG.spiders[s.type];
+  s.t += dt; s.anim += dt; if (s.flash > 0) s.flash -= dt;
+  const P = G.player;
+  switch (s.state){
+    case 'descend':
+      s.y += T.descend*sp*dt;
+      if (s.y >= s.target){ s.y = s.target;
+        if (s.y >= FLOOR-6){ s.onThread = false; s.state = 'crawl'; s.life = 0; SFX.land(); }
+        else { s.state = 'hang'; s.t = 0; s.hang = 0.8 + Math.random()*1.8; }
+      }
+      break;
+    case 'hang':
+      s.x += Math.sin(s.anim*2)*3*dt; // 輕輕搖晃
+      if (!s.triedNest && s.t > 0.6 && (s.type==='small' || s.type==='spitter')){
+        s.triedNest = true; const N = CONFIG.nest;
+        if (s.y > N.minY && s.y < N.maxY && G.cocoons.length < G.spec.cocoons + N.maxExtra
+            && !G.cocoons.some(c=>Math.abs(c.x-s.x) < 18 && Math.abs(c.y-s.y) < 30)
+            && Math.random() < N.chance*G.D.nest){ s.state = 'spin'; s.t = 0; s.swing = (s.x < 40 ? 1 : s.x > W-40 ? -1 : (Math.random()<0.5?-1:1)); startSpin(s); break; }
+      }
+      if (s.type === 'spitter'){
+        s.shotT -= dt;
+        if (s.shotT <= 0){ s.shotT = T.shotEvery/G.D.shot*(0.7+Math.random()*0.6); enemyShoot(s); }
+        if (s.t > s.hang + 3) { s.state = 'climb'; }
+      } else if (s.t > s.hang){
+        if (s.type === 'jumper'){ s.onThread = false; s.state = 'hop'; s.vx = (P.x > s.x ? 1 : -1)*T.hopVX*sp; s.vy = -40; s.hops = 0; }
+        else { const r = Math.random();
+          if (r < 0.45){ s.state = 'climb'; }
+          else { s.state = 'descend'; s.target = Math.random() < 0.35 ? FLOOR-5 : Math.min(FLOOR-30, s.y + 30 + Math.random()*60); }
+        }
+      }
+      break;
+    case 'spin':   // 在半空中盪到旁邊、拉出弧線結新的網和卵囊
+      s.x = Math.max(14, Math.min(W-14, s.x + s.swing*14*dt));
+      if (s.t >= CONFIG.nest.spinTime){
+        const hp = Math.max(2, Math.round(G.spec.cocoonHP*CONFIG.nest.hpMul));
+        const nc = { x:s.x, y:s.y, anchorX:s.ax, anchorY:s.anchorY, grow:0, hp, max:hp, timer:2.5, flash:0, wob:0, drop:0, patch:true };
+        G.cocoons.push(nc);
+        nc.node = { x:s.x, y:s.y-2, owner:nc }; G.webNodes.push(nc.node);
+        G.strands.forEach(st=>{ if (st.owner === s){ st.owner = nc; st.p = 1; } });
+        G.texts.push({x:s.x, y:s.y-14, s:'結網了！', t:1.0, c:'#ff9b9b'}); SFX.cocoon();
+        s.anchorY = s.y + 8; s.ax = s.x; s.y += 10; s.state = 'descend'; s.target = Math.random() < 0.4 ? FLOOR-5 : Math.min(FLOOR-30, s.y + 40 + Math.random()*60);
+      }
+      break;
+    case 'climb':
+      s.y -= T.climb*sp*dt; s.x += (s.ax - s.x)*Math.min(1, dt*1.5);
+      if (s.y <= s.anchorY + 4){ s.dead = true; }   // 回到網上
+      else if (s.type !== 'spitter' && Math.random() < 0.15*dt){ s.state='descend'; s.target = Math.min(FLOOR-30, s.y + 40 + Math.random()*80); }
+      break;
+    case 'fall':
+      s.vy += CONFIG.gravity*dt; s.y += s.vy*dt;
+      if (s.y >= FLOOR-5){ s.y = FLOOR-5; s.state = 'stun'; s.t = 0; SFX.land(); burst(s.x, FLOOR-2, '#887', 5, 30); }
+      break;
+    case 'stun':
+      if (s.t > CONFIG.stunTime){ s.state = 'crawl'; s.life = 0; }
+      break;
+    case 'hop':
+      s.vy += CONFIG.gravity*dt; s.x += s.vx*dt; s.y += s.vy*dt;
+      if (s.x < 8 || s.x > W-8){ s.vx *= -1; s.x = Math.max(8, Math.min(W-8, s.x)); }
+      if (s.y >= FLOOR-5){ s.y = FLOOR-5; s.hops++; SFX.land();
+        if (s.hops >= 3){ s.state = 'crawl'; s.life = 0; }
+        else { s.vy = T.hopVY*(0.8+Math.random()*0.4); s.vx = (P.x > s.x ? 1 : -1)*T.hopVX*sp*(0.6+Math.random()*0.6); }
+      }
+      break;
+    case 'crawl':
+      s.life += dt;
+      { const d = P.x - s.x; s.x += Math.sign(d)*Math.min(Math.abs(d), T.crawl*sp*dt); }
+      if (s.life > CONFIG.crawlLife){ s.state = 'leave'; s.vx = (s.x < W/2 ? -1 : 1)*T.crawl*sp*1.5; }
+      break;
+    case 'leave':
+      s.x += s.vx*dt; if (s.x < -12 || s.x > W+12) s.dead = true;
+      break;
+  }
+  // 碰到砲台
+  if (s.y > FLOOR-16 && Math.abs(s.x - P.x) < T.r + 4 && s.state !== 'stun' && s.state !== 'leave') hurtPlayer();
+}
+function enemyShoot(s){
+  const P = G.player, web = Math.random() < 0.5;
+  const sp = (web ? CONFIG.webBallSpeed : CONFIG.venomSpeed) * G.D.speed;
+  const dx = P.x - s.x, dy = FLOOR - s.y, L = Math.hypot(dx, dy) || 1;
+  const vx = dx/L*sp*0.5, vy = Math.max(sp*0.7, dy/L*sp);
+  G.shots.push({ x:s.x, y:s.y+5, vx, vy, kind: web ? 'web' : 'venom', t:0 });
+  SFX.enemyShot();
+}
+function updateQueenEnter(dt){
+  const Q = G.queen; Q.y = Math.min(Q.ty, Q.y + 40*dt);
+}
+function updateQueen(dt){
+  const Q = G.queen; Q.t += dt; if (Q.flash > 0) Q.flash -= dt;
+  updateQueenEnter(dt);
+  if (Q.state === 'enter' && Q.y >= Q.ty) Q.state = 'move';
+  if (Q.state === 'move'){
+    Q.x += Q.vx*G.D.speed*dt; if (Q.x < 30 || Q.x > W-30){ Q.vx *= -1; Q.x = Math.max(30, Math.min(W-30, Q.x)); }
+    Q.dropY = Q.y;
+    if (Q.t > 7){ Q.state = 'down'; Q.t = 0; }
+  } else if (Q.state === 'down'){
+    Q.dropY += 45*G.D.speed*dt; if (Q.dropY >= 170){ Q.dropY = 170; Q.state = 'hold'; Q.t = 0; }
+  } else if (Q.state === 'hold'){
+    if (Q.t > 2.2){ Q.state = 'up'; }
+  } else if (Q.state === 'up'){
+    Q.dropY -= 45*dt; if (Q.dropY <= Q.y){ Q.dropY = Q.y; Q.state = 'move'; Q.t = 0; }
+  }
+  Q.shootT -= dt;
+  if (Q.shootT <= 0){
+    Q.shootT = CONFIG.queen.shootEvery / G.D.shot;
+    const n = Q.state==='hold' ? 5 : 3, sp = CONFIG.venomSpeed*G.D.speed;
+    for (let i=0;i<n;i++){ const a = Math.PI/2 + (i-(n-1)/2)*0.28; G.shots.push({x:Q.x, y:Q.dropY+12, vx:Math.cos(a)*sp, vy:Math.sin(a)*sp, kind: i%2 ? 'web':'venom', t:0}); }
+    SFX.enemyShot();
+  }
+  Q.spawnT -= dt;
+  if (Q.spawnT <= 0){ Q.spawnT = CONFIG.queen.spawnEvery*G.D.spawn; if (G.spiders.length < 6) spawnSpider(Math.random()<0.5?'small':'jumper', Q.x, Q.dropY+10); }
+}
+function collideBullet(b){
+  if (b.dead) return;
+  // 蜘蛛身體
+  for (const s of G.spiders){
+    const T = CONFIG.spiders[s.type];
+    if (Math.abs(b.x - s.x) < T.r && Math.abs(b.y - s.y) < T.r){
+      b.dead = true; s.hp--; s.flash = 0.12;
+      if (s.hp <= 0){
+        s.dead = true;
+        const mult = s.state === 'stun' ? 2 : 1;
+        addScore(T.score*mult, s.x, s.y-6, mult>1 ? '#ffd400' : '#fff');
+        if (mult > 1) G.texts.push({x:s.x, y:s.y-16, s:'×2', t:0.9, c:'#ffd400'});
+        burst(s.x, s.y, PAL[s.type][2], 12, 70); burst(s.x, s.y, '#fff', 5, 40); SFX.pop();
+        maybeDrop(s.x, s.y, CONFIG.dropChance.spider);
+      } else SFX.hit();
+      return;
+    }
+  }
+  // 蜘蛛絲
+  for (const s of G.spiders){
+    if (!s.onThread || (s.state!=='descend' && s.state!=='hang' && s.state!=='climb' && s.state!=='spin')) continue;
+    const tx = s.ax + (s.x - s.ax)*Math.max(0, Math.min(1, (b.y - s.anchorY)/Math.max(1, s.y - s.anchorY)));
+    if (Math.abs(b.x - tx) < 2.2 && b.y < s.y - CONFIG.spiders[s.type].r && b.y > s.anchorY + 2){
+      b.dead = true; s.onThread = false; s.state = 'fall'; s.vy = 0; s.cutY = b.y;
+      addScore(CONFIG.cutBonus, s.x, b.y, '#00e5ff'); SFX.cut();
+      G.parts.push({x:b.x, y:b.y, vx:0, vy:-30, t:0.4, c:"#ccc"}, {x:b.x, y:b.y, vx:0, vy:30, t:0.4, c:'#ccc'});
+      return;
+    }
+  }
+  // 蛛后
+  const Q = G.queen;
+  if (Q && Q.state !== 'enter' && Math.abs(b.x - Q.x) < CONFIG.queen.r && Math.abs(b.y - Q.dropY) < CONFIG.queen.r){
+    b.dead = true; Q.hp--; Q.flash = 0.1; SFX.hit(); addScore(10);
+    if (Q.hp <= 0){
+      addScore(CONFIG.queen.score, Q.x, Q.dropY, '#ff6bd0'); SFX.cocoon(); SFX.clear();
+      for (let i=0;i<4;i++) burst(Q.x + (Math.random()*30-15), Q.dropY + (Math.random()*20-10), ['#ff6bd0','#ffd400','#fff'][i%3], 16, 100);
+      G.shake = 0.5; maybeDrop(Q.x, Q.dropY, 1);
+      G.queen = null;
+    }
+    return;
+  }
+  // 卵囊
+  for (const c of G.cocoons){
+    if (Math.abs(b.x - c.x) < 7 && Math.abs(b.y - (c.y+2)) < 9){
+      b.dead = true; c.hp--; c.flash = 0.1; c.wob = 0.2;
+      if (c.hp <= 0){
+        c.dead = true; addScore(CONFIG.cocoon.score, c.x, c.y, '#ffd400'); SFX.cocoon();
+        burst(c.x, c.y, '#f4f4f4', 18, 80); burst(c.x, c.y, '#ffd400', 6, 50); G.shake = 0.15;
+        maybeDrop(c.x, c.y+8, CONFIG.dropChance.cocoon);
+      } else SFX.hit();
+      break;
+    }
+  }
+  G.cocoons = G.cocoons.filter(c=>!c.dead);
+}
+function updateResult(dt){
+  const R = G.result; R.t += dt;
+  if (R.done) return;
+  if (R.kind === 'clear'){
+    // 獎勵慢慢加進總分（看得到增加過程）
+    if (R.t > 0.8){
+      const rate = Math.max(R.total*0.7, 600);
+      const add = Math.min(R.total - R.added, rate*dt);
+      if (add > 0){ R.added += add; G.score = R.startScore + Math.floor(R.added); G.shownScore = G.score; if (Math.floor(R.t*20)%2===0) SFX.tick(); }
+      if (R.added >= R.total){ finishResult(); }
+    }
+  } else {
+    R.shown = Math.min(1, R.t/1.5);
+    if (R.shown >= 1) finishResult();
+  }
+}
+function finishResult(){
+  const R = G.result; if (R.done) return;
+  if (R.kind === 'clear'){ const before = G.score; G.score = R.startScore + R.total; G.shownScore = G.score; R.added = R.total;
+    addScore(0); }
+  R.shown = 1; R.done = true; R.doneT = R.t;
+}
+function resultTap(){
+  const R = G.result; if (!R) return;
+  if (!R.done){ finishResult(); return; }   // 動畫中點一下 → 直接跳到結果
+  if (R.t - R.doneT < 0.3) return;
+  if (R.kind === 'clear'){ G.result = null; nextStage(); }
+  else { G = null; showTitle(); }
+}
+
+/* ================= 繪圖 ================= */
+function getWeb(){
+  if (webCache) return webCache;
+  const c = document.createElement('canvas'); c.width = cv.width; c.height = Math.round(90*K);
+  const g = c.getContext('2d'); g.scale(K, K);
+  g.strokeStyle = 'rgba(200,200,220,0.45)'; g.lineWidth = 0.7;
+  const cx = W/2, cy = -40, spokes = 15;
+  for (let i=0;i<=spokes;i++){ const a = Math.PI*(i/spokes); g.beginPath(); g.moveTo(cx, cy); g.lineTo(cx + Math.cos(a)*300, cy + Math.sin(a)*300); g.stroke(); }
+  for (let r=60; r<120; r+=11){
+    g.beginPath();
+    for (let i=0;i<=spokes;i++){ const a = Math.PI*(i/spokes), rr = r + (i%2?2:-2); const x = cx + Math.cos(a)*rr, y = cy + Math.sin(a)*rr; i ? g.lineTo(x,y) : g.moveTo(x,y); }
+    g.stroke();
+  }
+  g.setTransform(1,0,0,1,0,0); g.globalCompositeOperation='destination-in';
+  const gr = g.createLinearGradient(0,0,0,c.height); gr.addColorStop(0,'rgba(0,0,0,1)'); gr.addColorStop(0.55,'rgba(0,0,0,1)'); gr.addColorStop(1,'rgba(0,0,0,0)');
+  g.fillStyle = gr; g.fillRect(0,0,c.width,c.height);
+  return webCache = c;
+}
+function render(){
+  ctx.setTransform(1,0,0,1,0,0);
+  ctx.fillStyle = '#000'; ctx.fillRect(0,0,cv.width,cv.height);
+  ctx.imageSmoothingEnabled = false;
+  let sx = 0, sy = 0;
+  if (G && G.shake > 0){ sx = (Math.random()-0.5)*4*K; sy = (Math.random()-0.5)*4*K; }
+  ctx.setTransform(K,0,0,K,sx,sy);
+  const now = performance.now()/1000;
+  // 星星
+  for (const s of stars){ const a = 0.3 + 0.5*Math.abs(Math.sin(now*0.8 + s.t)); ctx.fillStyle = `rgba(180,180,255,${a})`; ctx.fillRect(Math.round(s.x), Math.round(s.y), 1, 1); }
+  // 月亮
+  ctx.fillStyle = '#2a2a10'; ctx.beginPath(); ctx.arc(190, 95, 12, 0, Math.PI*2); ctx.fill();
+  ctx.fillStyle = '#000'; ctx.beginPath(); ctx.arc(195, 92, 11, 0, Math.PI*2); ctx.fill();
+  // 網
+  ctx.save(); ctx.setTransform(1,0,0,1,sx,sy); ctx.drawImage(getWeb(), 0, Math.round(16*K)); ctx.restore();
+  ctx.setTransform(K,0,0,K,sx,sy);
+  // 地面
+  ctx.fillStyle = '#103010'; ctx.fillRect(0, FLOOR+1, W, H-FLOOR);
+  ctx.fillStyle = '#2a7a2a'; ctx.fillRect(0, FLOOR+1, W, 2);
+  for (let x=0;x<W;x+=6){ ctx.fillStyle = '#1d5a1d'; ctx.fillRect(x+((x/6)%2)*3, FLOOR+5, 2, 1); }
+
+  if (!G){ drawTitleDemo(now); return; }
+
+  drawStrands();
+  // 卵囊
+  for (const c of G.cocoons){
+    const wob = c.wob > 0 ? Math.sin(c.wob*60)*1.5 : Math.sin(now*2 + c.x)*0.4;
+    ctx.strokeStyle = 'rgba(220,220,220,0.6)'; ctx.lineWidth = 0.6;
+    if (c.patch) drawWebPatch(c.x, c.y - 2, 10*c.grow, 1);
+    ctx.strokeStyle = 'rgba(220,220,220,0.6)'; ctx.lineWidth = 0.6;
+    ctx.beginPath(); ctx.moveTo(c.anchorX != null ? c.anchorX : c.x, c.anchorY); ctx.lineTo(c.x + wob, c.y - 6 + c.drop); ctx.stroke();
+    drawSpr('cocoon', 'cocoon', c.x + wob, c.y + 2 + c.drop, 1.3*(c.patch ? 0.4+0.6*c.grow : 1), c.flash > 0);
+    // 裂痕代表血量
+    const dmg = 1 - c.hp/c.max;
+    if (dmg > 0.33){ ctx.fillStyle = '#444'; ctx.fillRect(Math.round(c.x-2+wob), Math.round(c.y+c.drop), 1, 3); }
+    if (dmg > 0.66){ ctx.fillStyle = '#444'; ctx.fillRect(Math.round(c.x+1+wob), Math.round(c.y+3+c.drop), 1, 3); }
+  }
+  // 蛛后
+  const Q = G.queen;
+  if (Q){
+    ctx.strokeStyle = 'rgba(230,230,230,0.7)'; ctx.lineWidth = 0.8;
+    ctx.beginPath(); ctx.moveTo(Q.x, 16); ctx.lineTo(Q.x, Q.dropY-10); ctx.stroke();
+    const fr = Math.floor(now*6)%2 ? 'spiderA' : 'spiderB';
+    drawSpr(fr, 'queen', Q.x, Q.dropY, 3, Q.flash > 0);
+    drawSpr('crown', 'crown', Q.x, Q.dropY - 14, 2);
+    // 血條
+    const bw = 120; ctx.fillStyle = '#300'; ctx.fillRect(W/2-bw/2, 22, bw, 4);
+    ctx.fillStyle = '#ff2f7a'; ctx.fillRect(W/2-bw/2, 22, bw*Q.hp/Q.max, 4);
+  }
+  // 蜘蛛
+  for (const s of G.spiders){
+    if (s.onThread){ ctx.strokeStyle = 'rgba(230,230,230,0.65)'; ctx.lineWidth = 0.6; ctx.beginPath(); ctx.moveTo(s.ax, s.anchorY); ctx.lineTo(s.x, s.y-6); ctx.stroke(); }
+    if (s.state === 'spin') drawWebPatch(s.x, s.y - 2, 10*Math.min(1, s.t/CONFIG.nest.spinTime), 0.8);
+    let fr = Math.floor(s.anim*(s.state==='crawl'||s.state==='leave'||s.state==='hop' ? 10 : 3))%2 ? 'spiderA':'spiderB';
+    if (s.state === 'stun') fr = 'spiderA';
+    const scale = s.type === 'armor' ? 1.7 : 1.4;
+    if (s.state === 'stun'){ ctx.save(); ctx.translate(Math.round(s.x), Math.round(s.y)); ctx.scale(1,-1); ctx.translate(-Math.round(s.x), -Math.round(s.y)); }
+    drawSpr(fr, s.type, s.x, s.y, scale, s.flash > 0);
+    if (s.state === 'stun'){ ctx.restore();
+      ctx.fillStyle = '#ffd400'; for (let i=0;i<3;i++){ const a = now*6 + i*2.1; ctx.fillRect(Math.round(s.x + Math.cos(a)*7), Math.round(s.y - 7 + Math.sin(a)*2), 1, 1); }
+    }
+    if (s.type === 'armor' && s.hp < CONFIG.spiders.armor.hp){ ctx.fillStyle = '#fff'; ctx.fillRect(Math.round(s.x-1), Math.round(s.y-7), 3*s.hp/CONFIG.spiders.armor.hp*2, 1); }
+  }
+  // 敵方子彈
+  for (const o of G.shots){
+    if (o.kind === 'web'){ ctx.fillStyle = '#eee'; ctx.fillRect(Math.round(o.x-2), Math.round(o.y-1), 4, 2); ctx.fillRect(Math.round(o.x-1), Math.round(o.y-2), 2, 4); ctx.fillStyle='#999'; ctx.fillRect(Math.round(o.x), Math.round(o.y), 1, 1); }
+    else { ctx.fillStyle = '#5cff5c'; ctx.fillRect(Math.round(o.x-1), Math.round(o.y-2), 2, 4); ctx.fillStyle = '#c0ffc0'; ctx.fillRect(Math.round(o.x-1), Math.round(o.y-2), 1, 1); }
+  }
+  // 寶物
+  for (const p of G.powers){
+    if (p.ground > 3.5 && Math.floor(now*8)%2) continue;
+    const x = Math.round(p.x), y = Math.round(p.y);
+    ctx.fillStyle = POWER_COL[p.kind]; ctx.fillRect(x-6, y-6, 12, 12);
+    ctx.fillStyle = '#000'; ctx.fillRect(x-5, y-5, 10, 10);
+    ctx.fillStyle = POWER_COL[p.kind]; ctx.font = 'bold 9px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(POWER_TXT[p.kind], x, y+0.5);
+  }
+  // 玩家子彈
+  ctx.fillStyle = '#ffff60';
+  for (const b of G.bullets){ ctx.fillRect(Math.round(b.x)-0.5, Math.round(b.y)-3, 1.5, 5); }
+  // 砲台
+  const P = G.player;
+  if (G.mode !== 'over' && !(P.inv > 0 && Math.floor(now*12)%2 && G.mode==='play')){
+    drawSpr('player', 'player', P.x, FLOOR-3, 1.2);
+    if (P.slow > 0){ ctx.strokeStyle = 'rgba(255,255,255,0.8)'; ctx.lineWidth = 0.6; for (let i=-1;i<=1;i++){ ctx.beginPath(); ctx.moveTo(P.x-9, FLOOR-6+i*3); ctx.lineTo(P.x+9, FLOOR-4-i*3); ctx.stroke(); } }
+    if (P.shield > 0){ ctx.strokeStyle = (P.shield < 3 && Math.floor(now*8)%2) ? 'rgba(124,255,107,0.3)' : 'rgba(124,255,107,0.85)'; ctx.lineWidth = 1; ctx.beginPath(); ctx.arc(P.x, FLOOR-4, 11, Math.PI, 0); ctx.stroke(); }
+  }
+  // 粒子
+  for (const p of G.parts){ ctx.fillStyle = p.c; ctx.fillRect(Math.round(p.x), Math.round(p.y), 1.5, 1.5); }
+  // 飄字
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  for (const t of G.texts){
+    ctx.globalAlpha = Math.min(1, t.t*2); ctx.fillStyle = t.c; ctx.font = `bold ${t.big?13:8}px sans-serif`;
+    ctx.strokeStyle = '#000'; ctx.lineWidth = 2; ctx.strokeText(t.s, t.x, t.y); ctx.fillText(t.s, t.x, t.y);
+  }
+  ctx.globalAlpha = 1;
+  drawHUD(now);
+  // 關卡開頭
+  if (G.mode === 'intro'){
+    ctx.fillStyle = 'rgba(0,0,0,0.5)'; ctx.fillRect(0, H/2-26, W, 52);
+    ctx.font = 'bold 20px sans-serif'; ctx.fillStyle = '#ffd400'; ctx.fillText(`第 ${G.stage} 關`, W/2, H/2-8);
+    ctx.font = 'bold 11px sans-serif'; ctx.fillStyle = G.spec.boss ? '#ff6bd0' : '#00e5ff';
+    ctx.fillText(G.spec.boss ? '蛛后出現了！' : '打破所有卵囊！', W/2, H/2+13);
+  }
+  if (G.result) drawResult(now);
+}
+function drawHUD(now){
+  ctx.fillStyle = 'rgba(0,0,0,0.75)'; ctx.fillRect(0, 0, W, 16);
+  ctx.textBaseline = 'middle'; ctx.font = 'bold 9px monospace';
+  ctx.textAlign = 'left'; ctx.fillStyle = '#ff3b3b'; ctx.fillText('分數', 4, 8);
+  ctx.fillStyle = '#fff'; ctx.fillText(String(Math.floor(G.shownScore)).padStart(6,'0'), 26, 8);
+  ctx.textAlign = 'center'; ctx.fillStyle = '#ff3b3b'; ctx.fillText('最高', 112, 8);
+  ctx.fillStyle = '#fff'; ctx.fillText(String(Math.max(hiScores[settings.diff]||0, Math.floor(G.shownScore))).padStart(6,'0'), 140, 8);
+  // 底部：命數與關卡
+  ctx.textAlign = 'left'; ctx.fillStyle = '#fff'; ctx.font = 'bold 9px sans-serif';
+  const by = FLOOR + 12;
+  const pop = 1 + G.lifePop*0.6;
+  const shown = Math.min(G.lives, 8);
+  for (let i=0;i<shown;i++) drawSpr('life', 'life', 8 + i*10, by, (i===shown-1 ? pop : 1)*1.2);
+  if (G.lives > 8){ ctx.fillText('×'+G.lives, 8+8*10, by); }
+  ctx.textAlign = 'right'; ctx.fillStyle = '#ffd400'; ctx.fillText('第 '+G.stage+' 關', W-4, by);
+  // 寶物剩餘時間
+  const P = G.player; let px = W/2 - 20;
+  ctx.textAlign = 'center';
+  [['dbl','double'],['rapid','rapid'],['shield','shield']].forEach(([k,n])=>{ if (P[k] > 0){ ctx.fillStyle = POWER_COL[n]; ctx.fillText(POWER_TXT[n]+Math.ceil(P[k]), px, by); px += 22; } });
+}
+function drawResult(now){
+  const R = G.result;
+  ctx.fillStyle = 'rgba(0,0,0,0.75)'; ctx.fillRect(16, 70, W-32, 140);
+  ctx.strokeStyle = R.kind==='clear' ? '#ffd400' : '#ff3b3b'; ctx.lineWidth = 1.5; ctx.strokeRect(16, 70, W-32, 140);
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.font = 'bold 18px sans-serif'; ctx.fillStyle = R.kind==='clear' ? '#ffd400' : '#ff3b3b';
+  ctx.fillText(R.kind==='clear' ? `第 ${G.stage} 關 過關！` : '遊戲結束', W/2, 92);
+  ctx.font = 'bold 11px sans-serif';
+  R.lines.forEach((l,i)=>{
+    const y = 120 + i*20;
+    ctx.textAlign = 'left'; ctx.fillStyle = '#aaa'; ctx.fillText(l.label, 34, y);
+    let v = l.value;
+    if (R.kind === 'over') v = Math.floor(l.value * R.shown);
+    ctx.textAlign = 'right'; ctx.fillStyle = '#fff'; ctx.fillText((R.kind==='clear' && l.value>0 ? '+' : '') + v + (l.suffix||''), W-34, y);
+  });
+  if (R.kind === 'clear'){ ctx.textAlign = 'left'; ctx.fillStyle = '#aaa'; ctx.fillText('總分', 34, 162); ctx.textAlign='right'; ctx.fillStyle = '#ffd400'; ctx.fillText(String(G.score), W-34, 162); }
+  if (R.kind === 'over' && R.isNew && R.done){ ctx.textAlign = 'center'; ctx.fillStyle = Math.floor(now*4)%2 ? '#ffd400' : '#ff3b3b'; ctx.fillText('★ 新的最高分！ ★', W/2, 164); }
+  ctx.textAlign = 'center'; ctx.font = 'bold 10px sans-serif';
+  ctx.fillStyle = Math.floor(now*2)%2 ? '#fff' : '#888';
+  ctx.fillText(R.done ? (R.kind==='clear' ? '點一下畫面 進入下一關' : '點一下畫面 回封面') : '點一下畫面 直接看結果', W/2, 192);
+}
+function startSpin(s){
+  // 從蜘蛛的位置往上方附近的網點拉出 2～3 條不規則弧線
+  const cand = G.webNodes.filter(n=>n.y < s.y - 12 && (!n.owner || !n.owner.dead))
+    .map(n=>({n, d: Math.hypot(n.x-s.x, (n.y-s.y)*1.3)})).sort((a,b)=>a.d-b.d);
+  const left = cand.find(c=>c.n.x < s.x - 22) || cand.find(c=>c.n.x < s.x - 6), right = cand.find(c=>c.n.x > s.x + 22) || cand.find(c=>c.n.x > s.x + 6);
+  const picks = [left, right, cand[0]].filter((c,i,arr)=>c && arr.indexOf(c)===i).slice(0, 3);
+  for (const c of picks){
+    const ax = s.x, ay = s.y - 2, bx = c.n.x, by = c.n.y;
+    const len = Math.hypot(bx-ax, by-ay), sag = len*(0.12 + Math.random()*0.18);
+    // 兩個控制點隨機偏移、往下垂 → 不規則的弧線
+    G.strands.push({ ax, ay, bx, by,
+      c1x: ax + (bx-ax)*0.3 + (Math.random()-0.5)*len*0.3, c1y: ay + (by-ay)*0.3 + sag,
+      c2x: ax + (bx-ax)*0.7 + (Math.random()-0.5)*len*0.3, c2y: ay + (by-ay)*0.7 + sag*0.8,
+      p: 0, owner: s, fall: 0 });
+  }
+}
+function bez(st, t){
+  const u = 1-t;
+  return [ u*u*u*st.ax + 3*u*u*t*st.c1x + 3*u*t*t*st.c2x + t*t*t*st.bx,
+           u*u*u*st.ay + 3*u*u*t*st.c1y + 3*u*t*t*st.c2y + t*t*t*st.by ];
+}
+function updateStrands(dt){
+  for (const st of G.strands){
+    if (st.fall > 0){ st.fall += dt; continue; }
+    const o = st.owner;
+    if (o.type){ // 還在結網的蜘蛛
+      if (o.dead || o.state !== 'spin'){ st.fall = 0.01; continue; }
+      st.p = Math.min(1, o.t / CONFIG.nest.spinTime);
+      const dx = o.x - st.ax, dy = (o.y-2) - st.ay;   // 弧線起點跟著蜘蛛盪過去
+      st.ax += dx; st.ay += dy; st.c1x += dx*0.7; st.c1y += dy*0.7; st.c2x += dx*0.3; st.c2y += dy*0.3;
+    } else if (o.dead){ st.fall = 0.01; }
+  }
+  G.strands = G.strands.filter(st=>st.fall < 0.8);
+}
+function drawStrands(){
+  for (const st of G.strands){
+    const a = st.fall > 0 ? Math.max(0, 1 - st.fall/0.8) : 1;
+    const drop = st.fall > 0 ? st.fall*st.fall*60 : 0;
+    ctx.strokeStyle = `rgba(225,225,245,${0.85*a})`; ctx.lineWidth = 0.8;
+    ctx.beginPath();
+    const steps = 16, end = st.p;
+    for (let i=0;i<=steps;i++){ const t = end*i/steps, [x,y] = bez(st, t); i ? ctx.lineTo(x, y+drop) : ctx.moveTo(x, y+drop); }
+    ctx.stroke();
+    if (st.p >= 1 && a > 0){   // 弧線上垂下的短絲
+      ctx.strokeStyle = `rgba(225,225,245,${0.5*a})`;
+      for (const t of [0.35, 0.65]){ const [x,y] = bez(st, t); ctx.beginPath(); ctx.moveTo(x, y+drop); ctx.lineTo(x+1, y+drop+4); ctx.stroke(); }
+    }
+  }
+}
+function drawWebPatch(x, y, R, a){
+  if (R < 1) return;
+  ctx.strokeStyle = `rgba(210,210,230,${0.55*a})`; ctx.lineWidth = 0.5;
+  const n = 8;
+  for (let i=0;i<n;i++){ const t = i/n*Math.PI*2; ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x+Math.cos(t)*R, y+Math.sin(t)*R*0.8); ctx.stroke(); }
+  for (const f of [0.45, 0.8]){
+    ctx.beginPath();
+    for (let i=0;i<=n;i++){ const t = i/n*Math.PI*2, rr = R*f; const px = x+Math.cos(t)*rr, py = y+Math.sin(t)*rr*0.8; i ? ctx.lineTo(px,py) : ctx.moveTo(px,py); }
+    ctx.stroke();
+  }
+}
+let demo = null;
+function drawTitleDemo(now){
+  // 封面背景：幾隻蜘蛛上上下下
+  if (!demo){ demo = [30, 80, 140, 195].map((x,i)=>({x, ph:i*1.3, type:['small','jumper','spitter','armor'][i]})); }
+  for (const d of demo){
+    const y = 60 + (Math.sin(now*0.7 + d.ph)*0.5+0.5)*150;
+    ctx.strokeStyle = 'rgba(230,230,230,0.5)'; ctx.lineWidth = 0.6; ctx.beginPath(); ctx.moveTo(d.x, 16); ctx.lineTo(d.x, y-4); ctx.stroke();
+    drawSpr(Math.floor(now*3+d.ph)%2?'spiderA':'spiderB', d.type, d.x, y, 1.5);
+  }
+}
+
+/* ================= 主迴圈 ================= */
+let last = performance.now();
+function loop(ts){
+  let dt = (ts - last)/1000; last = ts;
+  if (dt > 0.05) dt = 0.05;
+  update(dt); render();
+  requestAnimationFrame(loop);
+}
+
+/* ================= 介面 ================= */
+const $ = id => document.getElementById(id);
+function overlay(id, show){ $(id).classList.toggle('show', show); }
+let settingsFrom = null, helpFrom = null;
+function showTitle(){
+  ['pause','settings','help'].forEach(o=>overlay(o,false)); overlay('title', true);
+  pauseBtn.style.display = 'none'; paused = false; padEl.style.visibility = 'hidden';
+  $('hiTxt').textContent = hiScores[settings.diff] || 0;
+  document.querySelectorAll('#diffSel button').forEach(b=>b.classList.toggle('sel', b.dataset.d === settings.diff));
+  if (AC) Music.start('title');
+}
+function startGame(){
+  initAudio();
+  overlay('title', false); newGame(); paused = false;
+  pauseBtn.style.display = 'block'; padEl.style.visibility = 'visible';
+  ctl.left = ctl.right = ctl.fire = false; ctl.pointerX = null;
+}
+function setPause(p){
+  if (!G || G.mode === 'over') return;
+  paused = p; overlay('pause', p);
+  if (AC){ if (p) Music.stop(); else Music.start(G.spec.boss ? 'boss' : 'play'); }
+  if (!p) last = performance.now();
+}
+function syncSettingsUI(){
+  $('mv').value = settings.musicVol; $('sv').value = settings.sfxVol;
+  $('mvT').textContent = settings.musicVol; $('svT').textContent = settings.sfxVol;
+  document.querySelectorAll('#settings .seg').forEach(seg=>{
+    seg.querySelectorAll('button').forEach(b=>b.classList.toggle('sel', settings[seg.dataset.key] === b.dataset.v));
+  });
+}
+function buildStats(){
+  const C = CONFIG, P = C.player;
+  let h = '<h3>砲台</h3><table><tr><th>項目</th><th>數值</th></tr>';
+  h += `<tr><td>移動速度</td><td>${P.speed} 像素/秒（畫面寬 ${C.W}）</td></tr>`;
+  h += `<tr><td>射擊間隔</td><td>${P.fireInterval} 秒（快寶物 ${P.rapidInterval} 秒）</td></tr>`;
+  h += `<tr><td>子彈速度</td><td>${P.bulletSpeed} 像素/秒</td></tr>`;
+  h += `<tr><td>同時最多子彈</td><td>${P.maxBullets} 發（雙/快寶物各 ×2）</td></tr>`;
+  h += `<tr><td>受傷後無敵</td><td>${P.invuln} 秒</td></tr>`;
+  h += `<tr><td>被網球黏住</td><td>速度 ×${P.slowMul}，${P.slowTime} 秒</td></tr>`;
+  h += `<tr><td>寶物時間</td><td>雙/快 ${C.powerTime} 秒，盾 ${C.shieldTime} 秒或擋一次</td></tr>`;
+  h += `<tr><td>加命</td><td>每 ${C.extraLifeEvery} 分</td></tr></table>`;
+  h += '<h3>蜘蛛（普通難度）</h3><table><tr><th>種類</th><th>血</th><th>垂降</th><th>地上爬</th><th>分數</th></tr>';
+  for (const k in C.spiders){ const s = C.spiders[k]; h += `<tr><td>${s.name}</td><td>${s.hp}</td><td>${s.descend}</td><td>${s.crawl}</td><td>${s.score}</td></tr>`; }
+  h += `</table><p>射斷蜘蛛絲 +${C.cutBonus}；暈眩 ${C.stunTime} 秒內打死 ×2；地上爬 ${C.crawlLife} 秒後離開。吐絲蛛每 ${C.spiders.spitter.shotEvery} 秒吐一次（網球速度 ${C.webBallSpeed}、毒液 ${C.venomSpeed}）。</p>`;
+  h += '<h3>卵囊與蛛后</h3><table><tr><th>項目</th><th>數值</th></tr>';
+  h += `<tr><td>卵囊血量</td><td>${C.cocoon.baseHP} + 關卡×${C.cocoon.hpPerStage}（四捨五入）</td></tr>`;
+  h += `<tr><td>卵囊分數</td><td>${C.cocoon.score}，掉寶 ${C.dropChance.cocoon*100}%</td></tr>`;
+  h += `<tr><td>半空結新網</td><td>停住時 ${C.nest.chance*100}% 機率（簡單 ×0.5、困難 ×1.4），結網 ${C.nest.spinTime} 秒，高度 ${C.nest.minY}～${C.nest.maxY}，每關最多多 ${C.nest.maxExtra} 個，新卵囊血量 ×${C.nest.hpMul}</td></tr>`;
+  h += `<tr><td>蛛后血量</td><td>${C.queen.baseHP}，之後每次 +${C.queen.hpPerBoss}</td></tr>`;
+  h += `<tr><td>蛛后分數</td><td>${C.queen.score}（每打一下 +10）</td></tr>`;
+  h += `<tr><td>蛛后射擊/生蜘蛛</td><td>每 ${C.queen.shootEvery} 秒 / 每 ${C.queen.spawnEvery} 秒</td></tr></table>`;
+  h += '<h3>關卡</h3><table><tr><th>關</th><th>卵囊</th><th>卵囊血</th><th>生蜘蛛間隔</th><th>同時最多</th></tr>';
+  for (const n of [1,2,3,4,5,6,8,10,15]){ const s = stageSpec(n); h += `<tr><td>${n}${s.boss?' 蛛后':''}</td><td>${s.cocoons}</td><td>${s.cocoonHP}</td><td>${s.spawnEvery.toFixed(1)} 秒</td><td>${s.maxAlive}</td></tr>`; }
+  h += `</table><p>過關獎勵 ${C.stageClearBonus}×關卡（困難 ×2），無傷 +${C.noHitBonus}。</p>`;
+  h += '<h3>難度</h3><table><tr><th>難度</th><th>砲台數</th><th>敵速</th><th>生怪間隔</th><th>吐絲頻率</th></tr>';
+  for (const k in C.difficulty){ const d = C.difficulty[k]; h += `<tr><td>${d.label}</td><td>${d.lives}</td><td>×${d.speed}</td><td>×${d.spawn}</td><td>×${d.shot}</td></tr>`; }
+  h += '</table><p class="note">數值都在 index.html 最上面的 CONFIG，對照表也在資料夾的「數值表.md」。</p>';
+  $('helpStats').innerHTML = h;
+}
+document.addEventListener('click', e=>{
+  const b = e.target.closest('[data-act]'); if (!b) return;
+  initAudio();
+  const a = b.dataset.act;
+  if (a === 'start') startGame();
+  else if (a === 'resume') setPause(false);
+  else if (a === 'restart'){ overlay('pause', false); paused = false; startGame(); }
+  else if (a === 'home'){ G = null; showTitle(); }
+  else if (a === 'settings'){ syncSettingsUI(); overlay('settings', true); }
+  else if (a === 'closeSettings'){ overlay('settings', false); layout(); }
+  else if (a === 'help'){ buildStats(); overlay('help', true); }
+  else if (a === 'closeHelp') overlay('help', false);
+});
+document.querySelectorAll('#diffSel button').forEach(b=>b.addEventListener('click', ()=>{
+  settings.diff = b.dataset.d; saveSettings();
+  document.querySelectorAll('#diffSel button').forEach(x=>x.classList.toggle('sel', x===b));
+  $('hiTxt').textContent = hiScores[settings.diff] || 0;
+}));
+document.querySelectorAll('.tabs button').forEach(b=>b.addEventListener('click', ()=>{
+  document.querySelectorAll('.tabs button').forEach(x=>x.classList.toggle('sel', x===b));
+  $('helpPlay').style.display = b.dataset.tab==='play' ? '' : 'none';
+  $('helpStats').style.display = b.dataset.tab==='stats' ? '' : 'none';
+}));
+$('mv').addEventListener('input', e=>{ settings.musicVol = +e.target.value; $('mvT').textContent = settings.musicVol; applyVolume(); saveSettings(); });
+$('sv').addEventListener('input', e=>{ settings.sfxVol = +e.target.value; $('svT').textContent = settings.sfxVol; applyVolume(); saveSettings(); });
+$('sv').addEventListener('change', ()=>{ initAudio(); SFX.pop(); });
+document.querySelectorAll('#settings .seg').forEach(seg=>seg.addEventListener('click', e=>{
+  const b = e.target.closest('button'); if (!b) return;
+  settings[seg.dataset.key] = b.dataset.v; saveSettings(); syncSettingsUI();
+  if (seg.dataset.key === 'pad') layout();
+}));
+pauseBtn.addEventListener('click', e=>{ e.stopPropagation(); initAudio(); setPause(true); });
+
+/* 鍵盤 */
+window.addEventListener('keydown', e=>{
+  if (['ArrowLeft','ArrowRight','ArrowUp','ArrowDown','Space'].includes(e.code)) e.preventDefault();
+  initAudio();
+  if (e.code === 'Escape' || e.code === 'KeyP'){
+    if (G && G.mode !== 'over'){
+      if ($('settings').classList.contains('show')) overlay('settings', false);
+      else if ($('help').classList.contains('show')) overlay('help', false);
+      else setPause(!paused);
+    }
+    return;
+  }
+  if (G && G.result && !paused && (e.code === 'Space' || e.code === 'Enter') && !e.repeat){ resultTap(); return; }
+  keys[e.code] = true;
+});
+window.addEventListener('keyup', e=>{ keys[e.code] = false; });
+window.addEventListener('blur', ()=>{ for (const k in keys) keys[k] = false; ctl.left = ctl.right = ctl.fire = ctl.mouseFire = false; if (G && G.mode!=='over' && !paused && G.mode!=='clear') setPause(true); });
+document.addEventListener('visibilitychange', ()=>{
+  if (document.hidden){ if (G && G.mode!=='over' && G.mode!=='clear' && !paused) setPause(true); Music.stop(); if (AC) AC.suspend && AC.suspend(); }
+  else { if (AC && AC.resume) AC.resume(); if (!G) Music.start('title'); }
+});
+
+/* 畫面觸控/滑鼠 */
+function toLogical(e){ const r = cv.getBoundingClientRect(); return { x: (e.clientX - r.left)/r.width*W, y:(e.clientY - r.top)/r.height*H }; }
+let drag = null;
+cv.addEventListener('pointerdown', e=>{
+  e.preventDefault(); initAudio();
+  if (!G || paused) return;
+  if (G.result){ resultTap(); return; }
+  const p = toLogical(e);
+  if (e.pointerType === 'mouse'){ ctl.pointerX = p.x; if (e.button === 0) ctl.mouseFire = true; }
+  else { drag = { id:e.pointerId, x0:p.x, px:G.player.x }; ctl.fire = true; }
+  try{ cv.setPointerCapture(e.pointerId); }catch(_){}
+});
+cv.addEventListener('pointermove', e=>{
+  if (!G || paused) return;
+  const p = toLogical(e);
+  if (e.pointerType === 'mouse'){ ctl.pointerX = p.x; }
+  else if (drag && drag.id === e.pointerId){ ctl.pointerX = Math.max(8, Math.min(W-8, drag.px + (p.x - drag.x0)*1.3)); }
+});
+function endPtr(e){
+  if (e.pointerType === 'mouse'){ ctl.mouseFire = false; }
+  else if (drag && drag.id === e.pointerId){ drag = null; ctl.fire = false; ctl.pointerX = null; }
+}
+cv.addEventListener('pointerup', endPtr); cv.addEventListener('pointercancel', endPtr);
+cv.addEventListener('contextmenu', e=>e.preventDefault());
+
+/* 下方大按鈕 */
+function bindHold(el, on, off){
+  el.addEventListener('pointerdown', e=>{ e.preventDefault(); initAudio(); try{ el.setPointerCapture(e.pointerId); }catch(_){}
+    if (G && G.result && !paused){ resultTap(); return; } on(); el.classList.add('on'); });
+  const up = e=>{ off(); el.classList.remove('on'); };
+  el.addEventListener('pointerup', up); el.addEventListener('pointercancel', up); el.addEventListener('lostpointercapture', up);
+  el.addEventListener('contextmenu', e=>e.preventDefault());
+}
+bindHold($('bL'), ()=>{ ctl.left = true; ctl.pointerX = null; }, ()=>{ ctl.left = false; });
+bindHold($('bR'), ()=>{ ctl.right = true; ctl.pointerX = null; }, ()=>{ ctl.right = false; });
+bindHold($('bF'), ()=>{ ctl.fire = true; }, ()=>{ ctl.fire = false; });
+// 防止 iOS 雙擊放大與捲動
+document.addEventListener('touchmove', e=>{ if (!e.target.closest('.overlay')) e.preventDefault(); }, {passive:false});
+document.addEventListener('dblclick', e=>e.preventDefault());
+
+// 第一次點封面任何地方就開始播封面音樂
+document.addEventListener('pointerdown', function first(){ initAudio(); if (!G && !Music.playing) Music.start('title'); document.removeEventListener('pointerdown', first); });
+
+layout();
+showTitle();
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>
